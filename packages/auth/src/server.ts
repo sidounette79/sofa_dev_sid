@@ -13,7 +13,10 @@ import { isOidcAutoRegisterEnabled, isOidcConfigured, isPasswordLoginDisabled } 
 const authLog = createLogger("auth");
 
 export const auth = betterAuth({
-  trustedOrigins: ["sofa://"],
+  trustedOrigins: [
+  "sofa://",
+  ...(process.env.TRUSTED_ORIGINS?.split(",") ?? []),
+],
   logger: {
     // Suppress unset secret/low entropy warnings during build
     disabled: process.env.NEXT_PHASE === "phase-production-build",
@@ -66,11 +69,12 @@ export const auth = betterAuth({
       : []),
     expo(),
   ],
-  advanced: {
-    database: {
-      generateId: () => Bun.randomUUIDv7(),
-    },
+advanced: {
+  trustedProxies: process.env.TRUSTED_PROXIES?.split(",") ?? [],
+  database: {
+    generateId: () => Bun.randomUUIDv7(),
   },
+},
   hooks: {
     before: createAuthMiddleware(async (ctx) => {
       // Block email/password sign-up when registration is closed.
