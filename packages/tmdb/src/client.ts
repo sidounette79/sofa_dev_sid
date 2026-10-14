@@ -6,6 +6,20 @@ import type { operations, paths } from "./schema";
 
 const log = createLogger("tmdb");
 
+/**
+ * Thrown by the detail endpoints on a 404 specifically — distinguishes "TMDB
+ * doesn't have this ID anymore" (permanent, seen 17.08 on a title TMDB had
+ * removed/merged — status_code 34) from a transient network/5xx failure.
+ * Callers that loop over many titles should catch this separately so one
+ * gone title doesn't get retried forever or block the rest of the batch.
+ */
+export class TmdbNotFoundError extends Error {
+  constructor(resource: string) {
+    super(`TMDB resource not found: ${resource}`);
+    this.name = "TmdbNotFoundError";
+  }
+}
+
 // ─── Schema-derived types ───────────────────────────────────────────
 
 /** Extract the 200 JSON response body from an operation */
@@ -21,17 +35,31 @@ type OpResponse<K extends keyof operations> = operations[K] extends {
 export type TmdbSearchResponse = OpResponse<"search-multi">;
 export type TmdbSearchResult = NonNullable<TmdbSearchResponse["results"]>[number];
 
+// One entry from a /translations response (also embeddable via
+// append_to_response) — used as an English fallback source, see
+// applyEnglishOverviewFallback below.
+interface TmdbTranslationEntry {
+  iso_639_1?: string;
+  iso_3166_1?: string;
+  data?: { overview?: string; title?: string; name?: string };
+}
+interface TmdbTranslations {
+  translations?: TmdbTranslationEntry[];
+}
+
 // Movie details — augmented with append_to_response data
 export type TmdbMovieDetails = OpResponse<"movie-details"> & {
   release_dates?: {
     results: NonNullable<OpResponse<"movie-release-dates">["results"]>;
   };
+  translations?: TmdbTranslations;
 };
 
 // TV details — augmented with append_to_response data
 export type TmdbTvDetails = OpResponse<"tv-series-details"> & {
   content_ratings?: OpResponse<"tv-series-content-ratings">;
   external_ids?: OpResponse<"tv-series-external-ids">;
+  translations?: TmdbTranslations;
 };
 
 // Watch providers — manually defined because the schema types `results` as an
@@ -153,6 +181,25 @@ const authMiddleware: Middleware = {
   },
 };
 
+// 30.08, Sid — Découvrir/recherche showed English summaries almost always
+// ("dans Jellyseer c'est en français"), traced to every TMDB call in this
+// client defaulting to TMDB's own default locale (English) — nothing here
+// ever passed a `language` param. The separate TVDB French-overlay
+// (hydrateFrenchEpisodeTranslations, metadata.ts) only ever ran for TV
+// titles already resolved into the `titles` table via a detail-page visit —
+// it never touched movies, search results, or Découvrir cards. Applied here
+// instead of per-call so no endpoint (search/discover/trending/recommend/
+// details/season/episode) is missed.
+const localeMiddleware: Middleware = {
+  async onRequest({ request }) {
+    const url = new URL(request.url);
+    if (!url.searchParams.has("language")) {
+      url.searchParams.set("language", "fr-FR");
+    }
+    return new Request(url.toString(), request);
+  },
+};
+
 const requestTimings = new WeakMap<Request, number>();
 
 const loggingMiddleware: Middleware = {
@@ -174,7 +221,30 @@ const loggingMiddleware: Middleware = {
 
 const client = createClient<paths>({ baseUrl });
 if (baseUrlRewriteMiddleware) client.use(baseUrlRewriteMiddleware);
-client.use(timeoutMiddleware, authMiddleware, loggingMiddleware);
+client.use(timeoutMiddleware, authMiddleware, localeMiddleware, loggingMiddleware);
+
+// TMDB returns an empty string (not the English text) for `overview`/`title`
+// when no translation exists in the requested language — asking for
+// language=fr-FR can leave a French-less title blank instead of showing
+// nothing at all. `translations` costs no extra request when appended to a
+// details call (see getMovieDetails/getTvDetails below) and lets us recover
+// the English text from the same response rather than regressing to blank
+// for the (rarer, but real) titles TMDB has no French summary for.
+function findTranslatedOverview(
+  translations: TmdbTranslations | undefined,
+  iso_639_1: string,
+): string | undefined {
+  return translations?.translations?.find((t) => t.iso_639_1 === iso_639_1)?.data
+    ?.overview;
+}
+
+function withEnglishOverviewFallback<T extends { overview?: string | null; translations?: TmdbTranslations }>(
+  data: T,
+): T {
+  if (data.overview) return data;
+  const fallback = findTranslatedOverview(data.translations, "en");
+  return fallback ? { ...data, overview: fallback } : data;
+}
 
 // ─── Search ─────────────────────────────────────────────────────────
 
@@ -205,25 +275,39 @@ export async function searchTv(query: string, page = 1) {
 // ─── Details ────────────────────────────────────────────────────────
 
 export async function getMovieDetails(tmdbId: number) {
-  const { data, error } = await client.GET("/3/movie/{movie_id}", {
+  const { data, error, response } = await client.GET("/3/movie/{movie_id}", {
     params: {
       path: { movie_id: tmdbId },
-      query: { append_to_response: "release_dates" },
+      query: { append_to_response: "release_dates,translations" },
     },
   });
-  if (error) throw new Error(`TMDB API error: movie/${tmdbId}`);
-  return data as TmdbMovieDetails;
+  if (error) {
+    // openapi-fetch's `response` type resolves to `never` here for this
+    // operation's generated union (multi-branch OpenAPI response schema
+    // confuses the discriminant) — the real value is still a plain Response
+    // at runtime, so cast rather than fight the type.
+    if ((response as unknown as Response).status === 404) {
+      throw new TmdbNotFoundError(`movie/${tmdbId}`);
+    }
+    throw new Error(`TMDB API error: movie/${tmdbId}`);
+  }
+  return withEnglishOverviewFallback(data as TmdbMovieDetails);
 }
 
 export async function getTvDetails(tmdbId: number) {
-  const { data, error } = await client.GET("/3/tv/{series_id}", {
+  const { data, error, response } = await client.GET("/3/tv/{series_id}", {
     params: {
       path: { series_id: tmdbId },
-      query: { append_to_response: "content_ratings,external_ids" },
+      query: { append_to_response: "content_ratings,external_ids,translations" },
     },
   });
-  if (error) throw new Error(`TMDB API error: tv/${tmdbId}`);
-  return data as TmdbTvDetails;
+  if (error) {
+    if ((response as unknown as Response).status === 404) {
+      throw new TmdbNotFoundError(`tv/${tmdbId}`);
+    }
+    throw new Error(`TMDB API error: tv/${tmdbId}`);
+  }
+  return withEnglishOverviewFallback(data as TmdbTvDetails);
 }
 
 export async function getTvExternalIds(tmdbId: number) {
@@ -345,6 +429,23 @@ export async function getTrending(
     params: { path: { time_window: timeWindow }, query },
   });
   if (error) throw new Error("TMDB API error: trending/all");
+  return data;
+}
+
+/**
+ * New/upcoming movie releases (24.08, Sid — spotted this on Jellyseerr,
+ * genuinely missing from Sofa's Explore page: nothing surfaced movies not
+ * yet on anyone's radar, only Trending/Popular which skew toward stuff
+ * already out). Sid asked for the TV equivalent too (discover/upcomingSeries
+ * procedure) — TMDB has no dedicated /tv/upcoming endpoint like this one, so
+ * that one reuses the generic discover() below with a first_air_date filter
+ * instead of a new wrapper here.
+ */
+export async function getUpcomingMovies(page = 1) {
+  const { data, error } = await client.GET("/3/movie/upcoming", {
+    params: { query: { page } },
+  });
+  if (error) throw new Error("TMDB API error: movie/upcoming");
   return data;
 }
 

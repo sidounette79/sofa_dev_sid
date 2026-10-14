@@ -23,14 +23,13 @@ msgstr ""
 #~ msgstr ""
 
 #: apps/web/src/components/settings/account-section.tsx
-#: apps/web/src/components/settings/imports-section.tsx
 msgid "...and {remainingErrors} more"
 msgstr "...et {remainingErrors} de plus"
 
 #. placeholder {0}: systemHealth.data.imageCache.imageCount
 #: apps/native/src/app/(tabs)/(settings)/index.tsx
 msgid "{0, plural, one {# image} other {# images}}"
-msgstr ""
+msgstr "{0, plural, one {# image} other {# images}}"
 
 #. placeholder {0}: selected.length
 #: apps/web/src/components/library/library-filters.tsx
@@ -41,6 +40,11 @@ msgstr "{0, plural, one {# statut} other {# statuts}}"
 #: apps/native/src/app/(tabs)/(settings)/index.tsx
 msgid "{0, plural, one {# title} other {# titles}}"
 msgstr "{0, plural, one {# titre} other {# titres}}"
+
+#. placeholder {0}: statusConfig[effectiveBadge].label
+#: apps/web/src/components/title-card.tsx
+msgid "{0} — watched again"
+msgstr "{0} — revu"
 
 #: apps/web/src/components/settings/system-health-section.tsx
 #~ msgid "{0} · last <0/>"
@@ -57,6 +61,14 @@ msgstr "{0, plural, one {# titre} other {# titres}}"
 #: apps/web/src/components/settings/system-health-section.tsx
 #~ msgid "{0} backups · last <0/>"
 #~ msgstr ""
+
+#. placeholder {0}: author.bookCount
+#. placeholder {0}: items.length
+#: apps/web/src/routes/_app/authors.$id.tsx
+#: apps/web/src/routes/_app/books.index.tsx
+#: apps/web/src/routes/_app/books.index.tsx
+msgid "{0} books"
+msgstr "{0} livres"
 
 #: apps/web/src/components/settings/system-health-section.tsx
 #~ msgid "{0} cached images"
@@ -89,6 +101,10 @@ msgstr "{0, plural, one {# titre} other {# titres}}"
 #: apps/native/src/app/(tabs)/(settings)/index.tsx
 #~ msgid "{0} titles"
 #~ msgstr "{0} titles"
+
+#: apps/web/src/routes/_app/statistics.tsx
+#~ msgid "{0} titles rated ({1}% of your library)"
+#~ msgstr "{0} titres notés ({1}% de votre bibliothèque)"
 
 #: apps/web/src/components/settings/system-health-section.tsx
 #~ msgid "{0} triggered"
@@ -168,18 +184,16 @@ msgid "{label} URL regenerated"
 msgstr "URL {label} régénérée"
 
 #: apps/web/src/components/settings/account-section.tsx
-#: apps/web/src/components/settings/imports-section.tsx
 msgid "{movieCount} movies, {episodeCount} episodes"
 msgstr "{movieCount} films, {episodeCount} épisodes"
 
 #: apps/web/src/components/settings/account-section.tsx
-#: apps/web/src/components/settings/imports-section.tsx
 msgid "{ratingCount} ratings"
 msgstr "{ratingCount} notes"
 
 #: apps/web/src/components/settings/streaming-services-section.tsx
-msgid "{selectedCount} selected"
-msgstr "{selectedCount} sélectionné(s)"
+#~ msgid "{selectedCount} selected"
+#~ msgstr "{selectedCount} sélectionné(s)"
 
 #: apps/native/src/components/ui/star-rating.tsx
 msgid "{star, plural, one {# star} other {# stars}}"
@@ -189,9 +203,13 @@ msgstr "{star, plural, one {# étoile} other {# étoiles}}"
 msgid "{totalResults, plural, one {# result} other {# results}}"
 msgstr "{totalResults, plural, one {# résultat} other {# résultats}}"
 
+#: apps/web/src/routes/_app/search.tsx
+msgid "{totalResults} results from TMDB"
+msgstr "{totalResults} résultats depuis TMDB"
+
 #: apps/web/src/components/settings/imports-section.tsx
-msgid "{unresolvedCount} items have no external IDs and will be resolved by title search, which may be less accurate."
-msgstr "{unresolvedCount} éléments n'ont pas d'identifiants externes et seront résolus par recherche de titre, ce qui peut être moins précis."
+#~ msgid "{unresolvedCount} items have no external IDs and will be resolved by title search, which may be less accurate."
+#~ msgstr "{unresolvedCount} éléments n'ont pas d'identifiants externes et seront résolus par recherche de titre, ce qui peut être moins précis."
 
 #: apps/web/src/components/title-card.tsx
 msgid "{watched}/{total, plural, one {# episode} other {# episodes}}"
@@ -223,18 +241,22 @@ msgid "{watchedCount}/{episodeCount, plural, one {# episode} other {# episodes}}
 msgstr "{watchedCount}/{episodeCount, plural, one {# épisode} other {# épisodes}}"
 
 #: apps/native/src/components/dashboard/continue-watching-card.tsx
-#: apps/web/src/components/dashboard/continue-watching-card.tsx
 msgid "{watchedEpisodes}/{totalEpisodes, plural, one {# episode} other {# episodes}}"
 msgstr "{watchedEpisodes}/{totalEpisodes, plural, one {# épisode} other {# épisodes}}"
 
 #: apps/web/src/components/settings/account-section.tsx
-#: apps/web/src/components/settings/imports-section.tsx
 msgid "{watchlistCount} items"
 msgstr "{watchlistCount} éléments"
 
+#: apps/web/src/routes/_app/authors.$id.tsx
+#: apps/web/src/routes/_app/books.index.tsx
+#: apps/web/src/routes/_app/books.index.tsx
+msgid "1 book"
+msgstr "1 livre"
+
 #: apps/native/src/app/(tabs)/(library)/index.tsx
 msgid "1★+"
-msgstr ""
+msgstr "1★+"
 
 #: apps/native/src/app/(tabs)/(library)/index.tsx
 msgid "1980s"
@@ -246,7 +268,7 @@ msgstr "années 1990"
 
 #: apps/native/src/app/(tabs)/(library)/index.tsx
 msgid "2★+"
-msgstr ""
+msgstr "2★+"
 
 #: apps/native/src/app/(tabs)/(library)/index.tsx
 #: apps/native/src/components/library/filter-sheet.tsx
@@ -265,19 +287,19 @@ msgstr "années 2020"
 
 #: apps/native/src/app/(tabs)/(library)/index.tsx
 msgid "3★+"
-msgstr ""
+msgstr "3★+"
 
 #: apps/native/src/app/(tabs)/(library)/index.tsx
 msgid "4★+"
-msgstr ""
+msgstr "4★+"
 
 #: apps/native/src/app/(tabs)/(library)/index.tsx
 msgid "5★"
-msgstr ""
+msgstr "5★"
 
 #: apps/web/src/components/library/library-filters.tsx
 msgid "70s and earlier"
-msgstr ""
+msgstr "Années 70 et avant"
 
 #: apps/native/src/components/library/filter-sheet.tsx
 msgid "80s"
@@ -286,6 +308,10 @@ msgstr "années 80"
 #: apps/native/src/components/library/filter-sheet.tsx
 msgid "90s"
 msgstr "années 90"
+
+#: apps/web/src/components/settings/appearance-section.tsx
+msgid "Accent color"
+msgstr "Couleur d'accent"
 
 #: apps/native/src/app/(tabs)/(settings)/index.tsx
 #: apps/web/src/routes/_app/settings.tsx
@@ -298,7 +324,7 @@ msgstr "Menu du compte"
 
 #: apps/web/src/components/settings/system-health-section.tsx
 msgid "Actions"
-msgstr ""
+msgstr "Actions"
 
 #: apps/native/src/app/person/[id].tsx
 #: apps/native/src/components/search/recently-viewed-row-content.tsx
@@ -338,9 +364,12 @@ msgstr "Ajouter à la bibliothèque"
 #: apps/native/src/components/explore/hero-banner.tsx
 #: apps/native/src/components/titles/status-action-button.tsx
 #: apps/native/src/components/ui/poster-card.tsx
-#: apps/web/src/components/title-card.tsx
 msgid "Add to Watchlist"
 msgstr "Ajouter à la liste de suivi"
+
+#: apps/web/src/routes/_app/watched-authors.tsx
+#~ msgid "Added"
+#~ msgstr "Ajouté"
 
 #: apps/native/src/lib/title-actions.ts
 msgid "Added \"{titleName}\" to watchlist"
@@ -358,8 +387,9 @@ msgstr "Ajouté à la liste de suivi"
 #: apps/web/src/components/nav-bar.tsx
 #: apps/web/src/components/settings/account-section.tsx
 msgid "Admin"
-msgstr ""
+msgstr "Admin"
 
+#: apps/web/src/routes/_app/settings.tsx
 #: apps/web/src/routes/_app/settings.tsx
 #: apps/web/src/routes/_app/settings.tsx
 #: apps/web/src/routes/_app/settings.tsx
@@ -391,10 +421,19 @@ msgstr "âge {age}"
 #: apps/web/src/components/library/library-filters.tsx
 #: apps/web/src/components/library/library-filters.tsx
 #: apps/web/src/components/people/filmography-grid.tsx
+#: apps/web/src/routes/_app/books.index.tsx
 #: apps/web/src/routes/_app/upcoming.tsx
 #: apps/web/src/routes/_app/upcoming.tsx
 msgid "All"
 msgstr "Tout"
+
+#: apps/web/src/routes/_app/books.index.tsx
+msgid "All Authors"
+msgstr "Tous les auteurs"
+
+#: apps/web/src/routes/_app/books.index.tsx
+msgid "All Books"
+msgstr "Tous les livres"
 
 #: apps/native/src/app/(tabs)/(library)/index.tsx
 #: apps/native/src/components/library/filter-sheet.tsx
@@ -421,13 +460,18 @@ msgid "Already have an account? Sign in"
 msgstr "Vous avez déjà un compte ? Se connecter"
 
 #: apps/web/src/components/titles/title-availability.tsx
-msgid "Also available on"
-msgstr "Aussi disponible sur"
+#~ msgid "Also available on"
+#~ msgstr "Aussi disponible sur"
 
 #: apps/web/src/components/route-error.tsx
 #: apps/web/src/routes/__root.tsx
-msgid "An unexpected error occurred while loading this page. You can try again or head back to the dashboard."
-msgstr "Une erreur inattendue s'est produite lors du chargement de cette page. Vous pouvez réessayer ou retourner au tableau de bord."
+#~ msgid "An unexpected error occurred while loading this page. You can try again or head back to the dashboard."
+#~ msgstr "Une erreur inattendue s'est produite lors du chargement de cette page. Vous pouvez réessayer ou retourner au tableau de bord."
+
+#: apps/web/src/components/route-error.tsx
+#: apps/web/src/routes/__root.tsx
+msgid "An unexpected error occurred while loading this page. You can try again or head back to the library."
+msgstr "Une erreur inattendue s'est produite lors du chargement de cette page. Vous pouvez réessayer ou revenir à la bibliothèque."
 
 #: apps/native/src/app/(tabs)/(settings)/index.tsx
 #: apps/native/src/app/(tabs)/(settings)/index.tsx
@@ -457,9 +501,13 @@ msgstr "Toute année"
 #~ msgid "App Settings"
 #~ msgstr ""
 
+#: apps/web/src/components/settings/appearance-section.tsx
+msgid "Appearance"
+msgstr "Look et style"
+
 #: apps/native/src/app/(tabs)/(settings)/index.tsx
 msgid "Application"
-msgstr ""
+msgstr "Application"
 
 #: apps/native/src/components/library/filter-sheet.tsx
 msgid "Apply"
@@ -474,21 +522,44 @@ msgstr "Voulez-vous vraiment déconnecter {label} ? L'URL actuelle cessera de fo
 msgid "Are you sure you want to sign out?"
 msgstr "Voulez-vous vraiment vous déconnecter ?"
 
-#: apps/web/src/components/settings/imports-section.tsx
-msgid "Authorization succeeded but failed to fetch your library. Please try again."
-msgstr "L'autorisation a réussi mais la récupération de votre bibliothèque a échoué. Veuillez réessayer."
+#: apps/web/src/components/dashboard/to-watch-section.tsx
+#: apps/web/src/components/library/library-toolbar.tsx
+#: apps/web/src/routes/_app/books.index.tsx
+msgid "Ascending"
+msgstr "Croissant"
+
+#: apps/web/src/routes/_app/authors.$id.tsx
+#: apps/web/src/routes/_app/books.index.tsx
+msgid "Author"
+msgstr "Auteur"
 
 #: apps/web/src/components/settings/imports-section.tsx
-msgid "Authorization was denied. Please try again."
-msgstr "L'autorisation a été refusée. Veuillez réessayer."
+#~ msgid "Authorization succeeded but failed to fetch your library. Please try again."
+#~ msgstr "L'autorisation a réussi mais la récupération de votre bibliothèque a échoué. Veuillez réessayer."
+
+#: apps/web/src/components/settings/imports-section.tsx
+#~ msgid "Authorization was denied. Please try again."
+#~ msgstr "L'autorisation a été refusée. Veuillez réessayer."
 
 #: apps/web/src/components/settings/imports-section.tsx
 #~ msgid "Authorize Sofa to read your {0} library. No password shared."
 #~ msgstr ""
 
 #: apps/web/src/components/settings/imports-section.tsx
-msgid "Authorize Sofa to read your {sourceLabel} library. No password shared."
-msgstr "Autorisez Sofa à lire votre bibliothèque {sourceLabel}. Aucun mot de passe partagé."
+#~ msgid "Authorize Sofa to read your {sourceLabel} library. No password shared."
+#~ msgstr "Autorisez Sofa à lire votre bibliothèque {sourceLabel}. Aucun mot de passe partagé."
+
+#: apps/web/src/routes/_app/books.index.tsx
+msgid "Authors"
+msgstr "Auteurs"
+
+#: apps/web/src/routes/_app/authors.$id.tsx
+msgid "Auto-grab off"
+msgstr "Téléchargement auto désactivé"
+
+#: apps/web/src/routes/_app/authors.$id.tsx
+msgid "Auto-grab on"
+msgstr "Téléchargement auto activé"
 
 #: apps/web/src/components/settings/update-check-section.tsx
 msgid "Automatic update checks"
@@ -502,12 +573,42 @@ msgstr "Sauvegardez automatiquement votre base de données selon un planning"
 msgid "Availability"
 msgstr "Disponibilité"
 
+#: apps/web/src/components/titles/title-actions.tsx
+msgid "Available"
+msgstr "Disponible"
+
+#: apps/web/src/components/dashboard/available-emby-section.tsx
+msgid "Available — Not Tracked"
+msgstr "Dispo sur Emby — pas dans ma liste"
+
+#: apps/web/src/components/title-card.tsx
+#: apps/web/src/components/titles/title-emby-availability.tsx
+msgid "Available on your server"
+msgstr "Dispo sur Emby"
+
+#: apps/web/src/components/dashboard/available-emby-section.tsx
+#~ msgid "Available on Your Server"
+#~ msgstr "Disponible sur Emby"
+
+#: apps/web/src/components/titles/title-emby-availability.tsx
+msgid "Available on your server — {embyLibraryName}"
+msgstr "Dispo sur Emby — {embyLibraryName}"
+
 #: apps/native/src/components/library/filter-sheet.tsx
 #: apps/native/src/components/library/filter-sheet.tsx
 #: apps/web/src/components/library/library-filters.tsx
 #: apps/web/src/components/library/library-filters.tsx
 #~ msgid "Available to stream"
 #~ msgstr "Available to stream"
+
+#: apps/web/src/routes/_app/statistics.tsx
+#~ msgid "Avg. Rating"
+#~ msgstr "Note moyenne"
+
+#: apps/web/src/routes/_app/authors.$id.tsx
+#: apps/web/src/routes/_app/books.$id.tsx
+msgid "Back to Books"
+msgstr "Retour aux livres"
 
 #: apps/native/src/app/(auth)/register.tsx
 msgid "Back to Login"
@@ -542,14 +643,21 @@ msgstr "Sauvegardes"
 msgid "backups."
 msgstr "sauvegardes."
 
+#: apps/web/src/routes/_app/authors.$id.tsx
+msgid "Book title..."
+msgstr "Titre du livre..."
+
+#: apps/web/src/routes/_app/books.index.tsx
+msgid "Books"
+msgstr "Livres"
+
 #: apps/web/src/components/titles/title-availability.tsx
 #~ msgid "Buy"
 #~ msgstr ""
 
 #: apps/native/src/app/title/[id].tsx
-#: apps/web/src/components/titles/title-availability.tsx
 msgid "Buy or Rent"
-msgstr ""
+msgstr "Acheter ou louer"
 
 #: apps/web/src/components/settings/danger-section.tsx
 msgid "Cache management"
@@ -576,9 +684,7 @@ msgstr "Impossible de joindre le serveur"
 #: apps/web/src/components/settings/danger-section.tsx
 #: apps/web/src/components/settings/danger-section.tsx
 #: apps/web/src/components/settings/danger-section.tsx
-#: apps/web/src/components/settings/imports-section.tsx
-#: apps/web/src/components/settings/imports-section.tsx
-#: apps/web/src/components/settings/imports-section.tsx
+#: apps/web/src/components/titles/request-dialog.tsx
 #: apps/web/src/components/titles/status-button.tsx
 #: apps/web/src/components/titles/title-seasons.tsx
 msgid "Cancel"
@@ -603,8 +709,8 @@ msgstr "Rattraper"
 #: apps/native/src/components/titles/status-action-button.tsx
 #: apps/web/src/components/dashboard/upcoming-item.tsx
 #: apps/web/src/components/library/library-filters.tsx
-#: apps/web/src/components/title-card.tsx
 #: apps/web/src/components/titles/status-button.tsx
+#: apps/web/src/routes/_app/statistics.tsx
 msgid "Caught Up"
 msgstr "À jour"
 
@@ -615,6 +721,10 @@ msgstr "À jour"
 #: apps/web/src/components/titles/use-title-actions.ts
 msgid "Caught up — marked {count, plural, one {# episode} other {# episodes}} as watched"
 msgstr "À jour — {count, plural, one {# épisode marqué comme regardé} other {# épisodes marqués comme regardés}}"
+
+#: apps/web/src/routes/_app/upcoming.tsx
+msgid "Caught up / completed"
+msgstr "À jour / terminé"
 
 #: apps/native/src/app/(tabs)/(settings)/index.tsx
 #: apps/native/src/app/change-password.tsx
@@ -656,21 +766,33 @@ msgstr "Vérification…"
 msgid "Chinese"
 msgstr "Chinois"
 
+#: apps/web/src/components/titles/request-dialog.tsx
+msgid "Choose a folder"
+msgstr "Choisir un dossier"
+
+#: apps/web/src/components/titles/request-dialog.tsx
+msgid "Choose a profile"
+msgstr "Choisir un profil"
+
+#: apps/web/src/components/titles/request-dialog.tsx
+msgid "Choose a root folder and quality profile. This searches and downloads immediately — unlike the plain Watchlist button, which just marks interest."
+msgstr "Choisis un dossier racine et un profil qualité. Ça lance la recherche et le téléchargement immédiatement — contrairement au simple bouton Watchlist, qui ne fait que marquer un intérêt."
+
 #: apps/web/src/components/settings/imports-section.tsx
 #~ msgid "Choose how to import your {0} data."
 #~ msgstr ""
 
 #: apps/web/src/components/settings/imports-section.tsx
-msgid "Choose how to import your {sourceLabel} data."
-msgstr "Choisissez comment importer vos données {sourceLabel}."
+#~ msgid "Choose how to import your {sourceLabel} data."
+#~ msgstr "Choisissez comment importer vos données {sourceLabel}."
 
 #: apps/web/src/components/settings/language-section.tsx
 #~ msgid "Choose your preferred display language"
 #~ msgstr "Choose your preferred display language"
 
 #: apps/web/src/components/settings/streaming-services-section.tsx
-msgid "Choose your preferred streaming platforms"
-msgstr ""
+#~ msgid "Choose your preferred streaming platforms"
+#~ msgstr ""
 
 #: apps/web/src/components/settings/streaming-services-section.tsx
 #~ msgid "Choose your subscriptions"
@@ -723,8 +845,8 @@ msgid "Click <0>+</0> and select <1>Custom Lists</1>"
 msgstr "Cliquez sur <0>+</0> et sélectionnez <1>Custom Lists</1>"
 
 #: apps/web/src/components/settings/integration-configs.tsx
-msgid "Click <0>Add Webhook</0> and paste the URL above"
-msgstr "Cliquez sur <0>Add Webhook</0> et collez l'URL ci-dessus"
+#~ msgid "Click <0>Add Webhook</0> and paste the URL above"
+#~ msgstr "Cliquez sur <0>Add Webhook</0> et collez l'URL ci-dessus"
 
 #: apps/web/src/routes/setup.tsx
 msgid "Click the button to verify your configuration"
@@ -738,6 +860,10 @@ msgstr "Cliquez sur le bouton pour vérifier votre configuration"
 msgid "Close"
 msgstr "Fermer"
 
+#: apps/web/src/components/dashboard/upcoming-cards-section.tsx
+#~ msgid "Coming Up"
+#~ msgstr "À venir"
+
 #: apps/web/src/components/command-palette.tsx
 msgid "Command Palette"
 msgstr "Palette de commandes"
@@ -749,10 +875,14 @@ msgstr "Palette de commandes"
 #: apps/web/src/components/dashboard/stats-display.tsx
 #: apps/web/src/components/dashboard/upcoming-item.tsx
 #: apps/web/src/components/library/library-filters.tsx
-#: apps/web/src/components/title-card.tsx
 #: apps/web/src/components/titles/status-button.tsx
+#: apps/web/src/routes/_app/statistics.tsx
 msgid "Completed"
 msgstr "Terminé"
+
+#: apps/web/src/components/dashboard/completed-series-section.tsx
+msgid "Completed Series"
+msgstr "Terminées"
 
 #: apps/native/src/app/change-password.tsx
 #: apps/native/src/app/change-password.tsx
@@ -761,7 +891,6 @@ msgid "Confirm new password"
 msgstr "Confirmer le nouveau mot de passe"
 
 #: apps/native/src/app/(auth)/server-url.tsx
-#: apps/web/src/components/settings/imports-section.tsx
 msgid "Connect"
 msgstr "Connecter"
 
@@ -775,8 +904,8 @@ msgid "Connect {label}"
 msgstr "Connecter {label}"
 
 #: apps/web/src/components/settings/imports-section.tsx
-msgid "Connect to {source}"
-msgstr "Se connecter à {source}"
+#~ msgid "Connect to {source}"
+#~ msgstr "Se connecter à {source}"
 
 #: apps/web/src/routes/setup.tsx
 msgid "Connect to TMDB"
@@ -787,8 +916,8 @@ msgstr "Se connecter à TMDB"
 #~ msgstr ""
 
 #: apps/web/src/components/settings/imports-section.tsx
-msgid "Connect with {sourceLabel}"
-msgstr "Se connecter avec {sourceLabel}"
+#~ msgid "Connect with {sourceLabel}"
+#~ msgstr "Se connecter avec {sourceLabel}"
 
 #: apps/native/src/app/(auth)/server-url.tsx
 #: apps/native/src/app/(tabs)/(settings)/index.tsx
@@ -797,8 +926,8 @@ msgid "Connected"
 msgstr "Connecté"
 
 #: apps/web/src/components/settings/imports-section.tsx
-msgid "Connected to {source}"
-msgstr "Connecté à {source}"
+#~ msgid "Connected to {source}"
+#~ msgstr "Connecté à {source}"
 
 #: apps/native/src/app/(auth)/login.tsx
 msgid "Connected to <0>{serverHost}</0>. Tap to change."
@@ -832,7 +961,6 @@ msgid "Continue"
 msgstr "Continuer"
 
 #: apps/native/src/app/(tabs)/(home)/index.tsx
-#: apps/web/src/components/dashboard/continue-watching-section.tsx
 msgid "Continue Watching"
 msgstr "Continuer à regarder"
 
@@ -909,6 +1037,10 @@ msgstr "Mot de passe actuel"
 msgid "Current password is required"
 msgstr "Le mot de passe actuel est requis"
 
+#: apps/web/src/routes/_app/upcoming.tsx
+msgid "Currently watching"
+msgstr "En cours de visionnage"
+
 #: apps/web/src/components/command-palette.tsx
 msgid "Cycle status"
 msgstr "Changer le statut"
@@ -930,8 +1062,8 @@ msgstr "Zone de danger"
 #: apps/web/src/routes/_app/people.$id.tsx
 #: apps/web/src/routes/_app/titles.$id.tsx
 #: apps/web/src/routes/_app/titles.$id.tsx
-msgid "Dashboard"
-msgstr "Tableau de bord"
+#~ msgid "Dashboard"
+#~ msgstr "Tableau de bord"
 
 #: apps/native/src/app/(tabs)/(settings)/index.tsx
 #: apps/web/src/components/settings/system-health-section.tsx
@@ -948,6 +1080,7 @@ msgstr "Base de données restaurée. Rechargement..."
 
 #: apps/native/src/components/library/sort-menu.tsx
 #: apps/web/src/components/library/library-toolbar.tsx
+#: apps/web/src/routes/_app/books.index.tsx
 msgid "Date Added"
 msgstr "Date d'ajout"
 
@@ -962,6 +1095,10 @@ msgstr "Décennie"
 #: apps/web/src/components/explore/discover-section.tsx
 msgid "Default"
 msgstr "Par défaut"
+
+#: apps/web/src/components/settings/media-requests-section.tsx
+msgid "Default Radarr/Sonarr root folder + quality profile per user — used when someone requests a movie or series without picking a folder explicitly."
+msgstr "Dossier racine et profil qualité Radarr/Sonarr par défaut, par utilisateur — utilisé quand quelqu'un demande un film ou une série sans choisir de dossier explicitement."
 
 #: apps/native/src/components/ui/swipeable-row.tsx
 #: apps/web/src/components/settings/backup-section.tsx
@@ -982,15 +1119,25 @@ msgstr "Supprimer la sauvegarde ?"
 msgid "Deleted {0, plural, one {# file} other {# files}}, freed {freed}"
 msgstr "{0, plural, one {# fichier supprimé} other {# fichiers supprimés}}, {freed} libéré"
 
+#: apps/web/src/components/dashboard/to-watch-section.tsx
+#: apps/web/src/components/library/library-toolbar.tsx
+#: apps/web/src/routes/_app/books.index.tsx
+msgid "Descending"
+msgstr "Décroissant"
+
 #: apps/web/src/components/settings/imports-section.tsx
 #: apps/web/src/components/settings/imports-section.tsx
-msgid "Device code expired. Please try again."
-msgstr "Le code d'appareil a expiré. Veuillez réessayer."
+#~ msgid "Device code expired. Please try again."
+#~ msgstr "Le code d'appareil a expiré. Veuillez réessayer."
 
 #: apps/native/src/app/person/[id].tsx
 #: apps/web/src/components/people/person-hero.tsx
 msgid "died at {age}"
 msgstr "décédé à {age} ans"
+
+#: apps/web/src/routes/_app/authors.$id.tsx
+msgid "Direct Prowlarr search"
+msgstr "Recherche Prowlarr directe"
 
 #: apps/native/src/app/person/[id].tsx
 #: apps/native/src/components/search/recently-viewed-row-content.tsx
@@ -1014,8 +1161,18 @@ msgid "Disconnect {label}"
 msgstr "Déconnecter {label}"
 
 #: apps/web/src/components/explore/discover-section.tsx
+#: apps/web/src/components/nav-bar.tsx
+#: apps/web/src/components/nav-bar.tsx
 msgid "Discover"
 msgstr "Découvrir"
+
+#: apps/web/src/routes/_app/authors.$id.tsx
+msgid "Dismiss (e.g. foreign-language edition)"
+msgstr "Rejeter (ex. édition dans une autre langue)"
+
+#: apps/web/src/routes/_app/authors.$id.tsx
+msgid "Dismissed"
+msgstr "Rejeté"
 
 #: apps/native/src/app/(tabs)/(settings)/index.tsx
 msgid "Display name"
@@ -1034,7 +1191,6 @@ msgid "Don't have an account?"
 msgstr "Pas encore de compte ?"
 
 #: apps/web/src/components/settings/account-section.tsx
-#: apps/web/src/components/settings/imports-section.tsx
 msgid "Done"
 msgstr "Terminé"
 
@@ -1067,6 +1223,19 @@ msgstr "Télécharger la sauvegarde"
 msgid "Download your library, watch history, and ratings as JSON"
 msgstr "Téléchargez votre bibliothèque, votre historique de visionnage et vos notes en JSON"
 
+#: apps/web/src/components/dashboard/dropped-series-section.tsx
+#: apps/web/src/components/dashboard/upcoming-item.tsx
+#: apps/web/src/components/library/library-filters.tsx
+#: apps/web/src/components/title-card.tsx
+#: apps/web/src/components/titles/status-button.tsx
+#: apps/web/src/routes/_app/statistics.tsx
+msgid "Dropped"
+msgstr "De la merde !"
+
+#: apps/web/src/components/settings/integration-card.tsx
+msgid "e.g. sidounette"
+msgstr "ex. sidounette"
+
 #: apps/native/src/app/(tabs)/(settings)/index.tsx
 msgid "Edit profile photo"
 msgstr "Modifier la photo de profil"
@@ -1089,6 +1258,22 @@ msgstr "E-mail"
 #: apps/native/src/app/(auth)/register.tsx
 msgid "Email is required"
 msgstr "L'adresse e-mail est requise"
+
+#: apps/web/src/components/settings/emby-library-selector.tsx
+msgid "Emby libraries saved"
+msgstr "Bibliothèques Emby enregistrées"
+
+#: apps/web/src/components/settings/system-health-section.tsx
+msgid "Emby library scan"
+msgstr "Scan Emby"
+
+#: apps/web/src/components/settings/integration-card.tsx
+msgid "Emby username (for Now Playing)"
+msgstr "Nom d'utilisateur Emby (pour Lecture en cours)"
+
+#: apps/web/src/components/settings/integration-card.tsx
+msgid "Emby username saved"
+msgstr "Nom d'utilisateur Emby enregistré"
 
 #: apps/native/src/components/settings/integration-configs.ts
 msgid "Enable the \"Playback Stop\" notification type"
@@ -1116,8 +1301,8 @@ msgid "Enter a valid email address"
 msgstr "Entrez une adresse e-mail valide"
 
 #: apps/web/src/components/settings/imports-section.tsx
-msgid "Enter the code below on {source}'s website to authorize Sofa."
-msgstr "Entrez le code ci-dessous sur le site de {source} pour autoriser Sofa."
+#~ msgid "Enter the code below on {source}'s website to authorize Sofa."
+#~ msgstr "Entrez le code ci-dessous sur le site de {source} pour autoriser Sofa."
 
 #: apps/native/src/app/(auth)/server-url.tsx
 msgid "Enter the full URL for your Sofa server"
@@ -1165,8 +1350,11 @@ msgstr "Épisode non visionné"
 msgid "Episode watched"
 msgstr "Épisode visionné"
 
+#: apps/web/src/components/dashboard/title-list.tsx
+#~ msgid "episodes"
+#~ msgstr "épisodes"
+
 #: apps/web/src/components/settings/account-section.tsx
-#: apps/web/src/components/settings/imports-section.tsx
 #: apps/web/src/components/titles/title-seasons.tsx
 msgid "Episodes"
 msgstr "Épisodes"
@@ -1195,6 +1383,10 @@ msgstr "Épisodes et films à venir dans les 90 prochains jours."
 #~ msgid "Episodes this week"
 #~ msgstr ""
 
+#: apps/web/src/routes/_app/statistics.tsx
+msgid "Episodes Watched"
+msgstr "Épisodes vus"
+
 #: apps/native/src/app/change-password.tsx
 #: apps/native/src/app/change-password.tsx
 msgid "Error"
@@ -1205,7 +1397,6 @@ msgstr "Erreur"
 #~ msgstr ""
 
 #: apps/web/src/components/settings/account-section.tsx
-#: apps/web/src/components/settings/imports-section.tsx
 msgid "Errors ({errorCount})"
 msgstr "Erreurs ({errorCount})"
 
@@ -1216,8 +1407,6 @@ msgstr "Toutes les {n}h"
 #: apps/native/src/app/(tabs)/(explore)/_layout.tsx
 #: apps/native/src/app/(tabs)/(home)/index.tsx
 #: apps/native/src/components/navigation/native-tab-bar.tsx
-#: apps/web/src/components/nav-bar.tsx
-#: apps/web/src/components/nav-bar.tsx
 msgid "Explore"
 msgstr "Explorer"
 
@@ -1231,7 +1420,6 @@ msgid "Export"
 msgstr "Exporter"
 
 #: apps/web/src/components/settings/account-section.tsx
-#: apps/web/src/components/settings/imports-section.tsx
 msgid "Failed"
 msgstr "Échoué"
 
@@ -1248,9 +1436,13 @@ msgstr "Échec du rattrapage"
 msgid "Failed to change password"
 msgstr "Échec du changement de mot de passe"
 
+#: apps/web/src/routes/_app/authors.$id.tsx
+msgid "Failed to confirm match"
+msgstr "Échec de la confirmation"
+
 #: apps/web/src/components/settings/imports-section.tsx
-msgid "Failed to connect"
-msgstr "Échec de la connexion"
+#~ msgid "Failed to connect"
+#~ msgstr "Échec de la connexion"
 
 #: apps/native/src/components/settings/integration-card.tsx
 #: apps/web/src/components/settings/integration-card.tsx
@@ -1274,6 +1466,14 @@ msgstr "Échec de la suppression de la sauvegarde"
 msgid "Failed to disconnect {label}"
 msgstr "Échec de la déconnexion de {label}"
 
+#: apps/web/src/components/settings/playback-device-selector.tsx
+msgid "Failed to hide device"
+msgstr "Échec du masquage de l'appareil"
+
+#: apps/web/src/components/settings/media-requests-section.tsx
+msgid "Failed to load — check that Radarr/Sonarr are configured and reachable."
+msgstr "Échec du chargement — vérifie que Radarr/Sonarr sont configurés et joignables."
+
 #: apps/web/src/components/settings/backup-schedule-section.tsx
 msgid "Failed to load backup schedule settings"
 msgstr "Impossible de charger les paramètres de planification des sauvegardes"
@@ -1295,7 +1495,7 @@ msgstr "Échec du marquage de tous les épisodes comme visionnés"
 #: apps/native/src/lib/title-actions.ts
 #: apps/web/src/components/titles/use-title-actions.ts
 msgid "Failed to mark as unwatched"
-msgstr ""
+msgstr "Échec du marquage comme non vu"
 
 #: apps/native/src/hooks/use-title-actions.ts
 #: apps/native/src/lib/title-actions.ts
@@ -1316,13 +1516,12 @@ msgid "Failed to mark some episodes"
 msgstr "Échec du marquage de certains épisodes"
 
 #: apps/web/src/components/settings/account-section.tsx
-#: apps/web/src/components/settings/imports-section.tsx
 msgid "Failed to parse file"
 msgstr "Échec de l'analyse du fichier"
 
 #: apps/web/src/components/settings/imports-section.tsx
-msgid "Failed to parse import data"
-msgstr "Échec de l'analyse des données d'importation"
+#~ msgid "Failed to parse import data"
+#~ msgstr "Échec de l'analyse des données d'importation"
 
 #: apps/web/src/components/settings/danger-section.tsx
 msgid "Failed to purge caches"
@@ -1350,6 +1549,26 @@ msgstr "Échec de la suppression de la bibliothèque"
 msgid "Failed to remove profile picture"
 msgstr "Échec de la suppression de la photo de profil"
 
+#: apps/web/src/components/settings/media-requests-section.tsx
+msgid "Failed to save"
+msgstr "Échec de l'enregistrement"
+
+#: apps/web/src/components/settings/emby-library-selector.tsx
+msgid "Failed to save Emby libraries"
+msgstr "Échec de l'enregistrement des bibliothèques Emby"
+
+#: apps/web/src/components/settings/integration-card.tsx
+msgid "Failed to save Emby username"
+msgstr "Échec de l'enregistrement du nom d'utilisateur Emby"
+
+#: apps/web/src/components/settings/playback-device-selector.tsx
+msgid "Failed to save playback devices"
+msgstr "Échec de l'enregistrement des appareils de lecture"
+
+#: apps/web/src/components/titles/request-dialog.tsx
+msgid "Failed to send request"
+msgstr "Échec de l'envoi de la demande"
+
 #: apps/native/src/app/(auth)/login.tsx
 msgid "Failed to sign in"
 msgstr "Échec de la connexion"
@@ -1359,12 +1578,24 @@ msgstr "Échec de la connexion"
 #~ msgstr ""
 
 #: apps/web/src/components/settings/imports-section.tsx
-msgid "Failed to start {sourceLabel} connection"
-msgstr "Échec du démarrage de la connexion {sourceLabel}"
+#~ msgid "Failed to start {sourceLabel} connection"
+#~ msgstr "Échec du démarrage de la connexion {sourceLabel}"
+
+#: apps/web/src/components/titles/play-on-dialog.tsx
+msgid "Failed to start playback"
+msgstr "Échec du lancement de la lecture"
+
+#: apps/web/src/components/titles/use-title-actions.ts
+msgid "Failed to start rewatch"
+msgstr "Échec du redémarrage du visionnage"
 
 #: apps/web/src/components/auth-form.tsx
 msgid "Failed to start SSO login"
 msgstr "Échec du démarrage de la connexion SSO"
+
+#: apps/web/src/routes/_app/authors.$id.tsx
+msgid "Failed to stop watching"
+msgstr "Échec de l'arrêt du suivi"
 
 #: apps/web/src/components/settings/system-health-section.tsx
 msgid "Failed to trigger job"
@@ -1380,9 +1611,21 @@ msgstr "Échec du démarquage de l'épisode"
 msgid "Failed to unmark some episodes"
 msgstr "Échec du démarquage de certains épisodes"
 
+#: apps/web/src/routes/_app/authors.$id.tsx
+msgid "Failed to update"
+msgstr "Échec de la mise à jour"
+
+#: apps/web/src/routes/_app/authors.$id.tsx
+msgid "Failed to update auto-grab setting"
+msgstr "Échec de la mise à jour du réglage de téléchargement auto"
+
 #: apps/native/src/app/(tabs)/(settings)/index.tsx
 msgid "Failed to update name"
 msgstr "Échec de la mise à jour du nom"
+
+#: apps/web/src/components/settings/notifications-section.tsx
+msgid "Failed to update notification settings"
+msgstr "Échec de la mise à jour des notifications"
 
 #: apps/native/src/hooks/use-title-actions.ts
 #: apps/native/src/lib/title-actions.ts
@@ -1420,9 +1663,14 @@ msgstr "Échec de la mise à jour du statut"
 msgid "Failed to upload avatar"
 msgstr "Échec du téléchargement de l'avatar"
 
+#: apps/web/src/routes/_app/books.index.tsx
+#: apps/web/src/routes/_app/books.index.tsx
+msgid "Failed to watch author"
+msgstr "Échec du suivi de l'auteur"
+
 #: apps/web/src/components/settings/imports-section.tsx
-msgid "Fetching your library data from {source}..."
-msgstr "Récupération de vos données depuis {source}..."
+#~ msgid "Fetching your library data from {source}..."
+#~ msgstr "Récupération de vos données depuis {source}..."
 
 #: apps/native/src/app/person/[id].tsx
 #: apps/web/src/components/people/filmography-grid.tsx
@@ -1434,13 +1682,25 @@ msgstr "Filmographie"
 msgid "Filters"
 msgstr "Filtres"
 
+#: apps/web/src/routes/_app/authors.$id.tsx
+msgid "Find this book manually in Grimmory"
+msgstr "Chercher ce livre manuellement dans Grimmory"
+
 #: apps/web/src/components/settings/imports-section.tsx
-msgid "Finished importing from {source}."
-msgstr "Importation depuis {source} terminée."
+#~ msgid "Finished importing from {source}."
+#~ msgstr "Importation depuis {source} terminée."
 
 #: apps/web/src/components/settings/account-section.tsx
 msgid "Finished importing your Sofa export."
 msgstr "Importation de votre export Sofa terminée."
+
+#: apps/web/src/components/titles/title-seasons.tsx
+msgid "First season first"
+msgstr "Première saison en premier"
+
+#: apps/web/src/components/dashboard/caught-up-section.tsx
+msgid "Followed — Up to Date"
+msgstr "Suivies — À jour"
 
 #: apps/web/src/components/titles/title-availability.tsx
 #~ msgid "Free"
@@ -1453,6 +1713,10 @@ msgstr "Libérez de l'espace disque en vidant les métadonnées et images en cac
 #: apps/web/src/components/explore/discover-section.tsx
 msgid "French"
 msgstr "Français"
+
+#: apps/web/src/routes/_app/authors.$id.tsx
+msgid "French editions only"
+msgstr "Éditions françaises uniquement"
 
 #: apps/web/src/components/settings/backup-schedule-section.tsx
 msgid "Frequency"
@@ -1477,11 +1741,19 @@ msgstr "Vendredi"
 #: apps/web/src/components/library/library-filters.tsx
 #: apps/web/src/components/library/library-filters.tsx
 msgid "Genre"
-msgstr ""
+msgstr "Genre"
+
+#: apps/web/src/routes/_app/statistics.tsx
+msgid "Genres Watched"
+msgstr "Genres regardés"
 
 #: apps/web/src/components/explore/discover-section.tsx
 msgid "German"
 msgstr "Allemand"
+
+#: apps/web/src/components/settings/notifications-section.tsx
+msgid "Get notified when a new episode airs or a series' status changes"
+msgstr "Reçois une notification à la sortie d'un épisode ou au changement de statut d'une série"
 
 #: apps/web/src/components/landing-page.tsx
 msgid "Get Started"
@@ -1489,7 +1761,11 @@ msgstr "Commencer"
 
 #: apps/web/src/components/command-palette.tsx
 msgid "Global"
-msgstr ""
+msgstr "Global"
+
+#: apps/web/src/routes/_app/authors.$id.tsx
+msgid "Go"
+msgstr "Chercher"
 
 #: apps/native/src/app/person/[id].tsx
 #: apps/native/src/app/person/[id].tsx
@@ -1512,12 +1788,12 @@ msgid "Go to <0>Settings → API{linkIcon}</0> and request an API key. Choose �
 msgstr "Accédez à <0>Paramètres → API{linkIcon}</0> et demandez une clé API. Choisissez « Développeur » lorsqu'on vous le demande. Vous avez besoin du <1>Jeton d'accès en lecture de l'API</1> (le plus long)."
 
 #: apps/web/src/components/command-palette.tsx
-msgid "Go to dashboard"
-msgstr "Aller au tableau de bord"
+#~ msgid "Go to dashboard"
+#~ msgstr "Aller au tableau de bord"
 
 #: apps/web/src/components/command-palette.tsx
-msgid "Go to Dashboard"
-msgstr "Aller au tableau de bord"
+#~ msgid "Go to Dashboard"
+#~ msgstr "Aller au tableau de bord"
 
 #: apps/native/src/components/settings/integration-configs.ts
 msgid "Go to Dashboard > Plugins > Webhook"
@@ -1530,6 +1806,14 @@ msgstr "Aller à la découverte"
 #: apps/web/src/components/command-palette.tsx
 msgid "Go to Explore"
 msgstr "Aller à Explorer"
+
+#: apps/web/src/components/command-palette.tsx
+msgid "Go to library"
+msgstr "Aller à la bibliothèque"
+
+#: apps/web/src/components/command-palette.tsx
+msgid "Go to Library"
+msgstr "Aller à la bibliothèque"
 
 #: apps/web/src/components/ui/pagination.tsx
 msgid "Go to next page"
@@ -1547,6 +1831,16 @@ msgstr "Aller aux paramètres"
 msgid "Go to upcoming"
 msgstr "Aller aux prochaines sorties"
 
+#. placeholder {0}: result.matchedTitle ?? ""
+#: apps/web/src/routes/_app/authors.$id.tsx
+msgid "Grabbed: {0}"
+msgstr "Récupéré : {0}"
+
+#: apps/web/src/routes/_app/books.index.tsx
+#: apps/web/src/routes/_app/library.tsx
+msgid "Grid view"
+msgstr "Vue grille"
+
 #: apps/web/src/routes/setup.tsx
 msgid "Head to <0>themoviedb.org{linkIcon}</0> and sign up for a free account."
 msgstr "Rendez-vous sur <0>themoviedb.org{linkIcon}</0> et créez un compte gratuit."
@@ -1559,18 +1853,25 @@ msgstr "État de santé"
 msgid "Here's what's happening with your library"
 msgstr "Voici ce qui se passe dans votre bibliothèque"
 
+#. placeholder {0}: device.embyDeviceName
+#: apps/web/src/components/settings/playback-device-selector.tsx
+msgid "Hide {0} permanently"
+msgstr "Masquer {0} définitivement"
+
+#: apps/web/src/components/auth-form.tsx
+msgid "Hide password"
+msgstr "Masquer le mot de passe"
+
 #: apps/web/src/components/explore/discover-section.tsx
 msgid "Highest rated"
 msgstr "Mieux notés"
 
 #: apps/web/src/components/explore/discover-section.tsx
 msgid "Hindi"
-msgstr ""
+msgstr "Hindi"
 
 #: apps/native/src/app/(tabs)/(home)/_layout.tsx
 #: apps/native/src/components/navigation/native-tab-bar.tsx
-#: apps/web/src/components/nav-bar.tsx
-#: apps/web/src/components/nav-bar.tsx
 msgid "Home"
 msgstr "Accueil"
 
@@ -1589,22 +1890,18 @@ msgid "Image cache and backup disk usage"
 msgstr "Utilisation du disque : cache d'images et sauvegardes"
 
 #: apps/web/src/components/settings/account-section.tsx
-#: apps/web/src/routes/_app/settings.tsx
 msgid "Import"
 msgstr "Importation"
 
 #: apps/web/src/components/settings/account-section.tsx
-#: apps/web/src/components/settings/imports-section.tsx
 msgid "Import {totalItems} items"
 msgstr "Importer {totalItems} éléments"
 
 #: apps/web/src/components/settings/account-section.tsx
-#: apps/web/src/components/settings/imports-section.tsx
 msgid "Import complete"
 msgstr "Importation terminée"
 
 #: apps/web/src/components/settings/account-section.tsx
-#: apps/web/src/components/settings/imports-section.tsx
 msgid "Import failed"
 msgstr "Importation échouée"
 
@@ -1613,22 +1910,19 @@ msgstr "Importation échouée"
 #~ msgstr ""
 
 #: apps/web/src/components/settings/imports-section.tsx
-msgid "Import from {source}"
-msgstr "Importer depuis {source}"
+#~ msgid "Import from {source}"
+#~ msgstr "Importer depuis {source}"
 
 #: apps/web/src/components/settings/imports-section.tsx
-msgid "Import from {sourceLabel}"
-msgstr "Importer depuis {sourceLabel}"
+#~ msgid "Import from {sourceLabel}"
+#~ msgstr "Importer depuis {sourceLabel}"
 
 #: apps/web/src/components/settings/account-section.tsx
 #: apps/web/src/components/settings/account-section.tsx
-#: apps/web/src/components/settings/imports-section.tsx
-#: apps/web/src/components/settings/imports-section.tsx
 msgid "Import is still running in the background. Check back later."
 msgstr "L'importation est toujours en cours en arrière-plan. Revenez plus tard."
 
 #: apps/web/src/components/settings/account-section.tsx
-#: apps/web/src/components/settings/imports-section.tsx
 msgid "Import options"
 msgstr "Options d'importation"
 
@@ -1637,7 +1931,6 @@ msgid "Import Sofa data"
 msgstr "Importer des données Sofa"
 
 #: apps/web/src/components/settings/account-section.tsx
-#: apps/web/src/components/settings/imports-section.tsx
 msgid "Imported"
 msgstr "Importé"
 
@@ -1646,8 +1939,8 @@ msgstr "Importé"
 #~ msgstr ""
 
 #: apps/web/src/components/settings/imports-section.tsx
-msgid "Imported {importedCount} items from {sourceLabel}"
-msgstr "{importedCount} éléments importés depuis {sourceLabel}"
+#~ msgid "Imported {importedCount} items from {sourceLabel}"
+#~ msgstr "{importedCount} éléments importés depuis {sourceLabel}"
 
 #: apps/web/src/components/settings/account-section.tsx
 msgid "Imported {importedCount} items from Sofa export"
@@ -1658,8 +1951,8 @@ msgid "Importing data"
 msgstr "Importation des données"
 
 #: apps/web/src/components/settings/imports-section.tsx
-msgid "Importing from {source}"
-msgstr "Importation depuis {source}"
+#~ msgid "Importing from {source}"
+#~ msgstr "Importation depuis {source}"
 
 #: apps/native/src/app/(tabs)/(home)/index.tsx
 #~ msgid "In library"
@@ -1667,8 +1960,18 @@ msgstr "Importation depuis {source}"
 
 #: apps/native/src/app/(tabs)/(home)/index.tsx
 #: apps/web/src/components/dashboard/stats-display.tsx
+#: apps/web/src/routes/_app/statistics.tsx
 msgid "In Library"
 msgstr "Dans la bibliothèque"
+
+#: apps/web/src/routes/_app/books.index.tsx
+#: apps/web/src/routes/_app/books.index.tsx
+msgid "In Progress"
+msgstr "En cours"
+
+#: apps/web/src/components/dashboard/to-watch-section.tsx
+msgid "In Progress / To Start"
+msgstr "En cours / À commencer"
 
 #: apps/native/src/components/titles/status-action-button.tsx
 #: apps/web/src/components/titles/status-button.tsx
@@ -1751,6 +2054,10 @@ msgstr "{value} dernières"
 msgid "last <0/>"
 msgstr "dernières <0/>"
 
+#: apps/web/src/components/dashboard/to-watch-section.tsx
+msgid "Last aired"
+msgstr "Dernier diffusé"
+
 #: apps/web/src/components/settings/integration-card.tsx
 #~ msgid "Last event {0}"
 #~ msgstr ""
@@ -1787,13 +2094,28 @@ msgstr "Dernière exécution échouée"
 msgid "Last run succeeded"
 msgstr "Dernière exécution réussie"
 
+#: apps/web/src/components/titles/title-seasons.tsx
+msgid "Last season first"
+msgstr "Dernière saison en premier"
+
+#: apps/web/src/components/dashboard/to-watch-section.tsx
+msgid "Last watched"
+msgstr "Dernier vu"
+
+#: apps/web/src/components/library/library-toolbar.tsx
+msgid "Last Watched"
+msgstr "Dernier vu"
+
 #: apps/native/src/app/(tabs)/(library)/_layout.tsx
 #: apps/native/src/app/(tabs)/(library)/_layout.tsx
 #: apps/native/src/components/navigation/native-tab-bar.tsx
-#: apps/web/src/components/nav-bar.tsx
-#: apps/web/src/components/nav-bar.tsx
+#: apps/web/src/components/route-error.tsx
 #: apps/web/src/components/settings/account-section.tsx
+#: apps/web/src/routes/__root.tsx
 #: apps/web/src/routes/_app/library.tsx
+#: apps/web/src/routes/_app/people.$id.tsx
+#: apps/web/src/routes/_app/titles.$id.tsx
+#: apps/web/src/routes/_app/titles.$id.tsx
 msgid "Library"
 msgstr "Bibliothèque"
 
@@ -1805,10 +2127,19 @@ msgstr "Actualisation de la bibliothèque"
 msgid "Library statuses"
 msgstr "Statuts de la bibliothèque"
 
+#: apps/web/src/routes/_app/books.index.tsx
+#: apps/web/src/routes/_app/library.tsx
+msgid "List view"
+msgstr "Vue liste"
+
 #: apps/native/src/components/ui/skeleton.tsx
 #: apps/web/src/components/ui/spinner.tsx
 msgid "Loading"
 msgstr "Chargement"
+
+#: apps/web/src/components/titles/request-dialog.tsx
+msgid "Loading options…"
+msgstr "Chargement des options…"
 
 #: apps/web/src/components/auth-form.tsx
 msgid "Loading…"
@@ -1819,13 +2150,16 @@ msgid "Login failed"
 msgstr "Connexion échouée"
 
 #: apps/web/src/components/settings/account-section.tsx
-#: apps/web/src/components/settings/imports-section.tsx
 msgid "Lost connection to import. Check status in settings."
 msgstr "Connexion à l'importation perdue. Vérifiez l'état dans les paramètres."
 
 #: apps/web/src/components/settings/settings-shell.tsx
 msgid "Manage your account and preferences"
 msgstr "Gérez votre compte et vos préférences"
+
+#: apps/web/src/routes/_app/watched-authors.tsx
+#~ msgid "Manual"
+#~ msgstr "Manuel"
 
 #: apps/web/src/components/settings/backup-section.tsx
 msgid "Manual backup"
@@ -1846,10 +2180,14 @@ msgstr "Tout marquer comme visionné"
 #~ msgid "Mark as Completed"
 #~ msgstr ""
 
-#: apps/native/src/components/dashboard/upcoming-row.tsx
-#: apps/native/src/components/ui/poster-card.tsx
-#~ msgid "Mark as Watched"
-#~ msgstr ""
+#: apps/web/src/components/title-card.tsx
+#: apps/web/src/components/titles/title-actions.tsx
+msgid "Mark as Dropped"
+msgstr "C'est nul ! De la merde !"
+
+#: apps/web/src/components/title-card.tsx
+msgid "Mark as Watched"
+msgstr "Marquer comme vu"
 
 #: apps/native/src/components/ui/poster-card.tsx
 #~ msgid "Mark as Watching"
@@ -1868,7 +2206,7 @@ msgstr "Marquer l'épisode comme regardé"
 #: apps/native/src/components/ui/poster-card.tsx
 #: apps/web/src/components/titles/title-actions.tsx
 msgid "Mark Unwatched"
-msgstr ""
+msgstr "Marquer comme non vu"
 
 #: apps/web/src/components/command-palette.tsx
 msgid "Mark watched"
@@ -1883,7 +2221,7 @@ msgstr "Marquer comme visionné"
 
 #: apps/native/src/app/title/[id].tsx
 msgid "Marked \"{name}\" as unwatched"
-msgstr ""
+msgstr "\"{name}\" marqué comme non vu"
 
 #: apps/native/src/app/title/[id].tsx
 msgid "Marked \"{name}\" as watched"
@@ -1896,7 +2234,7 @@ msgstr "« {name} » marqué comme regardé"
 #: apps/native/src/lib/title-actions.ts
 #: apps/web/src/components/titles/use-title-actions.ts
 msgid "Marked \"{titleName}\" as unwatched"
-msgstr ""
+msgstr "\"{titleName}\" marqué comme non vu"
 
 #: apps/native/src/lib/title-actions.ts
 #: apps/web/src/components/titles/use-title-actions.ts
@@ -1917,15 +2255,21 @@ msgstr "Tous les épisodes de \"{titleName}\" marqués comme vus"
 #~ msgid "Marked as completed"
 #~ msgstr ""
 
-#: apps/native/src/app/title/[id].tsx
-#: apps/native/src/hooks/use-title-actions.ts
-#: apps/native/src/lib/title-actions.ts
-msgid "Marked as unwatched"
-msgstr ""
+#: apps/web/src/components/title-card.tsx
+#: apps/web/src/components/titles/use-title-actions.ts
+msgid "Marked as dropped"
+msgstr "Marqué comme abandonné"
 
 #: apps/native/src/app/title/[id].tsx
 #: apps/native/src/hooks/use-title-actions.ts
 #: apps/native/src/lib/title-actions.ts
+msgid "Marked as unwatched"
+msgstr "Marqué comme non vu"
+
+#: apps/native/src/app/title/[id].tsx
+#: apps/native/src/hooks/use-title-actions.ts
+#: apps/native/src/lib/title-actions.ts
+#: apps/web/src/components/title-card.tsx
 msgid "Marked as watched"
 msgstr "Marqué comme visionné"
 
@@ -1936,11 +2280,19 @@ msgstr "Marqué comme visionné"
 
 #: apps/native/src/components/library/filter-sheet.tsx
 msgid "Max"
-msgstr ""
+msgstr "Max"
 
 #: apps/web/src/components/library/library-filters.tsx
 #~ msgid "Maximum rating"
 #~ msgstr "Maximum rating"
+
+#: apps/web/src/routes/_app/settings.tsx
+msgid "Media Requests"
+msgstr "Demandes multimédia"
+
+#: apps/web/src/routes/_app/statistics.tsx
+msgid "Media Type Distribution"
+msgstr "Répartition des genres de médias"
 
 #: apps/web/src/components/settings/account-section.tsx
 msgid "Member since {memberSince}"
@@ -1948,7 +2300,7 @@ msgstr "Membre depuis {memberSince}"
 
 #: apps/native/src/components/library/filter-sheet.tsx
 msgid "Min"
-msgstr ""
+msgstr "Min"
 
 #: apps/web/src/components/auth-form.tsx
 msgid "Min 8 characters…"
@@ -1958,6 +2310,14 @@ msgstr "Min. 8 caractères…"
 #~ msgid "Minimum rating"
 #~ msgstr "Minimum rating"
 
+#: apps/web/src/routes/_app/authors.$id.tsx
+msgid "Missing"
+msgstr "Manquant"
+
+#: apps/web/src/routes/_app/authors.$id.tsx
+msgid "Missing first"
+msgstr "Manquants d'abord"
+
 #: apps/web/src/components/settings/backup-schedule-section.tsx
 msgid "Monday"
 msgstr "Lundi"
@@ -1965,6 +2325,10 @@ msgstr "Lundi"
 #: apps/web/src/components/ui/breadcrumb.tsx
 msgid "More"
 msgstr "Plus"
+
+#: apps/web/src/components/titles/title-actions.tsx
+msgid "More actions"
+msgstr "Plus d'actions"
 
 #: apps/native/src/app/title/[id].tsx
 msgid "More Like This"
@@ -2000,9 +2364,12 @@ msgstr "Film"
 
 #: apps/native/src/app/(tabs)/(home)/upcoming.tsx
 #: apps/native/src/app/(tabs)/(library)/index.tsx
+#: apps/web/src/components/nav-bar.tsx
+#: apps/web/src/components/nav-bar.tsx
 #: apps/web/src/components/people/filmography-grid.tsx
 #: apps/web/src/components/settings/account-section.tsx
-#: apps/web/src/components/settings/imports-section.tsx
+#: apps/web/src/routes/_app/statistics.tsx
+#: apps/web/src/routes/_app/statistics.tsx
 #: apps/web/src/routes/_app/upcoming.tsx
 msgid "Movies"
 msgstr "Films"
@@ -2027,6 +2394,10 @@ msgstr "Films {select}"
 #~ msgid "Movies this month"
 #~ msgstr ""
 
+#: apps/web/src/routes/_app/statistics.tsx
+msgid "Movies Watched"
+msgstr "Films vus"
+
 #: apps/native/src/app/(auth)/register.tsx
 #: apps/native/src/app/(auth)/register.tsx
 #: apps/web/src/components/auth-form.tsx
@@ -2048,7 +2419,7 @@ msgstr "Nom mis à jour"
 
 #: apps/web/src/components/command-palette.tsx
 msgid "Navigation"
-msgstr ""
+msgstr "Navigation"
 
 #: apps/web/src/components/settings/integration-card.tsx
 msgid "Need more help?"
@@ -2103,6 +2474,10 @@ msgstr "Les plus récents"
 msgid "Next"
 msgstr "Suivant"
 
+#: apps/web/src/components/library/library-toolbar.tsx
+msgid "Next Air Date"
+msgstr "Prochaine diffusion"
+
 #: apps/web/src/components/settings/backup-schedule-section.tsx
 msgid "Next backup {distance}"
 msgstr "Prochaine sauvegarde {distance}"
@@ -2115,14 +2490,43 @@ msgstr "Épisode suivant"
 msgid "Next run"
 msgstr "Prochaine exécution"
 
+#: packages/i18n/src/date-buckets.ts
+msgid "Next Week"
+msgstr "La semaine prochaine"
+
 #: apps/native/src/components/dashboard/continue-watching-card.tsx
 msgid "Next: S{seasonNum} E{epNum}"
 msgstr "Suivant : S{seasonNum} E{epNum}"
+
+#: apps/web/src/routes/_app/books.index.tsx
+msgid "No authors found"
+msgstr "Aucun auteur trouvé"
+
+#: apps/web/src/routes/_app/watched-authors.tsx
+#~ msgid "No authors watched yet. New releases from watched authors are checked daily and downloaded automatically once found."
+#~ msgstr "Aucun auteur suivi pour le moment. Les nouveautés des auteurs suivis sont vérifiées quotidiennement et téléchargées automatiquement dès qu'elles sont trouvées."
 
 #: apps/web/src/components/settings/backup-section.tsx
 #: apps/web/src/components/settings/system-health-section.tsx
 msgid "No backups yet"
 msgstr "Aucune sauvegarde"
+
+#: apps/web/src/routes/_app/authors.$id.tsx
+#: apps/web/src/routes/_app/books.index.tsx
+msgid "No books found"
+msgstr "Aucun livre trouvé"
+
+#: apps/web/src/routes/_app/authors.$id.tsx
+msgid "No catalog data found on Hardcover."
+msgstr "Aucune donnée de catalogue trouvée sur Hardcover."
+
+#: apps/web/src/routes/_app/authors.$id.tsx
+msgid "No catalog data found on Open Library."
+msgstr "Aucune donnée de catalogue trouvée sur Open Library."
+
+#: apps/web/src/components/titles/play-on-dialog.tsx
+msgid "No devices saved yet — pick some in Settings, under your Emby integration."
+msgstr "Aucun appareil enregistré pour l'instant — choisis-en dans Paramètres, sous ton intégration Emby."
 
 #: apps/native/src/components/ui/offline-banner.ios.tsx
 #: apps/native/src/components/ui/offline-banner.ios.tsx
@@ -2130,9 +2534,51 @@ msgstr "Aucune sauvegarde"
 msgid "No internet connection"
 msgstr "Pas de connexion Internet"
 
+#: apps/web/src/components/command-palette.tsx
+msgid "No longer available"
+msgstr "Plus disponible"
+
+#: apps/web/src/components/title-card.tsx
+#: apps/web/src/components/titles/title-emby-availability.tsx
+msgid "No longer on your server"
+msgstr "Plus sur Emby"
+
+#: apps/web/src/components/titles/title-emby-availability.tsx
+msgid "No longer on your server — was in {embyLibraryName}"
+msgstr "Plus sur Emby — était dans {embyLibraryName}"
+
+#: apps/web/src/routes/_app/authors.$id.tsx
+#: apps/web/src/routes/_app/books.index.tsx
+msgid "No matches found"
+msgstr "Aucune correspondance trouvée"
+
+#: apps/web/src/routes/_app/books.index.tsx
+msgid "No matches found on Hardcover"
+msgstr "Aucun résultat trouvé sur Hardcover"
+
+#: apps/web/src/routes/_app/books.index.tsx
+msgid "No matches found on Open Library"
+msgstr "Aucun résultat trouvé sur Open Library"
+
+#: apps/web/src/routes/_app/authors.$id.tsx
+msgid "No matching release found"
+msgstr "Aucune version correspondante trouvée"
+
 #: apps/native/src/app/(tabs)/(library)/index.tsx
 msgid "No matching titles"
 msgstr "Aucun titre correspondant"
+
+#: apps/web/src/components/title-card.tsx
+msgid "No more episodes to watch"
+msgstr "Plus d'épisodes à regarder"
+
+#: apps/web/src/routes/_app/statistics.tsx
+#~ msgid "No ratings yet"
+#~ msgstr "Pas encore de notes"
+
+#: apps/web/src/routes/_app/watched-authors.tsx
+#~ msgid "No releases detected yet."
+#~ msgstr "Aucune sortie détectée pour le moment."
 
 #: apps/native/src/app/(tabs)/(search)/index.tsx
 msgid "No results for \"{debouncedQuery}\""
@@ -2142,9 +2588,17 @@ msgstr "Aucun résultat pour « {debouncedQuery} »"
 #~ msgid "No results for \"{debouncedSearch}\""
 #~ msgstr "No results for \"{debouncedSearch}\""
 
+#: apps/web/src/routes/_app/search.tsx
+msgid "No results found"
+msgstr "Aucun résultat trouvé"
+
 #: apps/web/src/components/command-palette.tsx
 msgid "No results found."
 msgstr "Aucun résultat trouvé."
+
+#: apps/web/src/routes/_app/books.$id.tsx
+msgid "No summary available"
+msgstr "Aucun résumé disponible"
 
 #: apps/native/src/components/explore/filterable-title-row.tsx
 #: apps/web/src/components/explore/filterable-title-row.tsx
@@ -2159,10 +2613,29 @@ msgstr "Aucun titre trouvé. Essayez d'ajuster vos filtres."
 msgid "No titles match your filters"
 msgstr "Aucun titre ne correspond à vos filtres"
 
+#: apps/web/src/routes/_app/authors.$id.tsx
+msgid "No titles match your search."
+msgstr "Aucun titre ne correspond à votre recherche."
+
 #: apps/native/src/app/(tabs)/(home)/upcoming.tsx
 #: apps/web/src/routes/_app/upcoming.tsx
 msgid "No upcoming episodes or releases in the next 90 days."
 msgstr "Aucun épisode ou sortie à venir dans les 90 prochains jours."
+
+#: apps/web/src/components/settings/media-requests-section.tsx
+#: apps/web/src/components/settings/media-requests-section.tsx
+#: apps/web/src/components/settings/media-requests-section.tsx
+#: apps/web/src/components/settings/media-requests-section.tsx
+msgid "None"
+msgstr "Aucun"
+
+#: apps/web/src/components/dashboard/upcoming-item.tsx
+#~ msgid "Not available yet"
+#~ msgstr "Pas encore disponible"
+
+#: apps/web/src/components/titles/request-dialog.tsx
+msgid "Not available yet — saved, we'll retry automatically"
+msgstr ""
 
 #: apps/native/src/components/settings/integration-card.tsx
 #: apps/native/src/components/settings/integration-card.tsx
@@ -2175,6 +2648,58 @@ msgstr "Non configuré"
 msgid "Not Found"
 msgstr "Introuvable"
 
+#: apps/web/src/routes/_app/books.index.tsx
+msgid "Not in your library — search by provider"
+msgstr "Absent de votre bibliothèque — recherchez par fournisseur"
+
+#: apps/web/src/routes/_app/books.index.tsx
+#~ msgid "Not in your library — search Hardcover"
+#~ msgstr "Absent de ta bibliothèque — recherche sur Hardcover"
+
+#: apps/web/src/routes/_app/library.tsx
+msgid "Not in your library yet — results from TMDB"
+msgstr "Pas encore dans votre bibliothèque — résultats TMDB"
+
+#: apps/web/src/components/settings/notifications-section.tsx
+msgid "Not supported in this browser"
+msgstr "Non pris en charge par ce navigateur"
+
+#: apps/web/src/routes/_app/books.index.tsx
+msgid "Not Watched"
+msgstr "Non suivis"
+
+#: apps/web/src/components/settings/notifications-section.tsx
+msgid "Notification permission denied"
+msgstr "Permission de notification refusée"
+
+#: apps/web/src/components/settings/notifications-section.tsx
+msgid "Notifications"
+msgstr "Notifications"
+
+#: apps/web/src/components/settings/notifications-section.tsx
+msgid "Notifications are blocked in your browser settings"
+msgstr "Les notifications sont bloquées dans les réglages du navigateur"
+
+#: apps/web/src/components/settings/notifications-section.tsx
+msgid "Notifications disabled"
+msgstr "Notifications désactivées"
+
+#: apps/web/src/components/settings/notifications-section.tsx
+msgid "Notifications enabled"
+msgstr "Notifications activées"
+
+#: apps/web/src/components/dashboard/now-playing-section.tsx
+msgid "Now Playing"
+msgstr "En cours sur Emby"
+
+#: apps/web/src/components/title-card.tsx
+msgid "Obtaining"
+msgstr "En cours d'obtention"
+
+#: apps/web/src/components/titles/play-on-dialog.tsx
+msgid "Offline — open Emby on this device first"
+msgstr "Hors ligne — ouvre Emby sur cet appareil d'abord"
+
 #: apps/web/src/components/library/library-filters.tsx
 #~ msgid "Older"
 #~ msgstr "Older"
@@ -2183,27 +2708,40 @@ msgstr "Introuvable"
 msgid "Oldest"
 msgstr "Plus anciens"
 
+#: apps/web/src/routes/_app/authors.$id.tsx
+msgid "on Hardcover"
+msgstr "sur Hardcover"
+
 #: apps/native/src/components/library/filter-sheet.tsx
 #: apps/native/src/components/library/filter-sheet.tsx
-#: apps/web/src/components/library/library-filters.tsx
-#: apps/web/src/components/library/library-filters.tsx
 msgid "On my services"
 msgstr "Sur mes services"
 
+#: apps/web/src/routes/_app/authors.$id.tsx
+msgid "on Open Library"
+msgstr "sur Open Library"
+
 #: apps/native/src/components/titles/status-action-button.tsx
 #: apps/web/src/components/dashboard/upcoming-item.tsx
-#: apps/web/src/components/title-card.tsx
 #: apps/web/src/components/titles/status-button.tsx
 msgid "On Watchlist"
 msgstr "Dans la liste de suivi"
 
+#: apps/web/src/components/command-palette.tsx
+msgid "On your server"
+msgstr "Sur votre serveur"
+
 #: apps/web/src/components/titles/title-availability.tsx
-msgid "On your services"
-msgstr "Sur vos services"
+#~ msgid "On your services"
+#~ msgstr "Sur vos services"
+
+#: apps/web/src/components/titles/play-on-dialog.tsx
+msgid "Online"
+msgstr "En ligne"
 
 #: apps/web/src/components/settings/imports-section.tsx
-msgid "Open {source} to enter code"
-msgstr "Ouvrir {source} pour saisir le code"
+#~ msgid "Open {source} to enter code"
+#~ msgstr "Ouvrir {source} pour saisir le code"
 
 #: apps/web/src/components/settings/integration-card.tsx
 msgid "Open docs"
@@ -2221,9 +2759,25 @@ msgstr "Ouvrez Emby, allez dans Settings > Webhooks"
 msgid "Open in browser…"
 msgstr "Ouvrir dans le navigateur…"
 
+#: apps/web/src/routes/_app/books.$id.tsx
+#~ msgid "Open in CWA"
+#~ msgstr ""
+
+#: apps/web/src/routes/_app/books.$id.tsx
+msgid "Open in Readest"
+msgstr "Ouvrir dans Readest"
+
+#: apps/web/src/routes/_app/authors.$id.tsx
+msgid "Open Library (manual only)"
+msgstr "Open Library (manuel uniquement)"
+
+#: apps/web/src/routes/_app/authors.$id.tsx
+msgid "Open Library has no new-release detection — grab new titles manually as they show up in the catalog below"
+msgstr "Open Library ne permet pas de détecter les nouveautés — téléchargez les nouveaux titres manuellement au fur et à mesure qu'ils apparaissent dans le catalogue ci-dessous"
+
 #: apps/web/src/components/settings/integration-configs.tsx
-msgid "Open Plex, go to <0>Settings > Webhooks<1/></0>"
-msgstr "Ouvrez Plex, allez dans <0>Settings > Webhooks<1/></0>"
+#~ msgid "Open Plex, go to <0>Settings > Webhooks<1/></0>"
+#~ msgstr "Ouvrez Plex, allez dans <0>Settings > Webhooks<1/></0>"
 
 #: apps/native/src/components/settings/integration-configs.ts
 msgid "Open Plex, go to Settings > Webhooks"
@@ -2272,6 +2826,10 @@ msgstr "ou"
 #~ msgid "OR"
 #~ msgstr ""
 
+#: apps/web/src/routes/_app/authors.$id.tsx
+msgid "Owned"
+msgstr "Possédé"
+
 #: apps/native/src/app/+not-found.tsx
 msgid "Page Not Found"
 msgstr "Page introuvable"
@@ -2281,8 +2839,8 @@ msgid "Parsing file..."
 msgstr "Analyse du fichier..."
 
 #: apps/web/src/components/settings/imports-section.tsx
-msgid "Parsing..."
-msgstr "Analyse..."
+#~ msgid "Parsing..."
+#~ msgstr "Analyse..."
 
 #: apps/native/src/app/(auth)/login.tsx
 #: apps/native/src/app/(auth)/login.tsx
@@ -2321,6 +2879,10 @@ msgstr "Collez l'URL Radarr ci-dessus dans le champ List URL"
 msgid "Paste the Sonarr URL above into the List URL field"
 msgstr "Collez l'URL Sonarr ci-dessus dans le champ List URL"
 
+#: apps/web/src/routes/_app/upcoming.tsx
+msgid "Pending TMDB"
+msgstr "En attente TMDB"
+
 #: apps/web/src/components/settings/update-check-section.tsx
 msgid "Periodically check GitHub for new Sofa releases"
 msgstr "Vérifier périodiquement GitHub pour les nouvelles versions de Sofa"
@@ -2340,6 +2902,27 @@ msgstr "Personne"
 msgid "Person not found"
 msgstr "Personne introuvable"
 
+#: apps/web/src/components/settings/playback-device-selector.tsx
+#~ msgid "Pick a few of your Emby devices to show in the \"Play on...\" menu — up to {MAX_FAVORITE_DEVICES}, instead of every device you've ever used."
+#~ msgstr "Choisis quelques-uns de tes appareils Emby à afficher dans le menu « Lire sur... » — jusqu'à {MAX_FAVORITE_DEVICES}, au lieu de tous les appareils que tu as déjà utilisés."
+
+#: apps/web/src/components/settings/playback-device-selector.tsx
+msgid "Pick a few of your Emby devices to show in the \"Play on...\" menu — up to {MAX_FAVORITE_DEVICES}, instead of every device you've ever used. The × permanently hides a device you'll never want (e.g. an old phone) — it won't come back here."
+msgstr "Choisis quelques-uns de tes appareils Emby à afficher dans le menu « Lire sur... » — jusqu'à {MAX_FAVORITE_DEVICES}, au lieu de tous les appareils que tu as déjà utilisés. Le × masque définitivement un appareil dont tu ne veux jamais (ex. un vieux téléphone) — il ne reviendra plus ici."
+
+#: apps/web/src/components/titles/title-seasons.tsx
+msgid "Play episode {epNum} on..."
+msgstr "Lire l'épisode {epNum} sur..."
+
+#: apps/web/src/components/titles/title-emby-availability.tsx
+msgid "Play in Emby"
+msgstr "Lance dans Emby"
+
+#: apps/web/src/components/titles/play-on-dialog.tsx
+#: apps/web/src/components/titles/title-emby-availability.tsx
+msgid "Play on..."
+msgstr "Lire sur..."
+
 #: apps/web/src/components/titles/trailer-dialog.tsx
 msgid "Play trailer"
 msgstr "Lire la bande-annonce"
@@ -2347,6 +2930,18 @@ msgstr "Lire la bande-annonce"
 #: apps/native/src/app/title/[id].tsx
 msgid "Play trailer for {titleName}"
 msgstr "Lire la bande-annonce de {titleName}"
+
+#: apps/web/src/components/settings/playback-device-selector.tsx
+msgid "Playback devices (\"Play on...\")"
+msgstr "Appareils de lecture (« Lire sur... »)"
+
+#: apps/web/src/components/settings/playback-device-selector.tsx
+msgid "Playback devices saved"
+msgstr "Appareils de lecture enregistrés"
+
+#: apps/web/src/components/titles/play-on-dialog.tsx
+msgid "Playback started"
+msgstr "Lecture lancée"
 
 #: apps/native/src/app/change-password.tsx
 #: apps/web/src/components/settings/account-section.tsx
@@ -2375,6 +2970,10 @@ msgstr "Popularité"
 #: apps/web/src/components/explore/discover-section.tsx
 msgid "Portuguese"
 msgstr "Portugais"
+
+#: apps/web/src/components/settings/appearance-section.tsx
+msgid "Posters per row"
+msgstr "Affiches par ligne"
 
 #: apps/web/src/components/explore/discover-section.tsx
 #: apps/web/src/components/explore/discover-section.tsx
@@ -2468,6 +3067,10 @@ msgstr "{0, plural, one {# titre} other {# titres}}, {1, plural, one {# personne
 msgid "Purging..."
 msgstr "Purge..."
 
+#: apps/web/src/components/titles/request-dialog.tsx
+msgid "Quality profile"
+msgstr "Profil qualité"
+
 #: apps/web/src/components/command-palette.tsx
 msgid "Quick Actions"
 msgstr "Actions rapides"
@@ -2475,6 +3078,18 @@ msgstr "Actions rapides"
 #: apps/native/src/components/settings/integration-configs.ts
 msgid "Radarr List URL"
 msgstr "URL de liste Radarr"
+
+#: apps/web/src/components/settings/media-requests-section.tsx
+msgid "Radarr quality profile"
+msgstr "Profil qualité Radarr"
+
+#: apps/web/src/components/settings/media-requests-section.tsx
+msgid "Radarr root folder"
+msgstr "Dossier racine Radarr"
+
+#: apps/web/src/components/settings/system-health-section.tsx
+msgid "Radarr/Sonarr requested sync"
+msgstr "Synchro demandes Radarr/Sonarr"
 
 #: apps/web/src/components/titles/star-rating.tsx
 msgid "Rate {star, plural, one {# star} other {# stars}}"
@@ -2546,14 +3161,21 @@ msgstr "Note : {rating} sur 5 étoiles"
 
 #: apps/web/src/components/settings/account-section.tsx
 #: apps/web/src/components/settings/account-section.tsx
-#: apps/web/src/components/settings/imports-section.tsx
-#: apps/web/src/components/settings/imports-section.tsx
 msgid "Ratings"
 msgstr "Notes"
+
+#: apps/web/src/routes/_app/books.index.tsx
+#: apps/web/src/routes/_app/books.index.tsx
+msgid "Read"
+msgstr "Lu"
 
 #: apps/web/src/components/expandable-text.tsx
 msgid "Read more"
 msgstr "Lire la suite"
+
+#: apps/web/src/routes/_app/watched-authors.tsx
+#~ msgid "Readarr"
+#~ msgstr "Readarr"
 
 #: apps/native/src/components/settings/integration-configs.ts
 #: apps/web/src/components/settings/integration-card.tsx
@@ -2564,6 +3186,10 @@ msgstr "Prêt — pas encore interrogé"
 #: apps/web/src/components/settings/integration-card.tsx
 msgid "Ready — nothing received yet"
 msgstr "Prêt — rien reçu pour l'instant"
+
+#: apps/web/src/components/title-card.tsx
+msgid "Ready to Watch"
+msgstr "À voir"
 
 #: apps/web/src/components/command-palette.tsx
 msgid "Recent Searches"
@@ -2648,6 +3274,11 @@ msgstr "Date de sortie"
 msgid "Remove"
 msgstr "Supprimer"
 
+#: apps/web/src/components/title-card.tsx
+#: apps/web/src/components/titles/title-actions.tsx
+msgid "Remove Dropped Status"
+msgstr "Retirer le statut abandonné"
+
 #: apps/native/src/components/dashboard/continue-watching-card.tsx
 #: apps/native/src/components/dashboard/upcoming-row.tsx
 #: apps/native/src/components/titles/status-action-button.tsx
@@ -2683,6 +3314,10 @@ msgstr "Supprimer la photo"
 msgid "Remove profile picture"
 msgstr "Supprimer la photo de profil"
 
+#: apps/web/src/components/title-card.tsx
+msgid "Removed from dropped"
+msgstr "Retiré des abandonnés"
+
 #: apps/native/src/hooks/use-title-actions.ts
 #: apps/native/src/lib/title-actions.ts
 #: apps/web/src/components/titles/use-title-actions.ts
@@ -2693,17 +3328,44 @@ msgstr "Supprimé de la bibliothèque"
 #~ msgid "Rent"
 #~ msgstr ""
 
+#: apps/web/src/components/title-card.tsx
+#: apps/web/src/components/titles/request-dialog.tsx
+#: apps/web/src/components/titles/request-dialog.tsx
+#: apps/web/src/components/titles/title-actions.tsx
+msgid "Request"
+msgstr "Demande"
+
 #: apps/web/src/routes/setup.tsx
 msgid "Request an API key"
 msgstr "Demander une clé API"
+
+#: apps/web/src/components/settings/media-requests-section.tsx
+msgid "Request defaults"
+msgstr "Paramètres par défaut des demandes"
+
+#: apps/web/src/components/titles/request-dialog.tsx
+msgid "Request sent"
+msgstr "Demande envoyée"
+
+#: apps/web/src/components/titles/title-actions.tsx
+msgid "Requested"
+msgstr "Demandé"
+
+#: apps/web/src/components/dashboard/requested-not-available-section.tsx
+msgid "Requested — Not Available"
+msgstr "Demandé — pas dispo"
+
+#: apps/web/src/routes/_app/upcoming.tsx
+msgid "Requested, but TheTVDB doesn't have this show yet — retry with the poster's + once it does."
+msgstr "Demandée, mais TheTVDB n'a pas encore cette série — réessaie avec le + de l'affiche une fois que ce sera le cas."
 
 #: apps/web/src/components/settings/integration-configs.tsx
 msgid "Requires <0>Emby Server 4.7.9+</0> and an active <1>Emby Premiere<2/></1> license."
 msgstr "Nécessite <0>Emby Server 4.7.9+</0> et une licence <1>Emby Premiere<2/></1> active."
 
 #: apps/web/src/components/settings/integration-configs.tsx
-msgid "Requires an active <0>Plex Pass<1/></0> subscription."
-msgstr "Nécessite un abonnement <0>Plex Pass<1/></0> actif."
+#~ msgid "Requires an active <0>Plex Pass<1/></0> subscription."
+#~ msgstr "Nécessite un abonnement <0>Plex Pass<1/></0> actif."
 
 #: apps/native/src/components/settings/integration-configs.ts
 msgid "Requires an active Plex Pass subscription."
@@ -2738,6 +3400,10 @@ msgstr "Restauration échouée"
 msgid "Restore from a Sofa export file"
 msgstr "Restaurer depuis un fichier d'exportation Sofa"
 
+#: apps/web/src/routes/_app/authors.$id.tsx
+msgid "Restore to missing list"
+msgstr "Remettre dans les manquants"
+
 #: apps/web/src/components/settings/backup-restore-section.tsx
 msgid "Restoring…"
 msgstr "Restauration…"
@@ -2746,9 +3412,13 @@ msgstr "Restauration…"
 msgid "Results"
 msgstr "Résultats"
 
+#: apps/web/src/routes/_app/search.tsx
+msgid "Results for \"{trimmedQuery}\""
+msgstr "Résultats pour \"{trimmedQuery}\""
+
 #: apps/web/src/components/settings/imports-section.tsx
-msgid "Retrieving your watch history, watchlist, and ratings..."
-msgstr "Récupération de votre historique, liste de suivi et notes..."
+#~ msgid "Retrieving your watch history, watchlist, and ratings..."
+#~ msgstr "Récupération de votre historique, liste de suivi et notes..."
 
 #: apps/native/src/app/(tabs)/(library)/index.tsx
 #: apps/native/src/components/settings/integrations-section.tsx
@@ -2763,9 +3433,12 @@ msgid "Return home"
 msgstr "Retour à l'accueil"
 
 #: apps/web/src/components/settings/account-section.tsx
-#: apps/web/src/components/settings/imports-section.tsx
 msgid "Review what was found and choose what to import."
 msgstr "Vérifiez ce qui a été trouvé et choisissez ce que vous souhaitez importer."
+
+#: apps/web/src/components/titles/request-dialog.tsx
+msgid "Root folder"
+msgstr "Dossier racine"
 
 #: apps/web/src/components/settings/system-health-section.tsx
 msgid "Run now"
@@ -2794,8 +3467,8 @@ msgid "Save name"
 msgstr "Enregistrer le nom"
 
 #: apps/web/src/components/settings/streaming-services-section.tsx
-msgid "Saved"
-msgstr "Enregistré"
+#~ msgid "Saved"
+#~ msgstr "Enregistré"
 
 #: apps/web/src/routes/_app/onboarding.tsx
 msgid "Saving…"
@@ -2828,12 +3501,35 @@ msgstr "Sauvegardes planifiées activées"
 #: apps/native/src/app/(tabs)/(search)/_layout.tsx
 #: apps/native/src/components/navigation/native-tab-bar.tsx
 #: apps/web/src/components/command-palette.tsx
+#: apps/web/src/routes/_app/search.tsx
 msgid "Search"
 msgstr "Recherche"
 
+#: apps/web/src/routes/_app/authors.$id.tsx
+msgid "Search and download"
+msgstr "Rechercher et télécharger"
+
+#: apps/web/src/routes/_app/books.index.tsx
+msgid "Search authors..."
+msgstr "Rechercher des auteurs..."
+
+#: apps/web/src/routes/_app/books.index.tsx
+msgid "Search books or authors..."
+msgstr "Rechercher des livres ou auteurs…"
+
+#: apps/web/src/routes/_app/authors.$id.tsx
+msgid "Search failed"
+msgstr "Échec de la recherche"
+
+#: apps/web/src/routes/_app/authors.$id.tsx
+#: apps/web/src/routes/_app/books.index.tsx
+#: apps/web/src/routes/_app/books.index.tsx
+msgid "Search failed. Try again."
+msgstr "La recherche a échoué. Réessaie."
+
 #: apps/web/src/components/dashboard/stats-section.tsx
-msgid "Search for movies and TV shows to start tracking"
-msgstr "Recherchez des films et séries pour commencer à les suivre"
+#~ msgid "Search for movies and TV shows to start tracking"
+#~ msgstr "Recherchez des films et séries pour commencer à les suivre"
 
 #: apps/native/src/components/search/recently-viewed-list.ios.tsx
 #: apps/native/src/components/search/recently-viewed-list.tsx
@@ -2843,6 +3539,14 @@ msgstr "Rechercher des films, séries ou personnes"
 #: apps/web/src/components/command-palette.tsx
 msgid "Search for movies, TV shows, or run commands"
 msgstr "Rechercher des films, séries ou exécuter des commandes"
+
+#: apps/web/src/routes/_app/watched-authors.tsx
+#~ msgid "Search Hardcover for an author..."
+#~ msgstr "Rechercher un auteur sur Hardcover..."
+
+#: apps/web/src/routes/_app/books.index.tsx
+msgid "Search Hardcover..."
+msgstr "Rechercher sur Hardcover..."
 
 #: apps/web/src/components/library/library-toolbar.tsx
 msgid "Search library"
@@ -2860,6 +3564,22 @@ msgstr "Rechercher des films et séries…"
 msgid "Search movies, shows, people..."
 msgstr "Rechercher des films, séries, personnes..."
 
+#: apps/web/src/routes/_app/books.index.tsx
+msgid "Search Open Library..."
+msgstr "Rechercher sur Open Library..."
+
+#: apps/web/src/routes/_app/authors.$id.tsx
+msgid "Search Prowlarr directly by title, bypassing the provider catalog."
+msgstr "Cherche directement dans Prowlarr par titre, sans passer par le catalogue du fournisseur."
+
+#: apps/web/src/routes/_app/authors.$id.tsx
+msgid "Search titles..."
+msgstr "Rechercher des titres..."
+
+#: apps/web/src/routes/_app/authors.$id.tsx
+msgid "Search your Grimmory books..."
+msgstr "Chercher parmi tes livres Grimmory..."
+
 #: apps/native/src/app/(tabs)/(library)/index.tsx
 #~ msgid "Search your library..."
 #~ msgstr "Search your library..."
@@ -2869,12 +3589,19 @@ msgstr "Rechercher des films, séries, personnes..."
 msgid "Search…"
 msgstr "Rechercher…"
 
-#: apps/native/src/components/titles/season-accordion.tsx
-#: apps/native/src/components/titles/season-accordion.tsx
-#: apps/web/src/components/titles/use-title-actions.ts
-#: apps/web/src/components/titles/use-title-actions.ts
-#~ msgid "Season {0}"
-#~ msgstr ""
+#: apps/web/src/routes/_app/authors.$id.tsx
+#: apps/web/src/routes/_app/authors.$id.tsx
+#: apps/web/src/routes/_app/authors.$id.tsx
+#: apps/web/src/routes/_app/books.index.tsx
+#: apps/web/src/routes/_app/books.index.tsx
+msgid "Searching..."
+msgstr "Recherche en cours..."
+
+#. placeholder {0}: season.seasonNumber
+#: apps/web/src/components/titles/request-dialog.tsx
+#: apps/web/src/components/titles/title-seasons.tsx
+msgid "Season {0}"
+msgstr "Saison {0}"
 
 #: apps/native/src/components/titles/season-accordion.tsx
 #: apps/native/src/components/titles/season-accordion.tsx
@@ -2893,6 +3620,7 @@ msgid "Season watched"
 msgstr "Saison visionnée"
 
 #: apps/native/src/app/title/[id].tsx
+#: apps/web/src/components/titles/request-dialog.tsx
 msgid "Seasons"
 msgstr "Saisons"
 
@@ -2903,8 +3631,23 @@ msgstr "Sécurité"
 
 #: apps/native/src/components/ui/section-header.tsx
 #: apps/web/src/components/dashboard/feed-section.tsx
+#: apps/web/src/components/dashboard/to-watch-section.tsx
 msgid "See all"
 msgstr "Voir tout"
+
+#. placeholder {0}: searchData?.totalResults
+#: apps/web/src/components/command-palette.tsx
+msgid "See all {0} results"
+msgstr "Voir les {0} résultats"
+
+#: apps/web/src/components/dashboard/watched-movies-section.tsx
+#: apps/web/src/components/title-card.tsx
+msgid "Seen"
+msgstr "Vu"
+
+#: apps/web/src/components/title-card.tsx
+#~ msgid "Seen — Removed"
+#~ msgstr "Vu — plus disponible"
 
 #: apps/web/src/routes/_app/onboarding.tsx
 msgid "Select your streaming services to personalize your experience"
@@ -2965,6 +3708,10 @@ msgstr "Instructions de configuration"
 msgid "Setup required"
 msgstr "Configuration requise"
 
+#: apps/web/src/routes/_app/authors.$id.tsx
+msgid "Show dismissed"
+msgstr "Afficher les rejetés"
+
 #: apps/native/src/components/ui/expandable-text.tsx
 #: apps/native/src/components/ui/expandable-text.tsx
 #: apps/web/src/components/expandable-text.tsx
@@ -2975,6 +3722,10 @@ msgstr "Afficher moins"
 #: apps/native/src/components/ui/expandable-text.tsx
 msgid "Show more"
 msgstr "Afficher plus"
+
+#: apps/web/src/components/auth-form.tsx
+msgid "Show password"
+msgstr "Afficher le mot de passe"
 
 #: apps/web/src/components/ui/sidebar.tsx
 msgid "Sidebar"
@@ -3043,7 +3794,6 @@ msgid "Skip for now"
 msgstr "Passer pour l'instant"
 
 #: apps/web/src/components/settings/account-section.tsx
-#: apps/web/src/components/settings/imports-section.tsx
 msgid "Skipped"
 msgstr "Ignoré"
 
@@ -3066,7 +3816,6 @@ msgstr "Sofa v{latestVersion} est disponible"
 #: apps/native/src/components/settings/integration-configs.ts
 #: apps/native/src/components/settings/integration-configs.ts
 #: apps/native/src/components/settings/integration-configs.ts
-#: apps/web/src/components/settings/integration-configs.tsx
 #: apps/web/src/components/settings/integration-configs.tsx
 #: apps/web/src/components/settings/integration-configs.tsx
 msgid "Sofa will automatically log movies and episodes when you finish watching them"
@@ -3096,6 +3845,14 @@ msgstr "Une erreur s'est produite…"
 msgid "Sonarr List URL"
 msgstr "URL de liste Sonarr"
 
+#: apps/web/src/components/settings/media-requests-section.tsx
+msgid "Sonarr quality profile"
+msgstr "Profil qualité Sonarr"
+
+#: apps/web/src/components/settings/media-requests-section.tsx
+msgid "Sonarr root folder"
+msgstr "Dossier racine Sonarr"
+
 #: apps/native/src/components/library/sort-menu.tsx
 #: apps/web/src/components/explore/discover-section.tsx
 #: apps/web/src/components/explore/discover-section.tsx
@@ -3108,13 +3865,17 @@ msgstr "Trier"
 msgid "Sort filmography"
 msgstr "Trier la filmographie"
 
+#: apps/web/src/routes/_app/watched-authors.tsx
+#~ msgid "Source"
+#~ msgstr "Source"
+
 #: apps/web/src/components/explore/discover-section.tsx
 msgid "Spanish"
 msgstr "Espagnol"
 
 #: apps/web/src/components/dashboard/stats-section.tsx
-msgid "Start exploring"
-msgstr "Commencer à explorer"
+#~ msgid "Start exploring"
+#~ msgstr "Commencer à explorer"
 
 #: apps/native/src/app/(tabs)/(home)/index.tsx
 #: apps/native/src/app/(tabs)/(library)/index.tsx
@@ -3130,9 +3891,22 @@ msgid "Starting at"
 msgstr "À partir de"
 
 #: apps/web/src/components/settings/account-section.tsx
-#: apps/web/src/components/settings/imports-section.tsx
 msgid "Starting import..."
 msgstr "Démarrage de l'importation..."
+
+#: apps/web/src/components/titles/play-on-dialog.tsx
+msgid "Starts playback directly on the device's own Emby app."
+msgstr "Lance la lecture directement dans l'appli Emby de l'appareil."
+
+#: apps/web/src/routes/_app/statistics.tsx
+#: apps/web/src/routes/_app/statistics.tsx
+msgid "Statistics"
+msgstr "Statistiques"
+
+#: apps/web/src/components/nav-bar.tsx
+#: apps/web/src/components/nav-bar.tsx
+msgid "Stats"
+msgstr "Stats"
 
 #: apps/native/src/app/(tabs)/(library)/index.tsx
 #: apps/native/src/app/(tabs)/(library)/index.tsx
@@ -3140,37 +3914,54 @@ msgstr "Démarrage de l'importation..."
 #: apps/native/src/components/library/filter-sheet.tsx
 #: apps/web/src/components/library/library-filters.tsx
 #: apps/web/src/components/library/library-filters.tsx
+#: apps/web/src/routes/_app/books.index.tsx
 msgid "Status"
 msgstr "Statut"
+
+#: apps/web/src/routes/_app/statistics.tsx
+msgid "Status Breakdown by Type"
+msgstr "Répartition des statuts par type"
+
+#: apps/web/src/routes/_app/statistics.tsx
+msgid "Status Distribution"
+msgstr "Répartition des statuts"
 
 #: apps/native/src/hooks/use-title-actions.ts
 msgid "Status updated"
 msgstr "Statut mis à jour"
+
+#: apps/web/src/components/dashboard/upcoming-item.tsx
+#~ msgid "Still not available — try again later"
+#~ msgstr "Toujours indisponible — réessaie plus tard"
+
+#: apps/web/src/routes/_app/authors.$id.tsx
+#: apps/web/src/routes/_app/books.index.tsx
+msgid "Stop watching"
+msgstr "Ne plus suivre"
 
 #: apps/web/src/components/settings/system-health-section.tsx
 msgid "Storage"
 msgstr "Stockage"
 
 #: apps/native/src/app/title/[id].tsx
-#: apps/web/src/components/titles/title-availability.tsx
 msgid "Stream"
 msgstr "Streaming"
 
 #: apps/native/src/components/library/filter-sheet.tsx
 msgid "Streaming"
-msgstr ""
+msgstr "Streaming"
 
 #: apps/web/src/components/settings/streaming-services-section.tsx
-msgid "Streaming data provided by <0/><1>JustWatch</1>"
-msgstr ""
+#~ msgid "Streaming data provided by <0/><1>JustWatch</1>"
+#~ msgstr ""
 
 #: apps/web/src/components/settings/streaming-services-section.tsx
 #~ msgid "Streaming Services"
 #~ msgstr "Streaming Services"
 
 #: apps/web/src/components/settings/streaming-services-section.tsx
-msgid "Subscriptions"
-msgstr ""
+#~ msgid "Subscriptions"
+#~ msgstr ""
 
 #: apps/web/src/components/settings/backup-schedule-section.tsx
 msgid "Sunday"
@@ -3205,7 +3996,6 @@ msgid "then"
 msgstr "puis"
 
 #: apps/web/src/components/settings/account-section.tsx
-#: apps/web/src/components/settings/imports-section.tsx
 msgid "This may take a few minutes for large libraries. Please don't close this tab."
 msgstr "Cela peut prendre quelques minutes pour les grandes bibliothèques. Ne fermez pas cet onglet."
 
@@ -3239,6 +4029,7 @@ msgstr "cette semaine"
 
 #: apps/native/src/components/dashboard/stats-card.tsx
 #: apps/web/src/components/dashboard/stats-display.tsx
+#: packages/i18n/src/date-buckets.ts
 msgid "This Week"
 msgstr "Cette semaine"
 
@@ -3292,16 +4083,25 @@ msgstr "Cette année"
 msgid "Thursday"
 msgstr "Jeudi"
 
+#: apps/web/src/routes/_app/statistics.tsx
+msgid "Time Watching Movies"
+msgstr "Temps devant des films"
+
+#: apps/web/src/routes/_app/statistics.tsx
+msgid "Time Watching TV"
+msgstr "Temps devant des séries"
+
 #: apps/web/src/components/settings/backup-schedule-section.tsx
 msgid "Time:"
 msgstr "Heure :"
 
 #: apps/web/src/components/command-palette.tsx
+#: apps/web/src/components/library/library-toolbar.tsx
+#: apps/web/src/routes/_app/books.index.tsx
 msgid "Title"
 msgstr "Titre"
 
 #: apps/native/src/components/library/sort-menu.tsx
-#: apps/web/src/components/library/library-toolbar.tsx
 msgid "Title A-Z"
 msgstr "Titre A-Z"
 
@@ -3311,9 +4111,12 @@ msgid "Title not found"
 msgstr "Titre introuvable"
 
 #: apps/native/src/components/library/sort-menu.tsx
-#: apps/web/src/components/library/library-toolbar.tsx
 msgid "Title Z-A"
 msgstr "Titre Z-A"
+
+#: apps/web/src/components/settings/emby-library-selector.tsx
+msgid "Titles found in these libraries are automatically added to your watchlist."
+msgstr "Les titres trouvés dans ces bibliothèques sont automatiquement ajoutés à votre liste de suivi."
 
 #: apps/native/src/components/settings/integration-configs.ts
 #: apps/web/src/components/settings/integration-configs.tsx
@@ -3334,12 +4137,21 @@ msgstr "Note TMDB"
 #~ msgid "To"
 #~ msgstr "To"
 
+#: apps/web/src/components/dashboard/to-start-section.tsx
+#~ msgid "To Start"
+#~ msgstr "À commencer"
+
+#: apps/web/src/components/dashboard/to-watch-section.tsx
+#~ msgid "To Watch"
+#~ msgstr "À voir"
+
 #: apps/native/src/app/(tabs)/(home)/index.tsx
 msgid "today"
 msgstr "aujourd'hui"
 
 #: apps/native/src/components/dashboard/stats-card.tsx
 #: apps/web/src/components/dashboard/stats-display.tsx
+#: packages/i18n/src/date-buckets.ts
 msgid "Today"
 msgstr "Aujourd'hui"
 
@@ -3350,6 +4162,10 @@ msgstr "Basculer {name}"
 #: apps/web/src/components/settings/update-check-section.tsx
 msgid "Toggle automatic update checks"
 msgstr "Activer/désactiver les vérifications automatiques de mises à jour"
+
+#: apps/web/src/components/settings/notifications-section.tsx
+msgid "Toggle notifications"
+msgstr "Activer/désactiver les notifications"
 
 #: apps/web/src/components/settings/registration-section.tsx
 msgid "Toggle open registration"
@@ -3364,6 +4180,10 @@ msgstr "Activer/désactiver les sauvegardes planifiées"
 #: apps/web/src/components/ui/sidebar.tsx
 msgid "Toggle Sidebar"
 msgstr "Basculer la barre latérale"
+
+#: packages/i18n/src/date-buckets.ts
+msgid "Tomorrow"
+msgstr "Demain"
 
 #: apps/web/src/components/landing-page.tsx
 msgid "Track what you watch. Know what's next.<0/>Your library, your data, your rules."
@@ -3428,13 +4248,21 @@ msgstr "Épisodes de séries"
 msgid "TV show"
 msgstr "Série TV"
 
+#: apps/web/src/components/nav-bar.tsx
+#: apps/web/src/components/nav-bar.tsx
+#: apps/web/src/routes/_app/statistics.tsx
+#: apps/web/src/routes/_app/statistics.tsx
 #: apps/web/src/routes/_app/upcoming.tsx
 msgid "TV Shows"
-msgstr "Séries TV"
+msgstr "Séries"
 
 #: apps/native/src/components/library/filter-sheet.tsx
 msgid "Type"
-msgstr ""
+msgstr "Type"
+
+#: apps/web/src/routes/_app/search.tsx
+msgid "Type something to search"
+msgstr "Tapez quelque chose pour rechercher"
 
 #: apps/web/src/components/settings/system-health-section.tsx
 msgid "unknown"
@@ -3453,6 +4281,10 @@ msgstr "Démarquer l'épisode {epNum}"
 msgid "Unreachable"
 msgstr "Inaccessible"
 
+#: apps/web/src/routes/_app/books.index.tsx
+msgid "Unread"
+msgstr "Non lu"
+
 #: apps/web/src/components/titles/title-seasons.tsx
 msgid "Untitled"
 msgstr "Sans titre"
@@ -3461,6 +4293,10 @@ msgstr "Sans titre"
 msgid "Unwatch all"
 msgstr "Tout démarquer"
 
+#: apps/web/src/components/title-card.tsx
+msgid "Unwatch last episode"
+msgstr "Marquer le dernier épisode comme non vu"
+
 #: apps/web/src/components/titles/use-title-actions.ts
 #~ msgid "Unwatched all of {0}"
 #~ msgstr ""
@@ -3468,6 +4304,12 @@ msgstr "Tout démarquer"
 #: apps/web/src/components/titles/use-title-actions.ts
 msgid "Unwatched all of {seasonLabel}"
 msgstr "Tout marqué comme non regardé pour {seasonLabel}"
+
+#. placeholder {0}: result.seasonNumber
+#. placeholder {1}: result.episodeNumber
+#: apps/web/src/components/title-card.tsx
+msgid "Unwatched S{0} E{1}"
+msgstr "Non vu S{0} E{1}"
 
 #: apps/web/src/components/titles/use-title-actions.ts
 msgid "Unwatched S{seasonNum} E{epNum}"
@@ -3478,18 +4320,28 @@ msgid "Unwatched S{sNum} E{eNum}"
 msgstr "S{sNum} E{eNum} marqué comme non regardé"
 
 #: apps/native/src/components/titles/continue-watching-banner.tsx
-#: apps/web/src/components/dashboard/continue-watching-card.tsx
 msgid "Up next"
 msgstr "Suivant"
 
 #: apps/native/src/app/(tabs)/(home)/upcoming.tsx
 #: apps/native/src/components/dashboard/upcoming-section.tsx
-#: apps/web/src/components/dashboard/upcoming-section.tsx
 #: apps/web/src/components/nav-bar.tsx
 #: apps/web/src/components/nav-bar.tsx
 #: apps/web/src/routes/_app/upcoming.tsx
 msgid "Upcoming"
 msgstr "À venir"
+
+#: apps/web/src/routes/_app/explore.tsx
+msgid "Upcoming Movies"
+msgstr "Films à venir"
+
+#: apps/web/src/components/dashboard/upcoming-cards-section.tsx
+msgid "Upcoming Releases"
+msgstr "Prochaines sorties"
+
+#: apps/web/src/routes/_app/explore.tsx
+msgid "Upcoming Series"
+msgstr "Séries à venir"
 
 #: apps/native/src/app/(tabs)/(settings)/index.tsx
 #~ msgid "Update available: {0}"
@@ -3527,7 +4379,6 @@ msgstr "Mettre à jour le mot de passe"
 #~ msgstr ""
 
 #: apps/web/src/components/settings/backup-restore-section.tsx
-#: apps/web/src/components/settings/imports-section.tsx
 msgid "Upload"
 msgstr "Télécharger"
 
@@ -3540,12 +4391,12 @@ msgstr "Téléchargez un fichier .db pour remplacer la base de données actuelle
 #~ msgstr ""
 
 #: apps/web/src/components/settings/imports-section.tsx
-msgid "Upload a {acceptFormat} export from your {sourceLabel} account settings."
-msgstr "Importez un export {acceptFormat} depuis les paramètres de votre compte {sourceLabel}."
+#~ msgid "Upload a {acceptFormat} export from your {sourceLabel} account settings."
+#~ msgstr "Importez un export {acceptFormat} depuis les paramètres de votre compte {sourceLabel}."
 
 #: apps/web/src/components/settings/imports-section.tsx
-msgid "Upload export file"
-msgstr "Télécharger le fichier d'exportation"
+#~ msgid "Upload export file"
+#~ msgstr "Télécharger le fichier d'exportation"
 
 #: apps/web/src/components/settings/account-section.tsx
 msgid "Upload failed"
@@ -3584,12 +4435,23 @@ msgstr "Voir sur TMDB"
 msgid "View release"
 msgstr "Voir la version"
 
+#: apps/web/src/components/settings/account-section.tsx
+#~ msgid "View watch stats and library breakdowns"
+#~ msgstr "Voir les statistiques de visionnage et la répartition de la bibliothèque"
+
+#: apps/web/src/components/dashboard/waiting-for-episodes-section.tsx
+msgid "Waiting — Not Available"
+msgstr "En attente — pas dispo"
+
 #: apps/web/src/components/settings/imports-section.tsx
-msgid "Waiting for authorization..."
-msgstr "En attente d'autorisation..."
+#~ msgid "Waiting for authorization..."
+#~ msgstr "En attente d'autorisation..."
+
+#: apps/web/src/components/dashboard/caught-up-section.tsx
+#~ msgid "Waiting for New Episodes"
+#~ msgstr "Pas encore diffusés"
 
 #: apps/web/src/components/settings/account-section.tsx
-#: apps/web/src/components/settings/imports-section.tsx
 msgid "Warnings"
 msgstr "Avertissements"
 
@@ -3598,23 +4460,54 @@ msgstr "Avertissements"
 #~ msgstr ""
 
 #: apps/web/src/components/settings/account-section.tsx
-#: apps/web/src/components/settings/imports-section.tsx
 msgid "Warnings ({warningCount})"
 msgstr "Avertissements ({warningCount})"
+
+#: apps/web/src/components/titles/title-actions.tsx
+msgid "Watch Again"
+msgstr "Regarder à nouveau"
 
 #: apps/web/src/components/titles/title-seasons.tsx
 msgid "Watch all"
 msgstr "Tout marquer comme visionné"
 
+#: apps/web/src/routes/_app/watched-authors.tsx
+#~ msgid "Watch an author"
+#~ msgstr "Suivre un auteur"
+
+#: apps/web/src/routes/_app/watched-authors.tsx
+#~ msgid "Watch author"
+#~ msgstr "Suivre un auteur"
+
 #: apps/web/src/components/settings/account-section.tsx
-#: apps/web/src/components/settings/imports-section.tsx
 msgid "Watch history"
 msgstr "Historique de visionnage"
+
+#: apps/web/src/components/title-card.tsx
+msgid "Watch next episode"
+msgstr "Regarder l'épisode suivant"
 
 #: apps/web/src/components/titles/title-availability.tsx
 #: apps/web/src/components/titles/title-availability.tsx
 #~ msgid "Watch on {name}"
 #~ msgstr ""
+
+#: apps/web/src/routes/_app/books.index.tsx
+msgid "Watch this author"
+msgstr "Suivre cet auteur"
+
+#: apps/web/src/routes/_app/authors.$id.tsx
+#: apps/web/src/routes/_app/books.index.tsx
+msgid "Watched"
+msgstr "Suivis"
+
+#: apps/web/src/components/dashboard/watched-movies-section.tsx
+#~ msgid "Watched — No Longer Available"
+#~ msgstr "Déjà vus — plus disponible"
+
+#: apps/web/src/components/dashboard/watched-movies-section.tsx
+#~ msgid "Watched — Still Available"
+#~ msgstr "Déjà vus — disponible"
 
 #: apps/native/src/components/titles/season-accordion.tsx
 #: apps/native/src/lib/title-actions.ts
@@ -3626,6 +4519,28 @@ msgstr "Tout visionné de {seasonLabel}"
 #: apps/native/src/lib/title-actions.ts
 #~ msgid "Watched all of {seasonName}"
 #~ msgstr ""
+
+#: apps/web/src/routes/_app/watched-authors.tsx
+#~ msgid "Watched Authors"
+#~ msgstr "Auteurs suivis"
+
+#: apps/web/src/components/settings/system-health-section.tsx
+msgid "Watched authors catalog size"
+msgstr "Taille du catalogue des auteurs suivis"
+
+#: apps/web/src/components/settings/system-health-section.tsx
+msgid "Watched authors check"
+msgstr "Vérification des auteurs suivis"
+
+#: apps/web/src/components/titles/title-seasons.tsx
+msgid "Watched more than once"
+msgstr "Vu plus d'une fois"
+
+#. placeholder {0}: result.seasonNumber
+#. placeholder {1}: result.episodeNumber
+#: apps/web/src/components/title-card.tsx
+msgid "Watched S{0} E{1}"
+msgstr "Vu S{0} E{1}"
 
 #: apps/web/src/components/titles/use-title-actions.ts
 #: apps/web/src/components/titles/use-title-actions.ts
@@ -3642,20 +4557,23 @@ msgstr "S{sNum} E{eNum} marqué comme regardé"
 #: apps/native/src/components/titles/status-action-button.tsx
 #: apps/web/src/components/dashboard/upcoming-item.tsx
 #: apps/web/src/components/library/library-filters.tsx
-#: apps/web/src/components/title-card.tsx
 #: apps/web/src/components/titles/status-button.tsx
+#: apps/web/src/routes/_app/statistics.tsx
 #: apps/web/src/routes/_app/upcoming.tsx
 msgid "Watching"
 msgstr "En cours"
+
+#: apps/web/src/components/titles/use-title-actions.ts
+msgid "Watching \"{titleName}\" again from the start"
+msgstr "Vous regardez « {titleName} » depuis le début"
 
 #: apps/native/src/app/(tabs)/(home)/upcoming.tsx
 #: apps/native/src/app/(tabs)/(library)/index.tsx
 #: apps/native/src/components/library/filter-sheet.tsx
 #: apps/native/src/components/titles/status-action-button.tsx
 #: apps/web/src/components/library/library-filters.tsx
-#: apps/web/src/components/settings/imports-section.tsx
-#: apps/web/src/components/settings/imports-section.tsx
 #: apps/web/src/components/titles/status-button.tsx
+#: apps/web/src/routes/_app/statistics.tsx
 #: apps/web/src/routes/_app/upcoming.tsx
 msgid "Watchlist"
 msgstr "Liste de suivi"
@@ -3692,9 +4610,13 @@ msgid "What do you watch on?"
 msgstr "Sur quoi regardez-vous ?"
 
 #: apps/native/src/app/title/[id].tsx
-#: apps/web/src/components/titles/title-availability.tsx
 msgid "Where to Watch"
 msgstr "Où regarder"
+
+#. placeholder {0}: pendingLibrary.rootFolderPath
+#: apps/web/src/components/titles/title-emby-availability.tsx
+msgid "Will go to — {0}"
+msgstr "Ira dans — {0}"
 
 #: apps/web/src/components/titles/title-availability.tsx
 #~ msgid "With Ads"
@@ -3726,6 +4648,10 @@ msgstr "Année"
 #~ msgid "Year to"
 #~ msgstr "Year to"
 
+#: apps/web/src/components/settings/playback-device-selector.tsx
+msgid "You can pick up to {MAX_FAVORITE_DEVICES} devices"
+msgstr "Tu peux choisir jusqu'à {MAX_FAVORITE_DEVICES} appareils"
+
 #: apps/native/src/app/(tabs)/(settings)/index.tsx
 msgid "You'll be signed out to change the server URL."
 msgstr "Vous serez déconnecté pour modifier l'URL du serveur."
@@ -3739,12 +4665,15 @@ msgid "You're running v{currentVersion}."
 msgstr "Vous utilisez la v{currentVersion}."
 
 #: apps/web/src/components/settings/imports-section.tsx
-msgid "Your code:"
-msgstr "Votre code :"
+#~ msgid "Your code:"
+#~ msgstr "Votre code :"
+
+#: apps/web/src/components/settings/emby-library-selector.tsx
+msgid "Your Emby libraries"
+msgstr "Vos bibliothèques Emby"
 
 #: apps/native/src/app/(tabs)/(home)/index.tsx
 #: apps/native/src/app/(tabs)/(library)/index.tsx
-#: apps/web/src/components/dashboard/stats-section.tsx
 msgid "Your library is empty"
 msgstr "Votre bibliothèque est vide"
 
@@ -3755,4 +4684,3 @@ msgstr "Votre nom"
 #: apps/web/src/components/auth-form.tsx
 msgid "Your name…"
 msgstr "Votre nom…"
-

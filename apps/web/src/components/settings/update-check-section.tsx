@@ -51,7 +51,7 @@ export function UpdateCheckSection() {
               <Trans>Automatic update checks</Trans>
             </CardTitle>
             <CardDescription>
-              <Trans>Periodically check GitHub for new Sofa releases</Trans>
+              <Trans>Periodically check GitHub for new Patoune TV releases</Trans>
             </CardDescription>
           </div>
         </div>

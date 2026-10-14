@@ -3,13 +3,12 @@ import { asc, desc, eq, inArray } from "drizzle-orm";
 import { db } from "../client";
 import { platformTmdbIds, platforms, userPlatforms } from "../schema";
 
-export function getUserPlatformIds(userId: string): string[] {
-  return db
+export async function getUserPlatformIds(userId: string): Promise<string[]> {
+  const rows = await db
     .select({ platformId: userPlatforms.platformId })
     .from(userPlatforms)
-    .where(eq(userPlatforms.userId, userId))
-    .all()
-    .map((r) => r.platformId);
+    .where(eq(userPlatforms.userId, userId));
+  return rows.map((r) => r.platformId);
 }
 
 export function getUserPlatforms(userId: string) {
@@ -24,71 +23,60 @@ export function getUserPlatforms(userId: string) {
     .from(userPlatforms)
     .innerJoin(platforms, eq(userPlatforms.platformId, platforms.id))
     .where(eq(userPlatforms.userId, userId))
-    .orderBy(desc(platforms.isSubscription), asc(platforms.name))
-    .all();
+    .orderBy(desc(platforms.isSubscription), asc(platforms.name));
 }
 
-export function setUserPlatforms(userId: string, platformIds: string[]): void {
-  db.transaction((tx) => {
-    tx.delete(userPlatforms).where(eq(userPlatforms.userId, userId)).run();
+export async function setUserPlatforms(userId: string, platformIds: string[]): Promise<void> {
+  await db.transaction(async (tx) => {
+    await tx.delete(userPlatforms).where(eq(userPlatforms.userId, userId));
     if (platformIds.length > 0) {
-      tx.insert(userPlatforms)
+      await tx
+        .insert(userPlatforms)
         .values(platformIds.map((platformId) => ({ userId, platformId })))
-        .onConflictDoNothing()
-        .run();
+        .onConflictDoNothing();
     }
   });
 }
 
 export function getAllPlatforms() {
-  return db
-    .select()
-    .from(platforms)
-    .orderBy(desc(platforms.isSubscription), asc(platforms.name))
-    .all();
+  return db.select().from(platforms).orderBy(desc(platforms.isSubscription), asc(platforms.name));
 }
 
-export function hasUserPlatforms(userId: string): boolean {
-  return (
-    db
-      .select({ platformId: userPlatforms.platformId })
-      .from(userPlatforms)
-      .where(eq(userPlatforms.userId, userId))
-      .limit(1)
-      .get() != null
-  );
+export async function hasUserPlatforms(userId: string): Promise<boolean> {
+  const [row] = await db
+    .select({ platformId: userPlatforms.platformId })
+    .from(userPlatforms)
+    .where(eq(userPlatforms.userId, userId))
+    .limit(1);
+  return row != null;
 }
 
-export function platformIdsExist(platformIds: string[]): boolean {
+export async function platformIdsExist(platformIds: string[]): Promise<boolean> {
   if (platformIds.length === 0) return true;
   const unique = [...new Set(platformIds)];
-  const found = db
-    .select({ id: platforms.id })
-    .from(platforms)
-    .where(inArray(platforms.id, unique))
-    .all();
+  const found = await db.select({ id: platforms.id }).from(platforms).where(inArray(platforms.id, unique));
   return found.length === unique.length;
 }
 
-export function getTmdbProviderIdsForPlatform(platformId: string): number[] {
-  return db
+export async function getTmdbProviderIdsForPlatform(platformId: string): Promise<number[]> {
+  const rows = await db
     .select({ tmdbProviderId: platformTmdbIds.tmdbProviderId })
     .from(platformTmdbIds)
-    .where(eq(platformTmdbIds.platformId, platformId))
-    .all()
-    .map((r) => r.tmdbProviderId);
+    .where(eq(platformTmdbIds.platformId, platformId));
+  return rows.map((r) => r.tmdbProviderId);
 }
 
-export function getTmdbProviderIdsByPlatformIds(platformIds: string[]): Map<string, number[]> {
+export async function getTmdbProviderIdsByPlatformIds(
+  platformIds: string[],
+): Promise<Map<string, number[]>> {
   if (platformIds.length === 0) return new Map();
-  const rows = db
+  const rows = await db
     .select({
       platformId: platformTmdbIds.platformId,
       tmdbProviderId: platformTmdbIds.tmdbProviderId,
     })
     .from(platformTmdbIds)
-    .where(inArray(platformTmdbIds.platformId, platformIds))
-    .all();
+    .where(inArray(platformTmdbIds.platformId, platformIds));
 
   const map = new Map<string, number[]>();
   for (const row of rows) {

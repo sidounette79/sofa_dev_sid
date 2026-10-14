@@ -35,7 +35,7 @@ function getErrorMessages(
   return {
     network_unreachable: t`Could not reach the server. Check your connection and the URL.`,
     timeout: t`Connection timed out. The server might be down or unreachable.`,
-    not_sofa_server: t`This doesn't appear to be a Sofa server. Double-check the URL.`,
+    not_patoune_server: t`This doesn't appear to be a Patoune TV server. Double-check the URL.`,
     server_unhealthy: t`Server found but reporting an issue. Try again in a moment.`,
     invalid_url: t`That URL doesn't look right. Include the full server address.`,
   };
@@ -128,8 +128,8 @@ export default function ServerUrlScreen() {
 
   return (
     <AuthScreen
-      title="Sofa"
-      subtitle={t`Enter your Sofa server URL to get started`}
+      title="Patoune TV"
+      subtitle={t`Enter your Patoune TV server URL to get started`}
       logoStyle={iconAnimatedStyle}
     >
       <Animated.View entering={FadeInDown.duration(300).delay(200)}>
@@ -137,7 +137,7 @@ export default function ServerUrlScreen() {
           ref={inputRef}
           value={url}
           accessibilityLabel={t`Server URL`}
-          accessibilityHint={t`Enter the full URL for your Sofa server`}
+          accessibilityHint={t`Enter the full URL for your Patoune TV server`}
           onChangeText={handleChangeText}
           placeholder="https://sofa.example.com"
           placeholderTextColorClassName="accent-muted-foreground/50"

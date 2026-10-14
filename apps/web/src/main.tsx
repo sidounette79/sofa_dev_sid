@@ -7,6 +7,13 @@ import { orpc, queryClient } from "@/lib/orpc/client";
 
 import { routeTree } from "./routeTree.gen";
 
+// Registered unconditionally on boot (cheap, standard PWA practice) — actual
+// permission/subscription only happens when she opts in from Settings →
+// Notifications.
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("/sw.js").catch(() => undefined);
+}
+
 const router = createRouter({
   routeTree,
   defaultPreload: "intent",

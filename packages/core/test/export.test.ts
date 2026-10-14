@@ -13,13 +13,15 @@ import {
 
 import { generateUserExport } from "../src/export";
 
-beforeEach(() => clearAllTables());
+beforeEach(async () => {
+  await clearAllTables();
+});
 
 describe("generateUserExport", () => {
-  test("exports empty data for user with no tracking", () => {
-    insertUser("user-1");
+  test("exports empty data for user with no tracking", async () => {
+    await insertUser("user-1");
 
-    const result = generateUserExport("user-1", { name: "Test", email: "test@example.com" });
+    const result = await generateUserExport("user-1", { name: "Test", email: "test@example.com" });
 
     expect(result.version).toBe(1);
     expect(result.user).toEqual({ name: "Test", email: "test@example.com" });
@@ -30,23 +32,23 @@ describe("generateUserExport", () => {
     expect(result.exportedAt).toBeTruthy();
   });
 
-  test("exports library statuses", () => {
-    insertUser("user-1");
-    insertTitle({
+  test("exports library statuses", async () => {
+    await insertUser("user-1");
+    await insertTitle({
       id: "t1",
       tmdbId: 550,
       type: "movie",
       title: "Fight Club",
       releaseDate: "1999-10-15",
     });
-    insertTitle({ id: "t2", tmdbId: 1396, type: "tv", title: "Breaking Bad" });
-    insertTitle({ id: "t3", tmdbId: 100, type: "movie", title: "Watchlisted" });
+    await insertTitle({ id: "t2", tmdbId: 1396, type: "tv", title: "Breaking Bad" });
+    await insertTitle({ id: "t3", tmdbId: 100, type: "movie", title: "Watchlisted" });
 
-    insertStatus("user-1", "t1", "completed");
-    insertStatus("user-1", "t2", "in_progress");
-    insertStatus("user-1", "t3", "watchlist");
+    await insertStatus("user-1", "t1", "completed");
+    await insertStatus("user-1", "t2", "in_progress");
+    await insertStatus("user-1", "t3", "watchlist");
 
-    const result = generateUserExport("user-1", { name: "Test", email: "t@t.com" });
+    const result = await generateUserExport("user-1", { name: "Test", email: "t@t.com" });
 
     expect(result.library).toHaveLength(3);
 
@@ -61,9 +63,9 @@ describe("generateUserExport", () => {
     expect(bb?.type).toBe("tv");
   });
 
-  test("exports movie watches", () => {
-    insertUser("user-1");
-    insertTitle({
+  test("exports movie watches", async () => {
+    await insertUser("user-1");
+    await insertTitle({
       id: "t1",
       tmdbId: 550,
       type: "movie",
@@ -72,9 +74,9 @@ describe("generateUserExport", () => {
     });
 
     const watchedAt = new Date("2025-06-15T20:00:00.000Z");
-    insertMovieWatch("user-1", "t1", watchedAt);
+    await insertMovieWatch("user-1", "t1", watchedAt);
 
-    const result = generateUserExport("user-1", { name: "Test", email: "t@t.com" });
+    const result = await generateUserExport("user-1", { name: "Test", email: "t@t.com" });
 
     expect(result.movieWatches).toHaveLength(1);
     expect(result.movieWatches[0].tmdbId).toBe(550);
@@ -83,14 +85,14 @@ describe("generateUserExport", () => {
     expect(result.movieWatches[0].watchedAt).toBe(watchedAt.toISOString());
   });
 
-  test("exports episode watches with show context", () => {
-    insertUser("user-1");
-    const { episodeIds } = insertTvShow("tv-1", 1396, 1, 2, { title: "Breaking Bad" });
+  test("exports episode watches with show context", async () => {
+    await insertUser("user-1");
+    const { episodeIds } = await insertTvShow("tv-1", 1396, 1, 2, { title: "Breaking Bad" });
 
     const watchedAt = new Date("2025-02-01T20:00:00.000Z");
-    insertEpisodeWatch("user-1", episodeIds[0], watchedAt);
+    await insertEpisodeWatch("user-1", episodeIds[0], watchedAt);
 
-    const result = generateUserExport("user-1", { name: "Test", email: "t@t.com" });
+    const result = await generateUserExport("user-1", { name: "Test", email: "t@t.com" });
 
     expect(result.episodeWatches).toHaveLength(1);
     expect(result.episodeWatches[0].showTmdbId).toBe(1396);
@@ -101,18 +103,18 @@ describe("generateUserExport", () => {
     expect(result.episodeWatches[0].watchedAt).toBe(watchedAt.toISOString());
   });
 
-  test("exports ratings", () => {
-    insertUser("user-1");
-    insertTitle({
+  test("exports ratings", async () => {
+    await insertUser("user-1");
+    await insertTitle({
       id: "t1",
       tmdbId: 550,
       type: "movie",
       title: "Fight Club",
       releaseDate: "1999-10-15",
     });
-    insertRating("user-1", "t1", 5);
+    await insertRating("user-1", "t1", 5);
 
-    const result = generateUserExport("user-1", { name: "Test", email: "t@t.com" });
+    const result = await generateUserExport("user-1", { name: "Test", email: "t@t.com" });
 
     expect(result.ratings).toHaveLength(1);
     expect(result.ratings[0].tmdbId).toBe(550);
@@ -120,21 +122,21 @@ describe("generateUserExport", () => {
     expect(result.ratings[0].rating).toBe(5);
   });
 
-  test("does not include other users data", () => {
-    insertUser("user-1");
-    insertUser("user-2");
-    insertTitle({ id: "t1", tmdbId: 550, type: "movie", title: "Fight Club" });
-    insertTitle({ id: "t2", tmdbId: 100, type: "movie", title: "Other Movie" });
+  test("does not include other users data", async () => {
+    await insertUser("user-1");
+    await insertUser("user-2");
+    await insertTitle({ id: "t1", tmdbId: 550, type: "movie", title: "Fight Club" });
+    await insertTitle({ id: "t2", tmdbId: 100, type: "movie", title: "Other Movie" });
 
-    insertStatus("user-1", "t1", "completed");
-    insertMovieWatch("user-1", "t1");
-    insertRating("user-1", "t1", 5);
+    await insertStatus("user-1", "t1", "completed");
+    await insertMovieWatch("user-1", "t1");
+    await insertRating("user-1", "t1", 5);
 
-    insertStatus("user-2", "t2", "watchlist");
-    insertMovieWatch("user-2", "t2");
-    insertRating("user-2", "t2", 3);
+    await insertStatus("user-2", "t2", "watchlist");
+    await insertMovieWatch("user-2", "t2");
+    await insertRating("user-2", "t2", 3);
 
-    const result = generateUserExport("user-1", { name: "Test", email: "t@t.com" });
+    const result = await generateUserExport("user-1", { name: "Test", email: "t@t.com" });
 
     expect(result.library).toHaveLength(1);
     expect(result.library[0].tmdbId).toBe(550);

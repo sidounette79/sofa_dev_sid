@@ -30,7 +30,7 @@ export type ValidationResult =
 export type ValidationError =
   | "network_unreachable"
   | "timeout"
-  | "not_sofa_server"
+  | "not_patoune_server"
   | "server_unhealthy"
   | "invalid_url";
 
@@ -181,17 +181,17 @@ export async function validateServerUrl(url: string): Promise<ValidationResult> 
     try {
       const data = await response.json();
       if (!data || typeof data !== "object" || !("status" in data)) {
-        return { status: "error", error: "not_sofa_server" };
+        return { status: "error", error: "not_patoune_server" };
       }
 
       const instanceId = typeof data.instanceId === "string" ? data.instanceId : null;
       if (!instanceId) {
-        return { status: "error", error: "not_sofa_server" };
+        return { status: "error", error: "not_patoune_server" };
       }
 
       return { status: "success", instanceId };
     } catch {
-      return { status: "error", error: "not_sofa_server" };
+      return { status: "error", error: "not_patoune_server" };
     }
   } catch (err) {
     if (err instanceof Error && (err.name === "TimeoutError" || err.name === "AbortError")) {

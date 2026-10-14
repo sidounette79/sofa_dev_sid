@@ -129,7 +129,7 @@ export const createJob = os.imports.createJob.use(authed).handler(async ({ input
   const PENDING_STALE_MS = 5 * 60 * 1000; // 5 minutes
   const RUNNING_STALE_MS = 30 * 60 * 1000; // 30 minutes
   const now = Date.now();
-  const existing = getActiveImportJobForUser(context.user.id);
+  const [existing] = await getActiveImportJobForUser(context.user.id);
   if (existing) {
     const isPending = existing.status === "pending";
     const isRunning = existing.status === "running";
@@ -139,7 +139,7 @@ export const createJob = os.imports.createJob.use(authed).handler(async ({ input
         : now - existing.createdAt.getTime();
     const isStale = (isPending && age > PENDING_STALE_MS) || (isRunning && age > RUNNING_STALE_MS);
     if (isStale) {
-      updateImportJobProgress(existing.id, {
+      await updateImportJobProgress(existing.id, {
         status: "cancelled",
         finishedAt: new Date(),
         currentMessage: "Import timed out (stale job auto-cancelled)",
@@ -155,7 +155,7 @@ export const createJob = os.imports.createJob.use(authed).handler(async ({ input
 
   let job;
   try {
-    job = insertImportJob({
+    [job] = await insertImportJob({
       userId: context.user.id,
       source: data.source,
       status: "pending",
@@ -166,13 +166,16 @@ export const createJob = os.imports.createJob.use(authed).handler(async ({ input
       createdAt: new Date(),
     });
   } catch (err) {
-    if (err instanceof Error && "code" in err && err.code === "SQLITE_CONSTRAINT_UNIQUE") {
+    if (err instanceof Error && "code" in err && err.code === "23505") {
       throw new ORPCError("CONFLICT", {
         message: "An import is already in progress",
         data: { code: AppErrorCode.IMPORT_ALREADY_RUNNING },
       });
     }
     throw err;
+  }
+  if (!job) {
+    throw new ORPCError("INTERNAL_SERVER_ERROR", { message: "Failed to create import job" });
   }
 
   // Fire-and-forget processing
@@ -187,15 +190,15 @@ export const getJob = os.imports.getJob.use(authed).handler(({ input, context })
   return readImportJob(input.id, context.user.id);
 });
 
-export const cancelJob = os.imports.cancelJob.use(authed).handler(({ input, context }) => {
-  const job = readImportJob(input.id, context.user.id);
+export const cancelJob = os.imports.cancelJob.use(authed).handler(async ({ input, context }) => {
+  const job = await readImportJob(input.id, context.user.id);
   if (job.status !== "pending" && job.status !== "running") {
     throw new ORPCError("BAD_REQUEST", {
       message: "Can only cancel pending or running jobs",
       data: { code: AppErrorCode.IMPORT_CANNOT_CANCEL },
     });
   }
-  updateImportJobProgress(input.id, { status: "cancelled" });
+  await updateImportJobProgress(input.id, { status: "cancelled" });
   return readImportJob(input.id, context.user.id);
 });
 
@@ -203,7 +206,7 @@ export const jobEvents = os.imports.jobEvents.use(authed).handler(async function
   input,
   context,
 }) {
-  readImportJob(input.id, context.user.id);
+  await readImportJob(input.id, context.user.id);
 
   const userId = context.user.id;
   const current = activeSSEConnections.get(userId) ?? 0;
@@ -220,7 +223,7 @@ export const jobEvents = os.imports.jobEvents.use(authed).handler(async function
     const startedAt = Date.now();
 
     while (true) {
-      const job = readImportJob(input.id, context.user.id);
+      const job = await readImportJob(input.id, context.user.id);
       const isTerminal =
         job.status === "success" || job.status === "error" || job.status === "cancelled";
 

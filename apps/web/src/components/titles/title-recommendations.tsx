@@ -57,6 +57,8 @@ export function TitleRecommendations({ titleId }: { titleId: string }) {
               releaseDate={rec.releaseDate ?? rec.firstAirDate}
               voteAverage={rec.voteAverage}
               userStatus={data.userStatuses[rec.id]}
+              embyStatus={rec.embyStatus}
+              requestedAt={rec.requestedAt}
             />
           </div>
         ))}

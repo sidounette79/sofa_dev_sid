@@ -12,8 +12,8 @@ let nextBuffer: Buffer | null = TINY_PNG;
 
 import { generateEpisodeThumbHash, generateThumbHash } from "../src/thumbhash";
 
-beforeEach(() => {
-  clearAllTables();
+beforeEach(async () => {
+  await clearAllTables();
   process.env.IMAGE_CACHE_ENABLED = "false";
   nextBuffer = TINY_PNG;
   vi.spyOn(globalThis, "fetch").mockImplementation((async (
@@ -43,23 +43,20 @@ describe("thumbhash generation", () => {
   });
 
   test("clears a stale episode thumbhash when regeneration fails", async () => {
-    testDb.insert(titles).values({ id: "tv-1", tmdbId: 100, type: "tv", title: "Show" }).run();
-    testDb.insert(seasons).values({ id: "season-1", titleId: "tv-1", seasonNumber: 1 }).run();
-    testDb
-      .insert(episodes)
-      .values({
-        id: "ep-1",
-        seasonId: "season-1",
-        episodeNumber: 1,
-        stillPath: "/old-still.png",
-        stillThumbHash: "stale-hash",
-      })
-      .run();
+    await testDb.insert(titles).values({ id: "tv-1", tmdbId: 100, type: "tv", title: "Show" });
+    await testDb.insert(seasons).values({ id: "season-1", titleId: "tv-1", seasonNumber: 1 });
+    await testDb.insert(episodes).values({
+      id: "ep-1",
+      seasonId: "season-1",
+      episodeNumber: 1,
+      stillPath: "/old-still.png",
+      stillThumbHash: "stale-hash",
+    });
 
     nextBuffer = null;
     const hash = await generateEpisodeThumbHash("ep-1", "/new-still.png");
 
-    const episode = testDb.select().from(episodes).where(eq(episodes.id, "ep-1")).get();
+    const [episode] = await testDb.select().from(episodes).where(eq(episodes.id, "ep-1"));
 
     expect(hash).toBeNull();
     expect(episode?.stillThumbHash).toBeNull();

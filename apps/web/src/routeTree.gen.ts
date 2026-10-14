@@ -16,7 +16,9 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthRegisterRouteImport } from './routes/_auth/register'
 import { Route as AuthLoginRouteImport } from './routes/_auth/login'
 import { Route as AppUpcomingRouteImport } from './routes/_app/upcoming'
+import { Route as AppStatisticsRouteImport } from './routes/_app/statistics'
 import { Route as AppSettingsRouteImport } from './routes/_app/settings'
+import { Route as AppSearchRouteImport } from './routes/_app/search'
 import { Route as AppOnboardingRouteImport } from './routes/_app/onboarding'
 import { Route as AppLibraryRouteImport } from './routes/_app/library'
 import { Route as AppExploreRouteImport } from './routes/_app/explore'
@@ -57,9 +59,19 @@ const AppUpcomingRoute = AppUpcomingRouteImport.update({
   path: '/upcoming',
   getParentRoute: () => AppRoute,
 } as any)
+const AppStatisticsRoute = AppStatisticsRouteImport.update({
+  id: '/statistics',
+  path: '/statistics',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppSettingsRoute = AppSettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppSearchRoute = AppSearchRouteImport.update({
+  id: '/search',
+  path: '/search',
   getParentRoute: () => AppRoute,
 } as any)
 const AppOnboardingRoute = AppOnboardingRouteImport.update({
@@ -100,7 +112,9 @@ export interface FileRoutesByFullPath {
   '/explore': typeof AppExploreRoute
   '/library': typeof AppLibraryRoute
   '/onboarding': typeof AppOnboardingRoute
+  '/search': typeof AppSearchRoute
   '/settings': typeof AppSettingsRoute
+  '/statistics': typeof AppStatisticsRoute
   '/upcoming': typeof AppUpcomingRoute
   '/login': typeof AuthLoginRoute
   '/register': typeof AuthRegisterRoute
@@ -114,7 +128,9 @@ export interface FileRoutesByTo {
   '/explore': typeof AppExploreRoute
   '/library': typeof AppLibraryRoute
   '/onboarding': typeof AppOnboardingRoute
+  '/search': typeof AppSearchRoute
   '/settings': typeof AppSettingsRoute
+  '/statistics': typeof AppStatisticsRoute
   '/upcoming': typeof AppUpcomingRoute
   '/login': typeof AuthLoginRoute
   '/register': typeof AuthRegisterRoute
@@ -131,7 +147,9 @@ export interface FileRoutesById {
   '/_app/explore': typeof AppExploreRoute
   '/_app/library': typeof AppLibraryRoute
   '/_app/onboarding': typeof AppOnboardingRoute
+  '/_app/search': typeof AppSearchRoute
   '/_app/settings': typeof AppSettingsRoute
+  '/_app/statistics': typeof AppStatisticsRoute
   '/_app/upcoming': typeof AppUpcomingRoute
   '/_auth/login': typeof AuthLoginRoute
   '/_auth/register': typeof AuthRegisterRoute
@@ -147,7 +165,9 @@ export interface FileRouteTypes {
     | '/explore'
     | '/library'
     | '/onboarding'
+    | '/search'
     | '/settings'
+    | '/statistics'
     | '/upcoming'
     | '/login'
     | '/register'
@@ -161,7 +181,9 @@ export interface FileRouteTypes {
     | '/explore'
     | '/library'
     | '/onboarding'
+    | '/search'
     | '/settings'
+    | '/statistics'
     | '/upcoming'
     | '/login'
     | '/register'
@@ -177,7 +199,9 @@ export interface FileRouteTypes {
     | '/_app/explore'
     | '/_app/library'
     | '/_app/onboarding'
+    | '/_app/search'
     | '/_app/settings'
+    | '/_app/statistics'
     | '/_app/upcoming'
     | '/_auth/login'
     | '/_auth/register'
@@ -243,11 +267,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppUpcomingRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/statistics': {
+      id: '/_app/statistics'
+      path: '/statistics'
+      fullPath: '/statistics'
+      preLoaderRoute: typeof AppStatisticsRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/settings': {
       id: '/_app/settings'
       path: '/settings'
       fullPath: '/settings'
       preLoaderRoute: typeof AppSettingsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/search': {
+      id: '/_app/search'
+      path: '/search'
+      fullPath: '/search'
+      preLoaderRoute: typeof AppSearchRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/onboarding': {
@@ -300,7 +338,9 @@ interface AppRouteChildren {
   AppExploreRoute: typeof AppExploreRoute
   AppLibraryRoute: typeof AppLibraryRoute
   AppOnboardingRoute: typeof AppOnboardingRoute
+  AppSearchRoute: typeof AppSearchRoute
   AppSettingsRoute: typeof AppSettingsRoute
+  AppStatisticsRoute: typeof AppStatisticsRoute
   AppUpcomingRoute: typeof AppUpcomingRoute
   AppPeopleIdRoute: typeof AppPeopleIdRoute
   AppTitlesIdRoute: typeof AppTitlesIdRoute
@@ -311,7 +351,9 @@ const AppRouteChildren: AppRouteChildren = {
   AppExploreRoute: AppExploreRoute,
   AppLibraryRoute: AppLibraryRoute,
   AppOnboardingRoute: AppOnboardingRoute,
+  AppSearchRoute: AppSearchRoute,
   AppSettingsRoute: AppSettingsRoute,
+  AppStatisticsRoute: AppStatisticsRoute,
   AppUpcomingRoute: AppUpcomingRoute,
   AppPeopleIdRoute: AppPeopleIdRoute,
   AppTitlesIdRoute: AppTitlesIdRoute,

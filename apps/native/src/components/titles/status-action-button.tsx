@@ -4,6 +4,7 @@ import {
   IconCheck,
   IconPlayerPlayFilled,
   IconPlus,
+  IconTrash,
 } from "@tabler/icons-react-native";
 import { Alert, Pressable } from "react-native";
 import { useCSSVariable } from "uniwind";
@@ -12,13 +13,14 @@ import { ScaledIcon } from "@/components/ui/scaled-icon";
 import { Text } from "@/components/ui/text";
 import * as Haptics from "@/utils/haptics";
 
-type TitleStatus = "in_watchlist" | "watching" | "caught_up" | "completed";
+type TitleStatus = "in_watchlist" | "watching" | "caught_up" | "completed" | "dropped";
 
 const STATUS_ICONS = {
   in_watchlist: IconBookmarkFilled,
   watching: IconPlayerPlayFilled,
   caught_up: IconCheck,
   completed: IconCheck,
+  dropped: IconTrash,
 } as const;
 
 const STATUS_STYLES = {
@@ -38,6 +40,10 @@ const STATUS_STYLES = {
     bgClass: "bg-status-completed/10 border-status-completed/20",
     textClass: "text-status-completed",
   },
+  dropped: {
+    bgClass: "bg-destructive/10 border-destructive/20",
+    textClass: "text-destructive",
+  },
 } as const;
 
 function StatusLabel({ status }: { status: TitleStatus }) {
@@ -50,6 +56,8 @@ function StatusLabel({ status }: { status: TitleStatus }) {
       return <Trans>Caught Up</Trans>;
     case "completed":
       return <Trans>Completed</Trans>;
+    case "dropped":
+      return <Trans>Dropped</Trans>;
   }
 }
 
@@ -63,10 +71,11 @@ export function StatusActionButton({
   isPending: boolean;
 }) {
   const { t } = useLingui();
-  const [titleAccent, completedColor] = useCSSVariable([
+  const [titleAccent, completedColor, destructiveColor] = useCSSVariable([
     "--color-title-accent",
     "--color-status-completed",
-  ]) as [string, string];
+    "--color-destructive",
+  ]) as [string, string, string];
 
   if (!currentStatus) {
     return (
@@ -91,7 +100,11 @@ export function StatusActionButton({
   const StatusIcon = STATUS_ICONS[currentStatus];
   const styles = STATUS_STYLES[currentStatus];
   const iconColor =
-    currentStatus === "completed" || currentStatus === "caught_up" ? completedColor : titleAccent;
+    currentStatus === "completed" || currentStatus === "caught_up"
+      ? completedColor
+      : currentStatus === "dropped"
+        ? destructiveColor
+        : titleAccent;
 
   return (
     <Pressable

@@ -14,7 +14,7 @@ export function getRecentMovieWatch(userId: string, titleId: string, since: Date
         gte(userMovieWatches.watchedAt, since),
       ),
     )
-    .get();
+    ;
 }
 
 export function getRecentEpisodeWatch(userId: string, episodeId: string, since: Date) {
@@ -28,26 +28,26 @@ export function getRecentEpisodeWatch(userId: string, episodeId: string, since: 
         gte(userEpisodeWatches.watchedAt, since),
       ),
     )
-    .get();
+    ;
 }
 
-export function insertIntegrationEventTransaction(
+export async function insertIntegrationEventTransaction(
   values: typeof integrationEvents.$inferInsert,
   connectionId: string,
-): void {
-  db.transaction((tx) => {
-    tx.insert(integrationEvents).values(values).run();
-    tx.update(integrations)
+): Promise<void> {
+  await db.transaction(async (tx) => {
+    await tx.insert(integrationEvents).values(values);
+    await tx
+      .update(integrations)
       .set({ lastEventAt: new Date() })
-      .where(eq(integrations.id, connectionId))
-      .run();
+      .where(eq(integrations.id, connectionId));
   });
 }
 
-export function deleteOldIntegrationEvents(beforeDate: Date): number {
-  return db
+export async function deleteOldIntegrationEvents(beforeDate: Date): Promise<number> {
+  const deleted = await db
     .delete(integrationEvents)
     .where(lt(integrationEvents.receivedAt, beforeDate))
-    .returning({ id: integrationEvents.id })
-    .all().length;
+    .returning({ id: integrationEvents.id });
+  return deleted.length;
 }

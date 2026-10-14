@@ -17,12 +17,15 @@ import {
   getSeasonsForTitle,
   getTitleByTmdbIdAndType,
   getTitleGenres,
+  countEpisodesForTitle,
   getTitlesNeedingPosterHash,
   hasRecommendationsForTitle,
   hasSeasonForTitle,
   insertTitleReturning,
+  markTvdbTranslated,
   nullifyEpisodeThumbHash,
   nullifySeasonThumbHash,
+  setEpisodeFrenchTranslations,
   updateTitleFields,
   updateTrailerKey,
   upsertGenresTransaction,
@@ -43,10 +46,18 @@ import {
   getVideos,
 } from "@sofa/tmdb/client";
 import { tmdbImageUrl } from "@sofa/tmdb/image";
+import {
+  getSeriesEpisodesTranslated,
+  getSeriesTranslation,
+  isTvdbConfigured,
+} from "@sofa/tvdb/client";
 
 import { refreshAvailability } from "./availability";
 import { extractAndStoreColors, parseColorPalette } from "./colors";
 import { getCastForTitle, refreshCredits } from "./credits";
+import { deriveEmbyStatus } from "@sofa/db/queries/emby-library";
+
+import { getEmbyPublicUrl, getEmbyServerId, resolvePosterUrl } from "./emby";
 import {
   cacheEpisodeStills,
   cacheImagesForTitle,
@@ -54,6 +65,7 @@ import {
   imageCacheEnabled,
   loadImageBuffer,
 } from "./image-cache";
+import { notifySeriesStatusChanged } from "./push";
 import { generateProviderUrl } from "./providers";
 import {
   generateEpisodeThumbHash,
@@ -85,7 +97,7 @@ async function mapWithConcurrency<T, R>(
   return results;
 }
 
-export function updateTitleWithArtInvalidation(
+export async function updateTitleWithArtInvalidation(
   title: Pick<
     typeof titles.$inferSelect,
     "id" | "posterPath" | "backdropPath" | "posterThumbHash" | "backdropThumbHash" | "colorPalette"
@@ -102,7 +114,7 @@ export function updateTitleWithArtInvalidation(
   const posterPathChanged = nextPosterPath !== title.posterPath;
   const backdropPathChanged = nextBackdropPath !== title.backdropPath;
 
-  updateTitleFields(title.id, {
+  await updateTitleFields(title.id, {
     ...values,
     ...(posterPathChanged
       ? {
@@ -178,13 +190,13 @@ export function getOrFetchTitleByTmdbId(tmdbId: number, type: "movie" | "tv"): I
 async function _getOrFetchTitleByTmdbId(tmdbId: number, type: "movie" | "tv") {
   log.debug(`Importing ${type} TMDB ${tmdbId}`);
 
-  const existing = getTitleByTmdbIdAndType(tmdbId, type);
+  const [existing] = await getTitleByTmdbIdAndType(tmdbId, type);
   if (existing) {
     // Shell title — upgrade to full import
     if (!existing.lastFetchedAt) {
       if (type === "movie") {
         const movie = await getMovieDetails(tmdbId);
-        updateTitleWithArtInvalidation(existing, {
+        await updateTitleWithArtInvalidation(existing, {
           title: movie.title ?? existing.title,
           originalTitle: movie.original_title,
           overview: movie.overview,
@@ -201,14 +213,15 @@ async function _getOrFetchTitleByTmdbId(tmdbId: number, type: "movie" | "tv") {
           runtimeMinutes: movie.runtime ?? null,
           lastFetchedAt: new Date(),
         });
-        upsertGenresTransaction(existing.id, movie.genres ?? []);
+        await upsertGenresTransaction(existing.id, movie.genres ?? []);
         fireAndForgetEnrichment(existing.id, movie.poster_path, movie.backdrop_path, "movie");
-        return getTitleById(existing.id);
+        const [t] = await getTitleById(existing.id);
+        return t;
       }
 
       // TV shell — fetch details + children
       const show = await getTvDetails(tmdbId);
-      updateTitleWithArtInvalidation(existing, {
+      await updateTitleWithArtInvalidation(existing, {
         overview: show.overview,
         posterPath: show.poster_path,
         backdropPath: show.backdrop_path,
@@ -219,20 +232,22 @@ async function _getOrFetchTitleByTmdbId(tmdbId: number, type: "movie" | "tv") {
         originalLanguage: show.original_language ?? null,
         lastFetchedAt: new Date(),
       });
-      upsertGenresTransaction(existing.id, show.genres ?? []);
+      await upsertGenresTransaction(existing.id, show.genres ?? []);
       await refreshTvChildren(existing.id, tmdbId, show.number_of_seasons);
       fireAndForgetEnrichment(existing.id, show.poster_path, show.backdrop_path, "tv");
-      return getTitleById(existing.id);
+      const [t] = await getTitleById(existing.id);
+      return t;
     }
 
     // For fully-fetched TV shows, check if seasons are missing (e.g. prior failure)
     if (existing.type === "tv") {
-      if (!hasSeasonForTitle(existing.id)) {
+      if (!(await hasSeasonForTitle(existing.id))) {
         const show = await getTvDetails(tmdbId);
-        upsertGenresTransaction(existing.id, show.genres ?? []);
+        await upsertGenresTransaction(existing.id, show.genres ?? []);
         await refreshTvChildren(existing.id, tmdbId, show.number_of_seasons);
         fireAndForgetEnrichment(existing.id, show.poster_path, show.backdrop_path, "tv");
-        return getTitleById(existing.id);
+        const [t] = await getTitleById(existing.id);
+        return t;
       }
     }
 
@@ -243,7 +258,7 @@ async function _getOrFetchTitleByTmdbId(tmdbId: number, type: "movie" | "tv") {
 
   if (type === "movie") {
     const movie = await getMovieDetails(tmdbId);
-    const row = insertTitleReturning({
+    const [row] = await insertTitleReturning({
       tmdbId: movie.id,
       type: "movie",
       title: movie.title ?? "",
@@ -263,14 +278,14 @@ async function _getOrFetchTitleByTmdbId(tmdbId: number, type: "movie" | "tv") {
       lastFetchedAt: now,
     });
     if (!row) return undefined;
-    upsertGenresTransaction(row.id, movie.genres ?? []);
+    await upsertGenresTransaction(row.id, movie.genres ?? []);
     fireAndForgetEnrichment(row.id, movie.poster_path, movie.backdrop_path, "movie");
     log.info(`Imported movie "${movie.title}" (TMDB ${tmdbId})`);
     return row;
   }
 
   const show = await getTvDetails(tmdbId);
-  const row = insertTitleReturning({
+  const [row] = await insertTitleReturning({
     tmdbId: show.id,
     tvdbId: show.external_ids?.tvdb_id ?? null,
     type: "tv",
@@ -290,7 +305,7 @@ async function _getOrFetchTitleByTmdbId(tmdbId: number, type: "movie" | "tv") {
     lastFetchedAt: now,
   });
   if (!row) return undefined;
-  upsertGenresTransaction(row.id, show.genres ?? []);
+  await upsertGenresTransaction(row.id, show.genres ?? []);
 
   await refreshTvChildren(row.id, tmdbId, show.number_of_seasons);
   fireAndForgetEnrichment(row.id, show.poster_path, show.backdrop_path, "tv");
@@ -299,14 +314,14 @@ async function _getOrFetchTitleByTmdbId(tmdbId: number, type: "movie" | "tv") {
 }
 
 export async function refreshTitle(titleId: string) {
-  const title = getTitleById(titleId);
+  const [title] = await getTitleById(titleId);
   if (!title) return null;
 
   const now = new Date();
 
   if (title.type === "movie") {
     const movie = await getMovieDetails(title.tmdbId);
-    updateTitleWithArtInvalidation(title, {
+    await updateTitleWithArtInvalidation(title, {
       title: movie.title,
       originalTitle: movie.original_title,
       overview: movie.overview,
@@ -323,10 +338,11 @@ export async function refreshTitle(titleId: string) {
       runtimeMinutes: movie.runtime ?? null,
       lastFetchedAt: now,
     });
-    upsertGenresTransaction(titleId, movie.genres ?? []);
+    await upsertGenresTransaction(titleId, movie.genres ?? []);
   } else {
     const show = await getTvDetails(title.tmdbId);
-    updateTitleWithArtInvalidation(title, {
+    const previousStatus = title.status;
+    await updateTitleWithArtInvalidation(title, {
       title: show.name,
       originalTitle: show.original_name,
       overview: show.overview,
@@ -343,11 +359,20 @@ export async function refreshTitle(titleId: string) {
       originalLanguage: show.original_language ?? null,
       lastFetchedAt: now,
     });
-    upsertGenresTransaction(titleId, show.genres ?? []);
+    await upsertGenresTransaction(titleId, show.genres ?? []);
     await refreshTvChildren(titleId, title.tmdbId, show.number_of_seasons);
+
+    // Skip the very first fetch (previousStatus null) — everything "changes"
+    // from unknown to something, that's not a real transition worth paging
+    // her about.
+    if (previousStatus && show.status && show.status !== previousStatus) {
+      notifySeriesStatusChanged(titleId, show.name ?? title.title, previousStatus, show.status).catch((err) =>
+        log.debug("Status-change push notification failed:", err),
+      );
+    }
   }
 
-  const updated = getTitleById(titleId);
+  const [updated] = await getTitleById(titleId);
   if (updated) {
     syncTitleArt(
       updated.id,
@@ -382,9 +407,9 @@ export async function refreshTvChildren(titleId: string, tmdbId: number, numberO
 
     const seasonData = result.value;
 
-    const existingSeason = getExistingSeasonInfo(titleId, sn);
+    const [existingSeason] = await getExistingSeasonInfo(titleId, sn);
 
-    const seasonRow = upsertSeasonReturning({
+    const [seasonRow] = await upsertSeasonReturning({
       titleId,
       seasonNumber: seasonData.season_number,
       name: seasonData.name ?? null,
@@ -393,13 +418,14 @@ export async function refreshTvChildren(titleId: string, tmdbId: number, numberO
       airDate: seasonData.air_date ?? null,
       lastFetchedAt: now,
     });
+    if (!seasonRow) continue;
 
     // Snapshot existing episode still paths before upsert so we can detect changes
-    const oldEpStills = getOldEpisodeStills(existingSeason?.id ?? seasonRow.id);
+    const oldEpStills = await getOldEpisodeStills(existingSeason?.id ?? seasonRow.id);
 
     // Batch all episode upserts in a single transaction per season
     const eps = seasonData.episodes ?? [];
-    batchUpsertEpisodes(
+    await batchUpsertEpisodes(
       seasonRow.id,
       eps.map((ep) => ({
         episode_number: ep.episode_number,
@@ -415,14 +441,14 @@ export async function refreshTvChildren(titleId: string, tmdbId: number, numberO
     // Full hash (re)generation is handled by syncTitleArt() after
     // cache warming, so we only need to null out stale values here.
     if ((existingSeason?.posterPath ?? null) !== (seasonData.poster_path ?? null)) {
-      nullifySeasonThumbHash(seasonRow.id);
+      await nullifySeasonThumbHash(seasonRow.id);
       deleteOrphanedImage("posters", existingSeason?.posterPath ?? null);
     }
-    const seasonEps = getSeasonEpisodesWithHashes(seasonRow.id);
+    const seasonEps = await getSeasonEpisodesWithHashes(seasonRow.id);
     for (const ep of seasonEps) {
       const oldStill = oldEpStills.get(ep.episodeNumber);
       if (oldStill !== ep.stillPath) {
-        if (ep.stillThumbHash) nullifyEpisodeThumbHash(ep.id);
+        if (ep.stillThumbHash) await nullifyEpisodeThumbHash(ep.id);
         deleteOrphanedImage("stills", oldStill ?? null);
       }
     }
@@ -430,7 +456,7 @@ export async function refreshTvChildren(titleId: string, tmdbId: number, numberO
 }
 
 export async function refreshRecommendations(titleId: string) {
-  const title = getTitleById(titleId);
+  const [title] = await getTitleById(titleId);
   if (!title) return;
 
   const now = new Date();
@@ -513,7 +539,7 @@ export async function refreshRecommendations(titleId: string) {
     });
   }
 
-  const titleIdMap = upsertRecommendationsTransaction(
+  const titleIdMap = await upsertRecommendationsTransaction(
     titleId,
     uniqueTitles,
     allItems.map((item) => ({
@@ -529,7 +555,7 @@ export async function refreshRecommendations(titleId: string) {
     ...new Set(allItems.map((i) => titleIdMap.get(i.result.id)).filter(Boolean)),
   ] as string[];
   if (recTitleIds.length > 0) {
-    const needingHash = getTitlesNeedingPosterHash(recTitleIds);
+    const needingHash = await getTitlesNeedingPosterHash(recTitleIds);
     for (const t of needingHash) {
       generateTitlePosterThumbHash(t.id, t.posterPath).catch((err) =>
         log.debug("Recommendation poster thumbhash failed:", err),
@@ -539,13 +565,13 @@ export async function refreshRecommendations(titleId: string) {
 }
 
 /** Fetch seasons from the DB, building the Season[] structure. */
-function fetchSeasonsFromDb(titleId: string): Season[] {
-  const seasonRows = getSeasonsForTitle(titleId);
+async function fetchSeasonsFromDb(titleId: string): Promise<Season[]> {
+  const seasonRows = await getSeasonsForTitle(titleId);
 
   if (seasonRows.length === 0) return [];
 
   const seasonIds = seasonRows.map((s) => s.id);
-  const allEps = getEpisodesBySeasonIds(seasonIds);
+  const allEps = await getEpisodesBySeasonIds(seasonIds);
 
   const epsBySeason = new Map<string, Episode[]>();
   for (const ep of allEps) {
@@ -553,8 +579,10 @@ function fetchSeasonsFromDb(titleId: string): Season[] {
     arr.push({
       id: ep.id,
       episodeNumber: ep.episodeNumber,
-      name: ep.name,
-      overview: ep.overview,
+      // French (TVDB) takes priority over the TMDB text when present —
+      // see packages/tvdb and hydrateFrenchEpisodeTranslations().
+      name: ep.nameFr ?? ep.name,
+      overview: ep.overviewFr ?? ep.overview,
       stillPath: tmdbImageUrl(ep.stillPath, "stills"),
       stillThumbHash: ep.stillThumbHash,
       airDate: ep.airDate,
@@ -572,11 +600,78 @@ function fetchSeasonsFromDb(titleId: string): Season[] {
 }
 
 /**
+ * Best-effort backfill of French episode name/overview from TVDB, layered
+ * over the (usually English-only) TMDB text — see packages/tvdb. Runs in
+ * the background like ensureEnriched below: never blocks the current page
+ * load, and only marks the title as translated on success so a transient
+ * failure gets retried on the next view instead of getting stuck untranslated.
+ */
+// Guards against two near-simultaneous requests for the same title (e.g. the
+// route loader and a client refetch) both seeing tvdbTranslatedAt as null
+// and kicking off a duplicate TVDB fetch+write in parallel.
+const tvdbHydrationsInFlight = new Set<string>();
+
+// Daily soaps/talk shows can have thousands of episodes (e.g. "The Bold and
+// the Beautiful" — 8,580 on TVDB). Fetching+parsing that many translations
+// and writing them via bun:sqlite's synchronous driver is a multi-second
+// unyielding block on Sofa's single JS thread (measured: ~12.7s, enough to
+// fail the container health check) — same "unbounded work scales with
+// library size" bug family already hit twice elsewhere in Sofa. These shows
+// get the (cheap, single-call) series overview only; per-episode
+// translation isn't worth the cost here anyway (daily episodes rarely have
+// individually meaningful synopses).
+const EPISODE_HYDRATION_CAP = 1000;
+
+export async function hydrateFrenchEpisodeTranslations(titleId: string, tvdbId: number): Promise<void> {
+  if (!isTvdbConfigured() || tvdbHydrationsInFlight.has(titleId)) return;
+  tvdbHydrationsInFlight.add(titleId);
+  const start = Date.now();
+  try {
+    const seriesTranslation = await getSeriesTranslation(tvdbId, "fra");
+    if (seriesTranslation.overview) {
+      await updateTitleFields(titleId, { overviewFr: seriesTranslation.overview });
+    }
+    const episodeCount = await countEpisodesForTitle(titleId);
+    if (episodeCount > EPISODE_HYDRATION_CAP) {
+      await markTvdbTranslated(titleId);
+      log.info(
+        `Skipped TVDB episode translation for title ${titleId} (tvdbId ${tvdbId}): ${episodeCount} episodes exceeds the ${EPISODE_HYDRATION_CAP} cap`,
+      );
+      return;
+    }
+    const translations = await getSeriesEpisodesTranslated(tvdbId, "fra");
+    if (translations.length > 0) {
+      const seasonRows = await getSeasonsForTitle(titleId);
+      const seasonIdByNumber = new Map(seasonRows.map((s) => [s.seasonNumber, s.id]));
+      const updates = translations
+        .map((t) => {
+          const seasonId = seasonIdByNumber.get(t.seasonNumber);
+          if (!seasonId) return null;
+          return {
+            seasonId,
+            episodeNumber: t.episodeNumber,
+            nameFr: t.name,
+            overviewFr: t.overview,
+          };
+        })
+        .filter((u): u is NonNullable<typeof u> => u !== null);
+      await setEpisodeFrenchTranslations(updates);
+    }
+    await markTvdbTranslated(titleId);
+    log.info(
+      `TVDB hydration done for title ${titleId} (tvdbId ${tvdbId}): ${translations.length} episodes in ${Date.now() - start}ms`,
+    );
+  } finally {
+    tvdbHydrationsInFlight.delete(titleId);
+  }
+}
+
+/**
  * Ensure a TV title is fully hydrated (seasons/episodes fetched from TMDB).
  * Returns the hydrated seasons data.
  */
 export async function ensureTvHydrated(titleId: string): Promise<Season[]> {
-  const title = getTitleById(titleId);
+  const [title] = await getTitleById(titleId);
   if (!title || title.type !== "tv") return [];
 
   const { tmdbId } = title;
@@ -585,7 +680,7 @@ export async function ensureTvHydrated(titleId: string): Promise<Season[]> {
   if (!title.lastFetchedAt) {
     try {
       const show = await getTvDetails(tmdbId);
-      updateTitleWithArtInvalidation(title, {
+      await updateTitleWithArtInvalidation(title, {
         overview: show.overview,
         posterPath: show.poster_path,
         backdropPath: show.backdrop_path,
@@ -595,21 +690,21 @@ export async function ensureTvHydrated(titleId: string): Promise<Season[]> {
         originalLanguage: show.original_language ?? null,
         lastFetchedAt: new Date(),
       });
-      upsertGenresTransaction(titleId, show.genres ?? []);
+      await upsertGenresTransaction(titleId, show.genres ?? []);
       await refreshTvChildren(titleId, tmdbId, show.number_of_seasons);
     } catch (err) {
       log.debug(`Failed to hydrate shell TV title ${titleId}:`, err);
     }
   }
 
-  let result = fetchSeasonsFromDb(titleId);
+  let result = await fetchSeasonsFromDb(titleId);
 
   // Retry hydration when seasons are still missing
   if (result.length === 0) {
     try {
       const show = await getTvDetails(tmdbId);
       await refreshTvChildren(titleId, tmdbId, show.number_of_seasons);
-      result = fetchSeasonsFromDb(titleId);
+      result = await fetchSeasonsFromDb(titleId);
     } catch (err) {
       log.debug(`Failed to backfill missing seasons for title ${titleId}:`, err);
     }
@@ -623,6 +718,24 @@ export async function ensureTvHydrated(titleId: string): Promise<Season[]> {
  * redundant queries — only does lightweight existence checks for data not
  * already loaded (recommendations). Returns true if any work was performed.
  */
+// 21.08: wrapping each fire-and-forget enrichment task with timing at `warn`
+// — investigating a recurring freeze (main JS thread pegged ~100% for
+// 10s-100+s, confirmed via /proc, self-resolving) that direct isolated calls
+// to the "obvious" suspects (library/recommendations queries) never
+// reproduce. These tasks run detached from the request that triggered them
+// (see getOrFetchTitle), so a slow one here wouldn't show up in that
+// request's own timing — only in whatever unlucky *other* request happens
+// to be sharing the single JS thread while it runs.
+function timedTask(label: string, titleName: string, task: Promise<unknown>): Promise<unknown> {
+  const start = performance.now();
+  return task
+    .catch((err) => log.debug(`${label} enrichment failed for "${titleName}":`, err))
+    .finally(() => {
+      const ms = Math.round(performance.now() - start);
+      if (ms > 500) log.warn(`Slow enrichment task [${label}] for "${titleName}": ${ms}ms`);
+    });
+}
+
 async function ensureEnriched(
   titleId: string,
   title: typeof titles.$inferSelect,
@@ -631,26 +744,16 @@ async function ensureEnriched(
   const tasks: Promise<unknown>[] = [];
 
   if (!existing.hasCast) {
-    tasks.push(
-      refreshCredits(titleId).catch((err) => log.debug("Credits enrichment failed:", err)),
-    );
+    tasks.push(timedTask("credits", title.title, refreshCredits(titleId)));
   }
 
   if (!existing.hasAvailability) {
-    tasks.push(
-      refreshAvailability(titleId).catch((err) =>
-        log.debug("Availability enrichment failed:", err),
-      ),
-    );
+    tasks.push(timedTask("availability", title.title, refreshAvailability(titleId)));
   }
 
   // Recommendations are loaded separately (Suspense), so check here
-  if (!hasRecommendationsForTitle(titleId)) {
-    tasks.push(
-      refreshRecommendations(titleId).catch((err) =>
-        log.debug("Recommendations enrichment failed:", err),
-      ),
-    );
+  if (!(await hasRecommendationsForTitle(titleId))) {
+    tasks.push(timedTask("recommendations", title.title, refreshRecommendations(titleId)));
   }
 
   const needsTitleArtSync =
@@ -661,19 +764,16 @@ async function ensureEnriched(
 
   if (needsTitleArtSync) {
     tasks.push(
-      syncTitleArt(
-        titleId,
-        title.posterPath,
-        title.backdropPath,
-        title.type as "movie" | "tv",
-      ).catch((err) => log.debug("Title art enrichment failed:", err)),
+      timedTask(
+        "title-art",
+        title.title,
+        syncTitleArt(titleId, title.posterPath, title.backdropPath, title.type as "movie" | "tv"),
+      ),
     );
   }
 
   if (!title.trailerVideoKey) {
-    tasks.push(
-      refreshTrailer(titleId).catch((err) => log.debug("Trailer enrichment failed:", err)),
-    );
+    tasks.push(timedTask("trailer", title.title, refreshTrailer(titleId)));
   }
 
   if (tasks.length > 0) {
@@ -688,12 +788,12 @@ const STREAM_TYPES = new Set(["flatrate", "free", "ads"]);
 const STREAM_PRIORITY: Record<string, number> = { flatrate: 0, free: 1, ads: 2 };
 const PURCHASE_PRIORITY: Record<string, number> = { rent: 0, buy: 1 };
 
-function readAvailability(
+async function readAvailability(
   titleId: string,
   titleName: string,
   userPlatformIds?: Set<string>,
-): AvailabilityOffer[] {
-  const raw = getAvailabilityOffersForTitle(titleId);
+): Promise<AvailabilityOffer[]> {
+  const raw = await getAvailabilityOffersForTitle(titleId);
 
   // Group by platformId to deduplicate
   const byPlatform = new Map<string, (typeof raw)[number][]>();
@@ -754,15 +854,17 @@ export async function getOrFetchTitle(
   seasons: Season[];
   availability: AvailabilityOffer[];
   cast: CastMember[];
+  embyServerId: string | null;
+  embyUrl: string | null;
 } | null> {
-  let title = getTitleById(id);
+  let [title] = await getTitleById(id);
   if (!title) return null;
 
   // If this is a shell movie title, fetch full details now (movies are fast)
   if (title.type === "movie" && !title.lastFetchedAt) {
     try {
       const movie = await getMovieDetails(title.tmdbId);
-      updateTitleWithArtInvalidation(title, {
+      await updateTitleWithArtInvalidation(title, {
         title: movie.title,
         originalTitle: movie.original_title,
         overview: movie.overview,
@@ -779,8 +881,9 @@ export async function getOrFetchTitle(
         runtimeMinutes: movie.runtime ?? null,
         lastFetchedAt: new Date(),
       });
-      upsertGenresTransaction(id, movie.genres ?? []);
-      title = getTitleById(id) ?? title;
+      await upsertGenresTransaction(id, movie.genres ?? []);
+      const [refetched] = await getTitleById(id);
+      title = refetched ?? title;
     } catch (err) {
       log.debug(`Failed to hydrate shell movie title ${id}:`, err);
     }
@@ -789,34 +892,36 @@ export async function getOrFetchTitle(
   // For TV titles, hydrate seasons inline if needed
   let titleSeasons: Season[] = [];
   if (title.type === "tv") {
-    titleSeasons = title.lastFetchedAt ? fetchSeasonsFromDb(id) : [];
+    titleSeasons = title.lastFetchedAt ? await fetchSeasonsFromDb(id) : [];
     if (titleSeasons.length === 0) {
       titleSeasons = await ensureTvHydrated(id);
+    }
+    if (title.tvdbId && !title.tvdbTranslatedAt) {
+      hydrateFrenchEpisodeTranslations(id, title.tvdbId).catch((err) =>
+        log.warn(`Failed to fetch TVDB French translations for "${title.title}":`, err),
+      );
     }
   }
 
   // Read enrichment data, then backfill anything missing
-  const userPlatformIdSet = userId ? new Set(getUserPlatformIds(userId)) : undefined;
-  let availability = readAvailability(title.id, title.title, userPlatformIdSet);
-  let cast = getCastForTitle(id);
+  const userPlatformIdSet = userId ? new Set(await getUserPlatformIds(userId)) : undefined;
+  const availability = await readAvailability(title.id, title.title, userPlatformIdSet);
+  const cast = await getCastForTitle(id);
 
   if (title.lastFetchedAt) {
-    const enriched = await ensureEnriched(id, title, {
+    // Don't block the response on enrichment (TMDB network calls for
+    // credits/availability/recommendations/art/trailer): return what's
+    // already cached now, and backfill in the background. The next view
+    // of this title will pick up anything that was missing.
+    ensureEnriched(id, title, {
       hasCast: cast.length > 0,
       hasAvailability: availability.length > 0,
-    });
-    if (enriched) {
-      // Re-read only what was missing
-      if (cast.length === 0) cast = getCastForTitle(id);
-      if (availability.length === 0)
-        availability = readAvailability(title.id, title.title, userPlatformIdSet);
-      title = getTitleById(id) ?? title;
-    }
+    }).catch((err) => log.debug(`Background enrichment failed for "${title.title}":`, err));
   }
 
   const palette = parseColorPalette(title.colorPalette);
 
-  const titleGenreRows = getTitleGenres(id);
+  const titleGenreRows = await getTitleGenres(id);
 
   const resolvedTitle: ResolvedTitle = {
     id: title.id,
@@ -824,10 +929,11 @@ export async function getOrFetchTitle(
     type: title.type as "movie" | "tv",
     title: title.title,
     originalTitle: title.originalTitle,
-    overview: title.overview,
+    // French (TVDB) over English (TMDB) — same convention as episode text.
+    overview: title.overviewFr ?? title.overview,
     releaseDate: title.releaseDate,
     firstAirDate: title.firstAirDate,
-    posterPath: tmdbImageUrl(title.posterPath, "posters"),
+    posterPath: resolvePosterUrl(tmdbImageUrl(title.posterPath, "posters"), title.embyItemId),
     posterThumbHash: title.posterThumbHash,
     backdropPath: tmdbImageUrl(title.backdropPath, "backdrops"),
     backdropThumbHash: title.backdropThumbHash,
@@ -843,13 +949,20 @@ export async function getOrFetchTitle(
     colorPalette: palette,
     trailerVideoKey: title.trailerVideoKey,
     genres: titleGenreRows.map((r) => r.name),
+    embyStatus: deriveEmbyStatus(title.inEmbyLibrary, title.embyItemId),
+    embyLibraryName: title.embyLibraryName,
+    embyItemId: title.embyItemId,
   };
+
+  const embyServerId = title.inEmbyLibrary ? await getEmbyServerId() : null;
 
   return {
     title: resolvedTitle,
     seasons: titleSeasons,
     availability,
     cast,
+    embyServerId,
+    embyUrl: getEmbyPublicUrl(),
   };
 }
 
@@ -882,13 +995,13 @@ export function pickBestTrailer(videos: TmdbVideo[]): string | null {
 }
 
 export async function refreshTrailer(titleId: string) {
-  const title = getTitleById(titleId);
+  const [title] = await getTitleById(titleId);
   if (!title) return;
 
   try {
     const response = await getVideos(title.tmdbId, title.type);
     const key = pickBestTrailer(response.results ?? []);
-    updateTrailerKey(titleId, key);
+    await updateTrailerKey(titleId, key);
     log.debug(`Trailer for "${title.title}": ${key ? `YouTube ${key}` : "none found"}`);
   } catch (err) {
     log.debug(`Failed to fetch trailer for title ${titleId}:`, err);
@@ -896,7 +1009,7 @@ export async function refreshTrailer(titleId: string) {
 }
 
 async function generateMissingTvChildThumbHashes(titleId: string) {
-  const titleSeasons = getSeasonsForTitle(titleId);
+  const titleSeasons = await getSeasonsForTitle(titleId);
 
   const hashTasks: Promise<unknown>[] = [];
 
@@ -908,7 +1021,7 @@ async function generateMissingTvChildThumbHashes(titleId: string) {
 
   const seasonIds = titleSeasons.map((s) => s.id);
   if (seasonIds.length > 0) {
-    const epsNeedingHash = getEpisodesNeedingStillHash(seasonIds);
+    const epsNeedingHash = await getEpisodesNeedingStillHash(seasonIds);
     for (const ep of epsNeedingHash) {
       hashTasks.push(generateEpisodeThumbHash(ep.id, ep.stillPath));
     }
@@ -977,8 +1090,8 @@ interface BrowseTitleInput {
  * Inserts shell titles (`lastFetchedAt = null`) for new (tmdbId, type) pairs.
  * Returns a map keyed by `${tmdbId}-${type}` → { id, posterThumbHash }.
  */
-export function ensureBrowseTitlesExist(
+export async function ensureBrowseTitlesExist(
   items: BrowseTitleInput[],
-): Map<string, { id: string; posterThumbHash: string | null }> {
+): Promise<Map<string, { id: string; posterThumbHash: string | null }>> {
   return ensureBrowseTitlesTransaction(items);
 }

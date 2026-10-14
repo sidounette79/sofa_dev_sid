@@ -5,43 +5,40 @@ import { clearAllTables, insertTitle, testDb } from "@sofa/test/db";
 
 import { purgeMetadataCache } from "../src/cache";
 
-beforeEach(() => {
-  clearAllTables();
+beforeEach(async () => {
+  await clearAllTables();
 });
 
 describe("purgeMetadataCache", () => {
-  test("deletes shell titles not in any user library", () => {
+  test("deletes shell titles not in any user library", async () => {
     // Shell title (lastFetchedAt = null, no user status)
-    insertTitle({ id: "shell-1", tmdbId: 100, title: "Shell Movie" });
+    await insertTitle({ id: "shell-1", tmdbId: 100, title: "Shell Movie" });
 
-    const result = purgeMetadataCache();
+    const result = await purgeMetadataCache();
     expect(result.deletedTitles).toBe(1);
 
-    const remaining = testDb.select().from(titles).all();
+    const remaining = await testDb.select().from(titles);
     expect(remaining).toHaveLength(0);
   });
 
-  test("preserves fully-fetched titles", () => {
-    testDb
-      .insert(titles)
-      .values({
-        id: "fetched-1",
-        tmdbId: 100,
-        type: "movie",
-        title: "Fetched Movie",
-        lastFetchedAt: new Date(),
-      })
-      .run();
+  test("preserves fully-fetched titles", async () => {
+    await testDb.insert(titles).values({
+      id: "fetched-1",
+      tmdbId: 100,
+      type: "movie",
+      title: "Fetched Movie",
+      lastFetchedAt: new Date(),
+    });
 
-    const result = purgeMetadataCache();
+    const result = await purgeMetadataCache();
     expect(result.deletedTitles).toBe(0);
 
-    const remaining = testDb.select().from(titles).all();
+    const remaining = await testDb.select().from(titles);
     expect(remaining).toHaveLength(1);
   });
 
-  test("returns zero counts when nothing to purge", () => {
-    const result = purgeMetadataCache();
+  test("returns zero counts when nothing to purge", async () => {
+    const result = await purgeMetadataCache();
     expect(result.deletedTitles).toBe(0);
     expect(result.deletedPersons).toBe(0);
   });

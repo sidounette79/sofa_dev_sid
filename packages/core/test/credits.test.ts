@@ -30,18 +30,23 @@ vi.mock("../src/thumbhash", () => ({
 
 import { getCastForTitle, refreshCredits } from "../src/credits";
 
-beforeEach(() => {
-  clearAllTables();
+beforeEach(async () => {
+  await clearAllTables();
   mockGetMovieCredits.mockReset().mockResolvedValue({ cast: [], crew: [] });
   mockGetTvAggregateCredits.mockReset().mockResolvedValue({ cast: [], crew: [] });
 });
 
-function insertPerson(id: string, tmdbId: number, name: string, profilePath: string | null = null) {
-  testDb.insert(persons).values({ id, tmdbId, name, profilePath }).run();
+async function insertPerson(
+  id: string,
+  tmdbId: number,
+  name: string,
+  profilePath: string | null = null,
+) {
+  await testDb.insert(persons).values({ id, tmdbId, name, profilePath });
   return id;
 }
 
-function insertCastEntry(
+async function insertCastEntry(
   titleId: string,
   personId: string,
   overrides: {
@@ -52,32 +57,29 @@ function insertCastEntry(
     episodeCount?: number | null;
   } = {},
 ) {
-  testDb
-    .insert(titleCast)
-    .values({
-      titleId,
-      personId,
-      character: overrides.character ?? "Character",
-      department: overrides.department ?? "Acting",
-      job: overrides.job ?? null,
-      displayOrder: overrides.displayOrder ?? 0,
-      episodeCount: overrides.episodeCount ?? null,
-      lastFetchedAt: new Date(),
-    })
-    .run();
+  await testDb.insert(titleCast).values({
+    titleId,
+    personId,
+    character: overrides.character ?? "Character",
+    department: overrides.department ?? "Acting",
+    job: overrides.job ?? null,
+    displayOrder: overrides.displayOrder ?? 0,
+    episodeCount: overrides.episodeCount ?? null,
+    lastFetchedAt: new Date(),
+  });
 }
 
 // ─── getCastForTitle ────────────────────────────────────────────────
 
 describe("getCastForTitle", () => {
-  test("returns cast members ordered by displayOrder", () => {
-    insertTitle({ id: "m1", tmdbId: 1 });
-    insertPerson("p1", 100, "Actor One", "/path1.jpg");
-    insertPerson("p2", 200, "Actor Two", "/path2.jpg");
-    insertCastEntry("m1", "p1", { character: "Hero", displayOrder: 0 });
-    insertCastEntry("m1", "p2", { character: "Villain", displayOrder: 1 });
+  test("returns cast members ordered by displayOrder", async () => {
+    await insertTitle({ id: "m1", tmdbId: 1 });
+    await insertPerson("p1", 100, "Actor One", "/path1.jpg");
+    await insertPerson("p2", 200, "Actor Two", "/path2.jpg");
+    await insertCastEntry("m1", "p1", { character: "Hero", displayOrder: 0 });
+    await insertCastEntry("m1", "p2", { character: "Villain", displayOrder: 1 });
 
-    const cast = getCastForTitle("m1");
+    const cast = await getCastForTitle("m1");
     expect(cast).toHaveLength(2);
     expect(cast[0].name).toBe("Actor One");
     expect(cast[0].character).toBe("Hero");
@@ -85,25 +87,25 @@ describe("getCastForTitle", () => {
     expect(cast[1].name).toBe("Actor Two");
   });
 
-  test("includes crew members", () => {
-    insertTitle({ id: "m1", tmdbId: 1 });
-    insertPerson("p1", 100, "Director Person");
-    insertCastEntry("m1", "p1", {
+  test("includes crew members", async () => {
+    await insertTitle({ id: "m1", tmdbId: 1 });
+    await insertPerson("p1", 100, "Director Person");
+    await insertCastEntry("m1", "p1", {
       character: null,
       department: "Directing",
       job: "Director",
       displayOrder: 100,
     });
 
-    const cast = getCastForTitle("m1");
+    const cast = await getCastForTitle("m1");
     expect(cast).toHaveLength(1);
     expect(cast[0].department).toBe("Directing");
     expect(cast[0].job).toBe("Director");
   });
 
-  test("returns empty array for title with no cast", () => {
-    insertTitle({ id: "m1", tmdbId: 1 });
-    const cast = getCastForTitle("m1");
+  test("returns empty array for title with no cast", async () => {
+    await insertTitle({ id: "m1", tmdbId: 1 });
+    const cast = await getCastForTitle("m1");
     expect(cast).toHaveLength(0);
   });
 });
@@ -112,7 +114,7 @@ describe("getCastForTitle", () => {
 
 describe("refreshCredits", () => {
   test("creates persons and cast entries for a movie", async () => {
-    insertTitle({ id: "m1", tmdbId: 100, type: "movie" });
+    await insertTitle({ id: "m1", tmdbId: 100, type: "movie" });
 
     mockGetMovieCredits.mockResolvedValue({
       cast: [
@@ -133,8 +135,8 @@ describe("refreshCredits", () => {
 
     await refreshCredits("m1");
 
-    const castRows = testDb.select().from(titleCast).where(eq(titleCast.titleId, "m1")).all();
-    const personRows = testDb.select().from(persons).all();
+    const castRows = await testDb.select().from(titleCast).where(eq(titleCast.titleId, "m1"));
+    const personRows = await testDb.select().from(persons);
 
     expect(personRows).toHaveLength(3);
     expect(castRows).toHaveLength(3);
@@ -149,7 +151,7 @@ describe("refreshCredits", () => {
   });
 
   test("creates persons and cast entries for a TV show", async () => {
-    insertTitle({ id: "tv1", tmdbId: 200, type: "tv" });
+    await insertTitle({ id: "tv1", tmdbId: 200, type: "tv" });
 
     mockGetTvAggregateCredits.mockResolvedValue({
       cast: [
@@ -176,7 +178,7 @@ describe("refreshCredits", () => {
 
     await refreshCredits("tv1");
 
-    const castRows = testDb.select().from(titleCast).where(eq(titleCast.titleId, "tv1")).all();
+    const castRows = await testDb.select().from(titleCast).where(eq(titleCast.titleId, "tv1"));
     expect(castRows).toHaveLength(2);
 
     const actor = castRows.find((r) => r.department === "Acting");
@@ -194,7 +196,7 @@ describe("refreshCredits", () => {
   });
 
   test("limits movie cast to 20 entries", async () => {
-    insertTitle({ id: "m1", tmdbId: 100, type: "movie" });
+    await insertTitle({ id: "m1", tmdbId: 100, type: "movie" });
 
     const largeCast = Array.from({ length: 30 }, (_, i) => ({
       id: i + 1,
@@ -208,12 +210,12 @@ describe("refreshCredits", () => {
 
     await refreshCredits("m1");
 
-    const castRows = testDb.select().from(titleCast).where(eq(titleCast.titleId, "m1")).all();
+    const castRows = await testDb.select().from(titleCast).where(eq(titleCast.titleId, "m1"));
     expect(castRows).toHaveLength(20);
   });
 
   test("deduplicates persons by tmdbId", async () => {
-    insertTitle({ id: "m1", tmdbId: 100, type: "movie" });
+    await insertTitle({ id: "m1", tmdbId: 100, type: "movie" });
 
     mockGetMovieCredits.mockResolvedValue({
       cast: [{ id: 1, name: "Person", profile_path: null, character: "Role A", popularity: 5 }],
@@ -231,15 +233,15 @@ describe("refreshCredits", () => {
 
     await refreshCredits("m1");
 
-    const personRows = testDb.select().from(persons).all();
+    const personRows = await testDb.select().from(persons);
     expect(personRows).toHaveLength(1);
 
-    const castRows = testDb.select().from(titleCast).where(eq(titleCast.titleId, "m1")).all();
+    const castRows = await testDb.select().from(titleCast).where(eq(titleCast.titleId, "m1"));
     expect(castRows).toHaveLength(2);
   });
 
   test("filters crew to notable departments only", async () => {
-    insertTitle({ id: "m1", tmdbId: 100, type: "movie" });
+    await insertTitle({ id: "m1", tmdbId: 100, type: "movie" });
 
     mockGetMovieCredits.mockResolvedValue({
       cast: [],
@@ -273,7 +275,7 @@ describe("refreshCredits", () => {
 
     await refreshCredits("m1");
 
-    const castRows = testDb.select().from(titleCast).where(eq(titleCast.titleId, "m1")).all();
+    const castRows = await testDb.select().from(titleCast).where(eq(titleCast.titleId, "m1"));
     // Only Director and Writer are in NOTABLE_DEPARTMENTS
     expect(castRows).toHaveLength(2);
     const jobs = castRows.map((r) => r.job).sort();

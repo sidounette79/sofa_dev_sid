@@ -1,7 +1,7 @@
 import { useLingui } from "@lingui/react/macro";
 import { IconLoader, IconSearch } from "@tabler/icons-react";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 
 import { FeedSection } from "@/components/dashboard/feed-section";
 import { TitleGrid } from "@/components/dashboard/title-grid";
@@ -14,7 +14,25 @@ import {
 } from "@/components/ui/select";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { useInfiniteScroll } from "@/hooks/use-infinite-scroll";
+import { translateGenreName } from "@/lib/genre-names";
 import { orpc } from "@/lib/orpc/client";
+
+type DiscoverSortBy =
+  | "popularity.desc"
+  | "vote_average.desc"
+  | "primary_release_date.desc"
+  | "primary_release_date.asc";
+
+export interface DiscoverSearch {
+  discoverType?: "movie" | "tv";
+  discoverGenreId?: number;
+  discoverYearMin?: number;
+  discoverYearMax?: number;
+  discoverRatingMin?: number;
+  discoverSortBy?: DiscoverSortBy;
+  discoverLanguage?: string;
+  discoverPlatformId?: string;
+}
 
 const DECADE_PRESETS = [
   { label: "2020s", min: 2020, max: 2029 },
@@ -52,22 +70,47 @@ const LANGUAGE_OPTIONS = [
   { code: "pt", name: "Portuguese" },
 ] as const;
 
-export function DiscoverSection() {
+export function DiscoverSection({
+  search,
+  onSearchChange,
+}: {
+  search: DiscoverSearch;
+  onSearchChange: (opts: { search: (prev: DiscoverSearch) => DiscoverSearch }) => void;
+}) {
   const { t } = useLingui();
 
-  const [type, setType] = useState<"movie" | "tv">("movie");
-  const [genreId, setGenreId] = useState<number | undefined>(undefined);
-  const [yearMin, setYearMin] = useState<number | undefined>(undefined);
-  const [yearMax, setYearMax] = useState<number | undefined>(undefined);
-  const [ratingMin, setRatingMin] = useState<number | undefined>(undefined);
-  type DiscoverSortBy =
-    | "popularity.desc"
-    | "vote_average.desc"
-    | "primary_release_date.desc"
-    | "primary_release_date.asc";
-  const [sortBy, setSortBy] = useState<DiscoverSortBy | undefined>(undefined);
-  const [language, setLanguage] = useState<string | undefined>(undefined);
-  const [platformId, setPlatformId] = useState<string | undefined>(undefined);
+  const type = search.discoverType ?? "movie";
+  const genreId = search.discoverGenreId;
+  const yearMin = search.discoverYearMin;
+  const yearMax = search.discoverYearMax;
+  const ratingMin = search.discoverRatingMin;
+  const sortBy = search.discoverSortBy;
+  const language = search.discoverLanguage;
+  const platformId = search.discoverPlatformId;
+
+  function updateSearch(patch: Partial<DiscoverSearch>) {
+    onSearchChange({ search: (prev) => ({ ...prev, ...patch }) });
+  }
+  function setType(value: "movie" | "tv") {
+    // Same reset as before: a genre/provider id from one media type is
+    // meaningless (often outright invalid) for the other.
+    updateSearch({ discoverType: value, discoverGenreId: undefined, discoverPlatformId: undefined });
+  }
+  function setGenreId(value: number | undefined) {
+    updateSearch({ discoverGenreId: value });
+  }
+  function setRatingMin(value: number | undefined) {
+    updateSearch({ discoverRatingMin: value });
+  }
+  function setSortBy(value: DiscoverSortBy | undefined) {
+    updateSearch({ discoverSortBy: value });
+  }
+  function setLanguage(value: string | undefined) {
+    updateSearch({ discoverLanguage: value });
+  }
+  function setPlatformId(value: string | undefined) {
+    updateSearch({ discoverPlatformId: value });
+  }
 
   const { data: genreData } = useQuery(orpc.discover.genres.queryOptions({ input: { type } }));
   const { data: providerData } = useQuery(orpc.discover.platforms.queryOptions());
@@ -98,7 +141,38 @@ export function DiscoverSection() {
     isFetchingNextPage,
   });
 
-  const items = useMemo(() => data?.pages.flatMap((p) => p.items) ?? [], [data?.pages]);
+  // 28.08, Sid — real bug found live: unlike ExplorePage's Trending/Popular
+  // rows (which merge userStatuses/episodeProgress from each page via
+  // mergeMaps before handing items to TitleRow), this just flattened
+  // `items` straight from the pages — userStatuses/episodeProgress exist on
+  // each page's response (BrowseOutput, same shape discover.browse always
+  // returns) but were never read. A title with a real personal status (e.g.
+  // she'd already requested it) still showed no badge at all here, even
+  // though the exact same title showed one correctly in Films populaires.
+  const items = useMemo(() => {
+    const pages = data?.pages ?? [];
+    const userStatuses = Object.assign({}, ...pages.map((p) => p.userStatuses));
+    const episodeProgress = Object.assign({}, ...pages.map((p) => p.episodeProgress));
+    // 06.09, Sid: "j'ai des films à triple" — TMDB's own discover endpoint
+    // can shift results between page fetches for a volatile sort like
+    // popularity.desc (an item's rank moves between the two HTTP calls),
+    // so naively concatenating pages can repeat the same title. De-dupe by
+    // id, keeping the first (earliest-page) occurrence.
+    const seenIds = new Set<string>();
+    return pages
+      .flatMap((p) =>
+        p.items.map((item) => ({
+          ...item,
+          userStatus: userStatuses[item.id],
+          episodeProgress: episodeProgress[item.id],
+        })),
+      )
+      .filter((item) => {
+        if (seenIds.has(item.id)) return false;
+        seenIds.add(item.id);
+        return true;
+      });
+  }, [data?.pages]);
 
   const genres = genreData?.genres ?? [];
   const providers = providerData?.platforms ?? [];
@@ -125,14 +199,12 @@ export function DiscoverSection() {
 
   function handleDecadeChange(value: string | null) {
     if (!value) {
-      setYearMin(undefined);
-      setYearMax(undefined);
+      updateSearch({ discoverYearMin: undefined, discoverYearMax: undefined });
       return;
     }
     const preset = DECADE_PRESETS.find((d) => String(d.min) === value);
     if (preset) {
-      setYearMin(preset.min);
-      setYearMax(preset.max);
+      updateSearch({ discoverYearMin: preset.min, discoverYearMax: preset.max });
     }
   }
 
@@ -174,8 +246,6 @@ export function DiscoverSection() {
             const next = values.find((v) => v !== type);
             if (next === "movie" || next === "tv") {
               setType(next);
-              setGenreId(undefined);
-              setPlatformId(undefined);
             }
           }}
           variant="outline"
@@ -212,7 +282,7 @@ export function DiscoverSection() {
             <SelectItem value="">{t`All genres`}</SelectItem>
             {genres.map((genre) => (
               <SelectItem key={genre.id} value={String(genre.id)}>
-                {genre.name}
+                {translateGenreName(genre.name)}
               </SelectItem>
             ))}
           </SelectContent>

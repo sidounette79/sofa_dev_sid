@@ -2,6 +2,7 @@ import { createFileRoute, redirect } from "@tanstack/react-router";
 
 import { LandingPage } from "@/components/landing-page";
 import { authClient } from "@/lib/auth/client";
+import { redirectToHomePage } from "@/lib/home-page-redirect";
 import { client } from "@/lib/orpc/client";
 
 export const Route = createFileRoute("/")({
@@ -10,7 +11,7 @@ export const Route = createFileRoute("/")({
       authClient.getSession(),
       client.system.publicInfo({}),
     ]);
-    if (session?.user) throw redirect({ to: "/dashboard" });
+    if (session?.user) redirectToHomePage();
     if (!info.tmdbConfigured) throw redirect({ to: "/setup" });
     return { info };
   },

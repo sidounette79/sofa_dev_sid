@@ -5,6 +5,7 @@ import {
   getStaleTitles,
   getStaleNonLibraryTitles,
   getTitleByIdForCron,
+  getTitleIdsNeedingImageBackfill,
   getTitleIdsWithStaleSeasons,
   getTitlesWithFreshRecommendations,
   getTitlesWithStaleOffers,
@@ -18,21 +19,21 @@ export function startCronRun(jobName: string) {
   return insertCronRunReturning(jobName);
 }
 
-export function completeCronRun(runId: string, durationMs: number): void {
-  updateCronRunSuccess(runId, durationMs);
+export function completeCronRun(runId: string, durationMs: number): Promise<void> {
+  return updateCronRunSuccess(runId, durationMs);
 }
 
-export function failCronRun(runId: string, durationMs: number, error: unknown): void {
+export function failCronRun(runId: string, durationMs: number, error: unknown): Promise<void> {
   const errorMessage = error instanceof Error ? error.message : String(error);
-  updateCronRunError(runId, durationMs, errorMessage);
+  return updateCronRunError(runId, durationMs, errorMessage);
 }
 
-export function getLibraryTitleIds(): string[] {
+export function getLibraryTitleIds(): Promise<string[]> {
   return queryGetLibraryTitleIds();
 }
 
-export function getThumbhashBackfillTitleIds(): string[] {
-  return getLibraryTitleIds();
+export function getThumbhashBackfillTitleIds(): Promise<string[]> {
+  return getTitleIdsNeedingImageBackfill();
 }
 
 export function getStaleLibraryTitles(libraryIds: string[], staleDate: Date) {
@@ -43,9 +44,11 @@ export function getStaleNonLibraryTitlesForRefresh(staleDate: Date, limit: numbe
   return getStaleNonLibraryTitles(staleDate, limit);
 }
 
-export function getStaleAvailabilityTitles(libraryIds: string[], staleDate: Date) {
-  const withOffers = getTitlesWithStaleOffers(libraryIds);
-  const withStaleOffers = getTitlesWithStaleOffersFetchedBefore(libraryIds, staleDate);
+export async function getStaleAvailabilityTitles(libraryIds: string[], staleDate: Date) {
+  const [withOffers, withStaleOffers] = await Promise.all([
+    getTitlesWithStaleOffers(libraryIds),
+    getTitlesWithStaleOffersFetchedBefore(libraryIds, staleDate),
+  ]);
   return { withOffers, withStaleOffers };
 }
 

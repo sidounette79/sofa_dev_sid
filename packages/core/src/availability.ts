@@ -11,7 +11,7 @@ import { getWatchProviders } from "@sofa/tmdb/client";
 const log = createLogger("availability");
 
 export async function refreshAvailability(titleId: string) {
-  const title = getTitleById(titleId);
+  const [title] = await getTitleById(titleId);
   if (!title) return;
 
   const data = await getWatchProviders(title.tmdbId, title.type);
@@ -25,7 +25,7 @@ export async function refreshAvailability(titleId: string) {
       const providers = us[offerType];
       if (!providers) continue;
       for (const p of providers) {
-        const platformId = ensurePlatformForTmdbProvider(
+        const platformId = await ensurePlatformForTmdbProvider(
           p.provider_id,
           p.provider_name ?? "",
           p.logo_path ?? null,
@@ -41,7 +41,7 @@ export async function refreshAvailability(titleId: string) {
     }
   }
 
-  replaceAvailabilityTransaction(titleId, "US", allOfferRows);
+  await replaceAvailabilityTransaction(titleId, "US", allOfferRows);
 
   if (!us) {
     log.debug(`No US providers for title ${titleId}; cleared cached offers`);

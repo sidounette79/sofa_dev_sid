@@ -34,5 +34,8 @@ export function useTitleUserInfo() {
     userStatus: data?.status ?? null,
     userRating: data?.rating ?? 0,
     episodeWatches: data?.episodeWatches ?? [],
+    rewatchedEpisodeIds: data?.rewatchedEpisodeIds ?? [],
+    requestedAt: data?.requestedAt ?? null,
+    embyStatus: data?.embyStatus ?? null,
   };
 }

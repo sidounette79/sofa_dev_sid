@@ -1,4 +1,5 @@
 import type { PersonCredit, ResolvedPerson } from "@sofa/api/schemas";
+import { deriveEmbyStatus } from "@sofa/db/queries/emby-library";
 import {
   batchInsertShellTitlesTransaction,
   ensureBrowsePersonsTransaction,
@@ -41,14 +42,14 @@ async function ensureProfileThumbHash(
 }
 
 export async function getOrFetchPerson(personId: string): Promise<ResolvedPerson | null> {
-  const person = getPersonById(personId);
+  const [person] = await getPersonById(personId);
   if (!person) return null;
 
   // Shell record — lazily hydrate from TMDB
   if (!person.lastFetchedAt) {
     try {
       const details = await getPersonDetails(person.tmdbId);
-      updatePerson(personId, {
+      await updatePerson(personId, {
         name: details.name || person.name,
         biography: details.biography || null,
         birthday: details.birthday,
@@ -111,7 +112,7 @@ export async function getOrFetchPerson(personId: string): Promise<ResolvedPerson
 }
 
 export async function getOrFetchPersonByTmdbId(tmdbId: number): Promise<ResolvedPerson | null> {
-  const existing = getPersonByTmdbId(tmdbId);
+  const [existing] = await getPersonByTmdbId(tmdbId);
 
   if (existing) {
     return getOrFetchPerson(existing.id);
@@ -120,7 +121,7 @@ export async function getOrFetchPersonByTmdbId(tmdbId: number): Promise<Resolved
   // Create from TMDB
   try {
     const details = await getPersonDetails(tmdbId);
-    const row = insertPersonReturning({
+    const [row] = await insertPersonReturning({
       tmdbId,
       name: details.name ?? "",
       biography: details.biography || null,
@@ -134,7 +135,7 @@ export async function getOrFetchPersonByTmdbId(tmdbId: number): Promise<Resolved
       lastFetchedAt: new Date(),
     });
 
-    const person = row ?? getPersonByTmdbId(tmdbId);
+    const person = row ?? (await getPersonByTmdbId(tmdbId))[0];
     if (!person) return null;
 
     const profileThumbHash = await ensureProfileThumbHash(person);
@@ -158,8 +159,8 @@ export async function getOrFetchPersonByTmdbId(tmdbId: number): Promise<Resolved
   }
 }
 
-export function getLocalFilmography(personId: string): PersonCredit[] {
-  const rows = getPersonFilmographyJoined(personId);
+export async function getLocalFilmography(personId: string): Promise<PersonCredit[]> {
+  const rows = await getPersonFilmographyJoined(personId);
 
   return rows.map((r) => ({
     titleId: r.titleId,
@@ -174,6 +175,8 @@ export function getLocalFilmography(personId: string): PersonCredit[] {
     character: r.character,
     department: r.department,
     job: r.job,
+    embyStatus: deriveEmbyStatus(r.inEmbyLibrary, r.embyItemId),
+    requestedAt: r.requestedAt,
   }));
 }
 
@@ -201,7 +204,7 @@ async function syncPersonFilmography(
   const allEntries = [...validCast, ...validCrew];
   const tmdbIds = [...new Set(allEntries.map((c) => c.id))];
 
-  const existingTitles = getExistingTitlesByTmdbIds(tmdbIds);
+  const existingTitles = await getExistingTitlesByTmdbIds(tmdbIds);
   // Key by (tmdbId, type) composite since the same tmdbId can be a movie and TV show
   const titleIdMap = new Map<string, string>(
     existingTitles.map((title) => [`${title.tmdbId}-${title.type}`, title.id]),
@@ -230,7 +233,7 @@ async function syncPersonFilmography(
         voteCount: entry.vote_count,
       }));
 
-    const updatedMap = batchInsertShellTitlesTransaction(shellEntries, titleIdMap);
+    const updatedMap = await batchInsertShellTitlesTransaction(shellEntries, titleIdMap);
     for (const [key, id] of updatedMap) {
       titleIdMap.set(key, id);
     }
@@ -270,14 +273,14 @@ async function syncPersonFilmography(
   }
 
   const now = new Date();
-  replaceFilmographyTransaction(person.id, nextRows, now);
+  await replaceFilmographyTransaction(person.id, nextRows, now);
 }
 
 export async function fetchFullFilmography(personId: string): Promise<PersonCredit[]> {
-  const person = getPersonById(personId);
+  const [person] = await getPersonById(personId);
   if (!person) return [];
 
-  const localFilmography = getLocalFilmography(personId);
+  const localFilmography = await getLocalFilmography(personId);
   const isFresh =
     person.filmographyLastFetchedAt &&
     person.filmographyLastFetchedAt.getTime() > Date.now() - FILMOGRAPHY_STALE_MS;
@@ -288,7 +291,7 @@ export async function fetchFullFilmography(personId: string): Promise<PersonCred
 
   try {
     await syncPersonFilmography(person);
-    return getLocalFilmography(personId);
+    return await getLocalFilmography(personId);
   } catch (err) {
     if (person.filmographyLastFetchedAt) {
       log.warn(
@@ -317,6 +320,8 @@ interface BrowsePersonInput {
  * Inserts shell persons (`lastFetchedAt = null`) for new tmdbIds.
  * Returns a map of tmdbId → internal UUID.
  */
-export function ensureBrowsePersonsExist(items: BrowsePersonInput[]): Map<number, string> {
+export async function ensureBrowsePersonsExist(
+  items: BrowsePersonInput[],
+): Promise<Map<number, string>> {
   return ensureBrowsePersonsTransaction(items);
 }

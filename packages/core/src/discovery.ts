@@ -1,9 +1,10 @@
+import { getUntrackedEmbyLibraryTitleIds } from "@sofa/db/queries/emby-library";
 import {
   getAllTrackedTitleIds,
   getAvailabilityByTitleIds,
   getEngagedTitleIds,
-  getEpisodesBySeasonIds,
   getEpisodeWatchCountSince,
+  getOwnedEpisodesBySeasonIds,
   getEpisodeWatchesByEpisodeIds,
   getEpisodeWatchHistoryBuckets,
   getHighlyRatedTitleIds,
@@ -11,16 +12,21 @@ import {
   getMovieWatchCountSince,
   getMovieWatchHistoryBuckets,
   getNewAvailableFeed,
-  getRecommendationRows,
+  getRatingStats,
   getRecommendationRowsForTitle,
+  getTopRecommendationRows,
+  RECOMMENDATION_MIN_YEAR,
   getSeasonsByTitleIds,
   getTitleByIdOrNull,
   getTitlesByIds,
+  getTotalEpisodeWatchMinutes,
+  getTotalMovieWatchMinutes,
   getTvTitlesByIds,
   getUpcomingEpisodes,
   getUpcomingMovies,
   getUserStatusCounts,
 } from "@sofa/db/queries/discovery";
+import { getWatchedGenreStats } from "@sofa/db/queries/library";
 import { tmdbImageUrl } from "@sofa/tmdb/image";
 
 import type { DisplayStatus } from "./display-status";
@@ -55,11 +61,11 @@ export function periodStartTimestamp(period: TimePeriod): number {
   return Math.floor(start.getTime() / 1000);
 }
 
-export function getWatchCount(
+export async function getWatchCount(
   userId: string,
   table: "movies" | "episodes",
   period: TimePeriod,
-): number {
+): Promise<number> {
   const timestamp = periodStartTimestamp(period);
   if (table === "movies") {
     return getMovieWatchCountSince(userId, timestamp);
@@ -79,11 +85,11 @@ function toLocalDateBucket(date: Date): string {
   return `${year}-${month}-${day}`;
 }
 
-export function getWatchHistory(
+export async function getWatchHistory(
   userId: string,
   table: "movies" | "episodes",
   period: TimePeriod,
-): HistoryBucket[] {
+): Promise<HistoryBucket[]> {
   const startTs = periodStartTimestamp(period);
   const now = new Date();
 
@@ -129,8 +135,8 @@ export function getWatchHistory(
 
   const rows =
     table === "movies"
-      ? getMovieWatchHistoryBuckets(userId, startTs, fmt)
-      : getEpisodeWatchHistoryBuckets(userId, startTs, fmt);
+      ? await getMovieWatchHistoryBuckets(userId, startTs, fmt)
+      : await getEpisodeWatchHistoryBuckets(userId, startTs, fmt);
 
   const countMap = new Map(rows.map((r) => [r.bucket, r.count]));
   return buckets.map((b) => ({ bucket: b, count: countMap.get(b) ?? 0 }));
@@ -143,11 +149,72 @@ export interface DashboardStats {
   completed: number;
 }
 
-export function getUserStats(userId: string): DashboardStats {
-  const moviesThisMonth = getWatchCount(userId, "movies", "this_month");
-  const episodesThisWeek = getWatchCount(userId, "episodes", "this_week");
+export async function getLibraryStatistics(userId: string) {
+  const titleIds = await getAllTrackedTitleIds(userId);
+  const titleRecords = await getTitlesByIds(titleIds);
+  const typeById = new Map(titleRecords.map((t) => [t.id, t.type]));
+  const displayStatuses = await getDisplayStatusesByTitleIds(userId, titleIds);
 
-  const statusCounts = getUserStatusCounts(userId);
+  const mediaTypeDistribution = { movie: 0, tv: 0 };
+  const statusDistribution: Record<DisplayStatus, number> = {
+    in_watchlist: 0,
+    watching: 0,
+    caught_up: 0,
+    completed: 0,
+    dropped: 0,
+  };
+  const statusByType = {
+    movie: { ...statusDistribution },
+    tv: { ...statusDistribution },
+  };
+
+  for (const titleId of titleIds) {
+    const type = typeById.get(titleId);
+    const status = displayStatuses[titleId];
+    if (!status) continue;
+    statusDistribution[status]++;
+    if (type === "movie" || type === "tv") {
+      mediaTypeDistribution[type]++;
+      statusByType[type][status]++;
+    }
+  }
+
+  const ratingStats = await getRatingStats(userId);
+  const librarySize = titleIds.length;
+
+  const [totalMoviesWatched, totalEpisodesWatched, totalMovieMinutes, totalEpisodeMinutes, genreRows] =
+    await Promise.all([
+      getMovieWatchCountSince(userId, 0),
+      getEpisodeWatchCountSince(userId, 0),
+      getTotalMovieWatchMinutes(userId),
+      getTotalEpisodeWatchMinutes(userId),
+      getWatchedGenreStats(userId),
+    ]);
+
+  return {
+    librarySize,
+    totalMoviesWatched,
+    totalEpisodesWatched,
+    mediaTypeDistribution,
+    statusDistribution,
+    statusByType,
+    averageRating: ratingStats.average,
+    ratedCount: ratingStats.count,
+    percentRated: librarySize > 0 ? Math.round((ratingStats.count / librarySize) * 100) : 0,
+    // 25.08, Sid: all-time "time spent watching" + "genres watched" additions.
+    totalWatchTimeMinutes: {
+      movie: totalMovieMinutes,
+      tv: totalEpisodeMinutes,
+    },
+    genreStats: genreRows.map((g) => ({ name: g.name, count: g.count })),
+  };
+}
+export async function getUserStats(userId: string): Promise<DashboardStats> {
+  const [moviesThisMonth, episodesThisWeek, statusCounts] = await Promise.all([
+    getWatchCount(userId, "movies", "this_month"),
+    getWatchCount(userId, "episodes", "this_week"),
+    getUserStatusCounts(userId),
+  ]);
 
   return {
     moviesThisMonth,
@@ -162,9 +229,15 @@ export interface ContinueWatchingItem {
     id: string;
     title: string;
     posterPath: string | null;
+    posterThumbHash: string | null;
     backdropPath: string | null;
     backdropThumbHash: string | null;
     type: string;
+    firstAirDate: string | null;
+    status: string | null;
+    voteAverage: number | null;
+    inEmbyLibrary: boolean;
+    embyItemId: string | null;
   };
   nextEpisode: {
     id: string;
@@ -174,22 +247,31 @@ export interface ContinueWatchingItem {
     stillPath: string | null;
     stillThumbHash: string | null;
     overview: string | null;
+    embyItemId: string | null;
   } | null;
   lastWatchedAt: Date | null;
+  lastAiredAt: Date | null;
   totalEpisodes: number;
   watchedEpisodes: number;
 }
 
-export function getContinueWatchingFeed(userId: string): ContinueWatchingItem[] {
+export type ContinueWatchingSortBy = "watched" | "aired";
+export type ContinueWatchingSortDirection = "asc" | "desc";
+
+export async function getContinueWatchingFeed(
+  userId: string,
+  sortBy: ContinueWatchingSortBy = "watched",
+  sortDirection: ContinueWatchingSortDirection = "desc",
+): Promise<ContinueWatchingItem[]> {
   // Get in-progress TV shows
-  const inProgress = getInProgressTitleIds(userId);
+  const inProgress = await getInProgressTitleIds(userId);
 
   if (inProgress.length === 0) return [];
 
   const titleIds = inProgress.map((r) => r.titleId);
 
   // Batch fetch all TV titles (1 query)
-  const tvTitles = getTvTitlesByIds(titleIds);
+  const tvTitles = await getTvTitlesByIds(titleIds);
 
   if (tvTitles.length === 0) return [];
 
@@ -197,16 +279,29 @@ export function getContinueWatchingFeed(userId: string): ContinueWatchingItem[] 
   const titleMap = new Map(tvTitles.map((t) => [t.id, t]));
 
   // Batch fetch all seasons for these titles (1 query)
-  const allSeasons = getSeasonsByTitleIds(tvTitleIds);
+  const allSeasons = await getSeasonsByTitleIds(tvTitleIds);
 
   const seasonIds = allSeasons.map((s) => s.id);
 
-  // Batch fetch all episodes for these seasons (1 query)
-  const allEpisodes = getEpisodesBySeasonIds(seasonIds);
+  // Batch fetch episodes actually available on Emby for these seasons (1
+  // query) — episodes never downloaded (e.g. awaiting a French release)
+  // don't count toward progress and can't be picked as the next episode,
+  // so there's no need to load them here.
+  const allEpisodes = await getOwnedEpisodesBySeasonIds(seasonIds);
 
   // Batch fetch all watches for this user for these episodes (1 query)
   const episodeIds = allEpisodes.map((ep) => ep.id);
-  const allWatches = getEpisodeWatchesByEpisodeIds(userId, episodeIds);
+  const rawWatches = await getEpisodeWatchesByEpisodeIds(userId, episodeIds);
+
+  // Only count watches from each title's *current* rewatch cycle — a watch
+  // left over from a previous watch-through shouldn't make a rewatch look
+  // already caught up.
+  const seasonToTitle = new Map(allSeasons.map((s) => [s.id, s.titleId]));
+  const episodeToTitle = new Map(allEpisodes.map((ep) => [ep.id, seasonToTitle.get(ep.seasonId)]));
+  const titleCycle = new Map(inProgress.map((r) => [r.titleId, r.currentCycle]));
+  const allWatches = rawWatches.filter(
+    (w) => w.cycle === (titleCycle.get(episodeToTitle.get(w.episodeId) ?? "") ?? 1),
+  );
 
   // Build lookup maps
   const watchedEpisodeIds = new Set(allWatches.map((w) => w.episodeId));
@@ -244,6 +339,7 @@ export function getContinueWatchingFeed(userId: string): ContinueWatchingItem[] 
     const titleSeasonsArr = seasonsByTitle.get(title.id) ?? [];
     let nextEpisode: ContinueWatchingItem["nextEpisode"] = null;
     let lastWatchedAt: Date | null = null;
+    let lastAiredAt: Date | null = null;
     let totalEpisodes = 0;
     let watchedEpisodes = 0;
 
@@ -252,6 +348,12 @@ export function getContinueWatchingFeed(userId: string): ContinueWatchingItem[] 
       totalEpisodes += eps.length;
 
       for (const ep of eps) {
+        if (ep.airDate && ep.airDate <= today) {
+          const airedDate = new Date(`${ep.airDate}T00:00:00`);
+          if (!lastAiredAt || airedDate > lastAiredAt) {
+            lastAiredAt = airedDate;
+          }
+        }
         if (watchedEpisodeIds.has(ep.id)) {
           watchedEpisodes++;
           const watchDate = watchDateMap.get(ep.id);
@@ -269,6 +371,7 @@ export function getContinueWatchingFeed(userId: string): ContinueWatchingItem[] 
             stillPath: ep.stillPath,
             stillThumbHash: ep.stillThumbHash,
             overview: ep.overview,
+            embyItemId: ep.embyItemId,
           };
         }
       }
@@ -280,23 +383,30 @@ export function getContinueWatchingFeed(userId: string): ContinueWatchingItem[] 
           id: title.id,
           title: title.title,
           posterPath: title.posterPath,
+          posterThumbHash: title.posterThumbHash,
           backdropPath: title.backdropPath,
           backdropThumbHash: title.backdropThumbHash,
           type: title.type,
+          firstAirDate: title.firstAirDate,
+          status: title.status,
+          voteAverage: title.voteAverage,
+          inEmbyLibrary: title.inEmbyLibrary,
+          embyItemId: title.embyItemId,
         },
         nextEpisode,
         lastWatchedAt,
+        lastAiredAt,
         totalEpisodes,
         watchedEpisodes,
       });
     }
   }
 
-  // Sort by most recent watch
   items.sort((a, b) => {
-    const aTime = a.lastWatchedAt?.getTime() ?? 0;
-    const bTime = b.lastWatchedAt?.getTime() ?? 0;
-    return bTime - aTime;
+    const field = sortBy === "aired" ? "lastAiredAt" : "lastWatchedAt";
+    const aTime = a[field]?.getTime() ?? 0;
+    const bTime = b[field]?.getTime() ?? 0;
+    return sortDirection === "asc" ? aTime - bTime : bTime - aTime;
   });
 
   return items;
@@ -304,51 +414,41 @@ export function getContinueWatchingFeed(userId: string): ContinueWatchingItem[] 
 
 export { getNewAvailableFeed } from "@sofa/db/queries/discovery";
 
-export function getRecommendationsFeed(userId: string) {
-  // Get recommendations from user's highly-rated or completed titles
-  const userCompletedOrRated = getEngagedTitleIds(userId);
+// Recency-capped: a user with a large library can have thousands of
+// engaged/rated titles, and every one of them multiplies out into the
+// titleRecommendations scan below (each title carries ~80-90 rows). Capping
+// to the most recent ones keeps that scan bounded — recently watched/rated
+// titles are also the more relevant taste signal anyway, so this isn't a
+// quality tradeoff, just dropping a very long tail that barely moved the
+// final top-20 in practice.
+const RECOMMENDATION_SOURCE_LIMIT = 200;
 
-  const ratedIds = getHighlyRatedTitleIds(userId);
+export async function getRecommendationsFeed(userId: string, type?: "movie" | "tv") {
+  // Get recommendations from user's highly-rated or completed titles
+  const [userCompletedOrRated, ratedIds] = await Promise.all([
+    getEngagedTitleIds(userId, RECOMMENDATION_SOURCE_LIMIT),
+    getHighlyRatedTitleIds(userId, RECOMMENDATION_SOURCE_LIMIT),
+  ]);
 
   const sourceIds = [...new Set([...userCompletedOrRated, ...ratedIds])];
   if (sourceIds.length === 0) return [];
 
   // Get all tracked title IDs to exclude
-  const trackedIds = new Set(getAllTrackedTitleIds(userId));
+  const trackedIds = await getAllTrackedTitleIds(userId);
 
-  // Batch fetch all recommendations for all source IDs (1 query)
-  const allRecRows = getRecommendationRows(sourceIds);
-
-  const recs: Map<string, { titleId: string; score: number }> = new Map();
-
-  for (const rec of allRecRows) {
-    if (trackedIds.has(rec.recommendedTitleId)) continue;
-    const existing = recs.get(rec.recommendedTitleId);
-    const score = 100 - rec.rank;
-    if (existing) {
-      existing.score += score;
-    } else {
-      recs.set(rec.recommendedTitleId, {
-        titleId: rec.recommendedTitleId,
-        score,
-      });
-    }
-  }
-
-  const sorted = recs
-    .values()
-    .toArray()
-    .toSorted((a, b) => b.score - a.score)
-    .slice(0, 20);
+  // Aggregate + rank in SQL — see getTopRecommendationRows for why. `type`
+  // filters in the same SQL pass so a type-scoped cap of 20 doesn't get
+  // skewed empty by the other type dominating the global top-20 (24.08).
+  const sorted = await getTopRecommendationRows(sourceIds, trackedIds, 20, type);
 
   if (sorted.length === 0) return [];
 
   // Batch fetch all recommended titles (1 query)
-  const recTitleIds = sorted.map((r) => r.titleId);
-  const recTitles = getTitlesByIds(recTitleIds);
+  const recTitleIds = sorted.map((r) => r.recommendedTitleId);
+  const recTitles = await getTitlesByIds(recTitleIds);
   const recTitleMap = new Map(recTitles.map((t) => [t.id, t]));
 
-  return sorted.map((r) => recTitleMap.get(r.titleId)).filter(Boolean);
+  return sorted.map((r) => recTitleMap.get(r.recommendedTitleId)).filter(Boolean);
 }
 
 // ─── Upcoming feed ──────────────────────────────────────────────────
@@ -379,9 +479,10 @@ export interface UpcomingItem {
 export interface UpcomingFeedResult {
   items: UpcomingItem[];
   nextCursor: string | null;
+  totalResults: number;
 }
 
-export function getUpcomingFeed(
+export async function getUpcomingFeed(
   userId: string,
   options: {
     days?: number;
@@ -390,7 +491,7 @@ export function getUpcomingFeed(
     mediaType?: "movie" | "tv";
     statusFilter?: ("watching" | "watchlist")[];
   } = {},
-): UpcomingFeedResult {
+): Promise<UpcomingFeedResult> {
   const { days = 90, limit = 20, cursor, mediaType, statusFilter } = options;
 
   // Map display status filter to stored statuses for DB query
@@ -419,9 +520,9 @@ export function getUpcomingFeed(
   }
   const fromDate = cursorDate ?? today;
   const episodeRows =
-    mediaType === "movie" ? [] : getUpcomingEpisodes(userId, fromDate, toDate, storedStatuses);
+    mediaType === "movie" ? [] : await getUpcomingEpisodes(userId, fromDate, toDate, storedStatuses);
   const movieRows =
-    mediaType === "tv" ? [] : getUpcomingMovies(userId, fromDate, toDate, storedStatuses);
+    mediaType === "tv" ? [] : await getUpcomingMovies(userId, fromDate, toDate, storedStatuses);
 
   // Merge into unified items
   type RawItem = { date: string; titleId: string; titleName: string } & (
@@ -513,8 +614,10 @@ export function getUpcomingFeed(
 
   // Batch-fetch display statuses and streaming providers
   const titleIds = [...new Set(pageItems.map((item) => item.titleId))];
-  const displayStatuses = getDisplayStatusesByTitleIds(userId, titleIds);
-  const providerRows = getAvailabilityByTitleIds(titleIds);
+  const [displayStatuses, providerRows] = await Promise.all([
+    getDisplayStatusesByTitleIds(userId, titleIds),
+    getAvailabilityByTitleIds(titleIds),
+  ]);
   const providerMap = new Map<
     string,
     { platformId: string; providerName: string; logoPath: string | null }
@@ -576,14 +679,47 @@ export function getUpcomingFeed(
     };
   });
 
-  return { items, nextCursor };
+  // 26.08, Sid — collapsed already holds every upcoming item in the date
+  // window (no DB-level LIMIT, see comment above) before the cursor slice,
+  // so its length is the real total — UpcomingCardsSection was showing
+  // items.length (capped at `limit`) as if it were that total.
+  return { items, nextCursor, totalResults: collapsed.length };
 }
 
-export function getRecommendationsForTitle(titleId: string) {
-  const title = getTitleByIdOrNull(titleId);
+export async function getUntrackedEmbyLibraryFeed(
+  userId: string,
+  limit = 20,
+  type?: "movie" | "tv",
+) {
+  const titleIds = await getUntrackedEmbyLibraryTitleIds(userId, limit, type);
+  if (titleIds.length === 0) return [];
+
+  const titleRows = await getTitlesByIds(titleIds);
+  const titleMap = new Map(titleRows.map((t) => [t.id, t]));
+
+  // Preserve the original ordering (most recently scanned first)
+  return titleIds
+    .map((id) => titleMap.get(id))
+    .filter((t): t is NonNullable<typeof t> => t != null)
+    .map((t) => ({
+      id: t.id,
+      tmdbId: t.tmdbId,
+      type: t.type as "movie" | "tv",
+      title: t.title,
+      posterPath: t.posterPath,
+      posterThumbHash: t.posterThumbHash,
+      releaseDate: t.releaseDate,
+      firstAirDate: t.firstAirDate,
+      voteAverage: t.voteAverage,
+      embyLibraryName: t.embyLibraryName,
+    }));
+}
+
+export async function getRecommendationsForTitle(titleId: string) {
+  const [title] = await getTitleByIdOrNull(titleId);
   if (!title) return [];
 
-  const recs = getRecommendationRowsForTitle(titleId);
+  const recs = await getRecommendationRowsForTitle(titleId);
 
   if (recs.length === 0) return [];
 
@@ -606,7 +742,7 @@ export function getRecommendationsForTitle(titleId: string) {
 
   // Batch fetch all recommended titles (1 query)
   const recTitleIds = uniqueRecs.map((r) => r.recommendedTitleId);
-  const recTitles = getTitlesByIds(recTitleIds);
+  const recTitles = await getTitlesByIds(recTitleIds);
   const recTitleMap = new Map(recTitles.map((t) => [t.id, t]));
 
   return uniqueRecs
@@ -625,5 +761,14 @@ export function getRecommendationsForTitle(titleId: string) {
         voteAverage: r.voteAverage,
       };
     })
-    .filter((r): r is NonNullable<typeof r> => r !== null);
+    // 25.08, Sid: "au moins des années 2000" — same year floor as the
+    // personalized recommendations feed (getTopRecommendationRows), applied
+    // here too since this is the OTHER place recommendations show up (the
+    // "Recommended" section under a title's own page).
+    .filter(
+      (r): r is NonNullable<typeof r> =>
+        r !== null &&
+        ((r.releaseDate ?? "") >= RECOMMENDATION_MIN_YEAR ||
+          (r.firstAirDate ?? "") >= RECOMMENDATION_MIN_YEAR),
+    );
 }

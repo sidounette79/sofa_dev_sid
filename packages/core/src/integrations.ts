@@ -6,6 +6,7 @@ import {
   getUserIntegrations,
   insertIntegration,
   regenerateIntegrationToken,
+  updateIntegrationEmbyUsername,
   updateIntegrationEnabled,
 } from "@sofa/db/queries/integrations";
 
@@ -24,6 +25,7 @@ function serializeIntegration(row: {
   provider: string;
   type: "webhook" | "list";
   token: string;
+  embyUsername: string | null;
   enabled: boolean;
   lastEventAt: Date | null;
   createdAt: Date;
@@ -35,11 +37,11 @@ function serializeIntegration(row: {
   };
 }
 
-export function listUserIntegrations(userId: string) {
-  const userIntegrations = getUserIntegrations(userId);
+export async function listUserIntegrations(userId: string) {
+  const userIntegrations = await getUserIntegrations(userId);
 
   const integrationIds = userIntegrations.map((i) => i.id);
-  const eventsByIntegration = getRecentEventsForIntegrations(integrationIds);
+  const eventsByIntegration = await getRecentEventsForIntegrations(integrationIds);
 
   const result = userIntegrations.map((integration) => {
     const events = eventsByIntegration.get(integration.id) ?? [];
@@ -58,18 +60,22 @@ export function listUserIntegrations(userId: string) {
   return { integrations: result };
 }
 
-export function createOrUpdateIntegration(userId: string, provider: string, enabled?: boolean) {
-  const existing = getIntegrationByUserAndProvider(userId, provider);
+export async function createOrUpdateIntegration(
+  userId: string,
+  provider: string,
+  enabled?: boolean,
+) {
+  const [existing] = await getIntegrationByUserAndProvider(userId, provider);
 
   if (existing) {
     if (enabled !== undefined) {
-      const row = updateIntegrationEnabled(existing.id, enabled);
+      const [row] = await updateIntegrationEnabled(existing.id, enabled);
       return serializeIntegration(row);
     }
     return serializeIntegration(existing);
   }
 
-  const row = insertIntegration({
+  const [row] = await insertIntegration({
     userId,
     provider,
     type: integrationTypeFor(provider),
@@ -81,16 +87,22 @@ export function createOrUpdateIntegration(userId: string, provider: string, enab
   return serializeIntegration(row);
 }
 
-export function deleteIntegration(userId: string, provider: string): void {
-  deleteIntegrationByUserAndProvider(userId, provider);
+export async function deleteIntegration(userId: string, provider: string): Promise<void> {
+  await deleteIntegrationByUserAndProvider(userId, provider);
 }
 
-export function regenerateToken(userId: string, provider: string) {
+export async function regenerateToken(userId: string, provider: string) {
   return regenerateIntegrationToken(userId, provider, generateToken());
 }
 
-export function findIntegrationByToken(token: string) {
-  return getIntegrationByToken(token);
+export async function findIntegrationByToken(token: string) {
+  const [row] = await getIntegrationByToken(token);
+  return row;
+}
+
+export async function setEmbyUsername(userId: string, embyUsername: string | null) {
+  const [row] = await updateIntegrationEmbyUsername(userId, "emby", embyUsername);
+  return row ? serializeIntegration(row) : null;
 }
 
 export { serializeIntegration };

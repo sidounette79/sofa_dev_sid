@@ -298,7 +298,7 @@ function SystemStatusCard({
 }
 
 function BackgroundJobsCard({
-  jobs,
+  jobs: rawJobs,
   isRefreshing,
   onRefresh,
 }: Pick<SystemHealthData, "jobs"> & {
@@ -306,6 +306,21 @@ function BackgroundJobsCard({
   onRefresh: () => void;
 }) {
   const { t } = useLingui();
+  // Hidden from settings: the streaming-platforms system ("Where to Watch") is being
+  // phased out in favor of Emby-based availability, so this task is no longer relevant here.
+  // Also hidden (25.08, Sid): the "Sofa Books" author-watching jobs — that
+  // feature is already superseded by native Grimmory tracking and unlinked
+  // from the nav (see ROADMAP), these three just clutter the list now. And
+  // "Update check" — not something Sid wants surfaced here. Frontend-only:
+  // the underlying jobs still run, just not shown.
+  const HIDDEN_JOBS = new Set([
+    "refreshAvailability",
+    "checkWatchedAuthors",
+    "refreshWatchedAuthorsTotalBooks",
+    "watchNewAuthors",
+    "updateCheck",
+  ]);
+  const jobs = rawJobs.filter((j) => !HIDDEN_JOBS.has(j.jobName));
 
   const JOB_LABELS: Record<string, string> = {
     nightlyRefreshLibrary: t`Library refresh`,
@@ -313,8 +328,12 @@ function BackgroundJobsCard({
     refreshRecommendations: t`Recommendations`,
     refreshTvChildren: t`TV episodes`,
     cacheImages: t`Image cache`,
+    scanEmbyLibrary: t`Emby library scan`,
+    syncRequestedFromRadarrSonarr: t`Radarr/Sonarr requested sync`,
     scheduledBackup: t`Backup`,
     updateCheck: t`Update check`,
+    checkWatchedAuthors: t`Watched authors check`,
+    refreshWatchedAuthorsTotalBooks: t`Watched authors catalog size`,
   };
 
   const triggerJobMutation = useMutation(

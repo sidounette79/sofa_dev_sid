@@ -25,7 +25,7 @@ export function getUserLibrary(userId: string) {
     .from(userTitleStatus)
     .innerJoin(titles, eq(userTitleStatus.titleId, titles.id))
     .where(eq(userTitleStatus.userId, userId))
-    .all();
+    ;
 }
 
 export function getUserMovieWatches(userId: string) {
@@ -39,7 +39,7 @@ export function getUserMovieWatches(userId: string) {
     .from(userMovieWatches)
     .innerJoin(titles, eq(userMovieWatches.titleId, titles.id))
     .where(eq(userMovieWatches.userId, userId))
-    .all();
+    ;
 }
 
 export function getUserEpisodeWatches(userId: string) {
@@ -58,7 +58,7 @@ export function getUserEpisodeWatches(userId: string) {
     .innerJoin(seasons, eq(episodes.seasonId, seasons.id))
     .innerJoin(titles, eq(seasons.titleId, titles.id))
     .where(eq(userEpisodeWatches.userId, userId))
-    .all();
+    ;
 }
 
 export function getUserRatings(userId: string) {
@@ -75,5 +75,5 @@ export function getUserRatings(userId: string) {
     .from(userRatings)
     .innerJoin(titles, eq(userRatings.titleId, titles.id))
     .where(eq(userRatings.userId, userId))
-    .all();
+    ;
 }

@@ -34,6 +34,8 @@ export function appErrorMessages(
     IMPORT_CANNOT_CANCEL: t`This import cannot be cancelled`,
     REGISTRATION_CLOSED: t`Registration is currently closed`,
     EXPORT_FAILED: t`Failed to export data`,
+    PLAYBACK_DEVICE_ERROR: t`Playback device error`,
+    NO_TVDB_ID: t`No TVDB ID available for this show yet`,
   };
 }
 

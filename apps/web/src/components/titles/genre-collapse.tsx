@@ -1,14 +1,15 @@
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { translateGenreName } from "@/lib/genre-names";
 
 export function GenreCollapse({ genres }: { genres: string[] }) {
   if (genres.length === 0) return null;
-  if (genres.length === 1) return <span>{genres[0]}</span>;
+  if (genres.length === 1) return <span>{translateGenreName(genres[0]!)}</span>;
 
   const remaining = genres.slice(1);
 
   return (
     <span className="inline-flex items-center gap-1">
-      <span>{genres[0]}</span>
+      <span>{translateGenreName(genres[0]!)}</span>
       <Popover>
         <PopoverTrigger
           openOnHover
@@ -22,7 +23,7 @@ export function GenreCollapse({ genres }: { genres: string[] }) {
         <PopoverContent className="flex w-auto max-w-48 min-w-28 flex-col gap-0 p-1">
           {remaining.map((genre) => (
             <span key={genre} className="text-popover-foreground px-2 py-1 text-[13px]">
-              {genre}
+              {translateGenreName(genre)}
             </span>
           ))}
         </PopoverContent>

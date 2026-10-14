@@ -8,7 +8,14 @@ import {
   BackupCreateOutput,
   BackupScheduleOutput,
   BackupsListOutput,
+  ContinueWatchingInput,
   ContinueWatchingOutput,
+  NowPlayingOutput,
+  UntrackedEmbyLibraryOutput,
+  RequestedNotAvailableOutput,
+  OptionalMediaTypeParam,
+  UpdateEmbyLibrariesInput,
+  UpdateEmbyUsernameInput,
   CreateImportJobInput,
   CreateIntegrationInput,
   DiscoverInput,
@@ -17,20 +24,39 @@ import {
   FilenameParam,
   GenresOutput,
   IdParam,
+  QuickEpisodeActionOutput,
   ImportJobEvent,
   ImportJobSchema,
   ImportPreviewSchema,
+  EmbyLibrariesListOutput,
   IntegrationOutput,
   IntegrationsListOutput,
   LibraryGenresOutput,
   LibraryListInput,
   LibraryListOutput,
+  RequestOptionsOutput,
+  AdminUserRequestDefaultsListOutput,
+  UserRequestDefaultsOutput,
+  SetUserRequestDefaultsInput,
+  RequestMovieInput,
+  RequestSeriesInput,
+  UnresolvedSeriesRequestsOutput,
+  AvailablePlaybackDevicesOutput,
+  FavoritePlaybackDevicesOutput,
+  SetFavoritePlaybackDevicesInput,
+  DismissPlaybackDeviceInput,
+  PlayOnDeviceInput,
+  PlaybackActivityInput,
+  PlaybackActivityOutput,
+  PlaybackReportingUsersOutput,
+  LibraryStatisticsOutput,
   LibraryStatsOutput,
   MediaTypeParam,
   PageParam,
   PaginatedInput,
   ParseFileInput,
   ParsePayloadInput,
+  PendingLibraryOutput,
   PersonDetailOutput,
   PlatformsListOutput,
   PopularOutput,
@@ -38,6 +64,8 @@ import {
   PublicInfoOutput,
   PurgeImageCacheOutput,
   PurgeMetadataCacheOutput,
+  PushSubscribeInput,
+  PushUnsubscribeInput,
   RestoreBackupInput,
   SearchInput,
   SearchOutput,
@@ -106,6 +134,18 @@ export const contract = {
       })
       .input(IdParam)
       .output(TitleRecommendationsOutput),
+    pendingLibrary: oc
+      .route({
+        method: "GET",
+        path: "/titles/{id}/pending-library",
+        tags: ["Titles"],
+        summary: "Get the library folder a requested title will land in",
+        description:
+          "For a title that's been requested but isn't on Emby yet: reads Radarr/Sonarr directly for the real root folder already assigned to that request (not guessed from current user defaults, which can drift). Null if not requested, not found in Radarr/Sonarr yet, or Radarr/Sonarr isn't reachable.",
+        successDescription: "The root folder path, or null",
+      })
+      .input(IdParam)
+      .output(PendingLibraryOutput),
   },
 
   // ─── Tracking ───────────────────────────────────────────────
@@ -158,6 +198,38 @@ export const contract = {
         description: "Set a 0-5 star rating for a title. Use 0 to clear the rating.",
       })
       .input(UpdateRatingInput)
+      .output(z.void()),
+    watchNext: oc
+      .route({
+        method: "POST",
+        path: "/tracking/titles/{id}/watch-next",
+        tags: ["Tracking"],
+        summary: "Mark the next unwatched episode as watched",
+        description:
+          "Finds and marks the next unwatched (already-aired) episode of a TV series as watched.",
+      })
+      .input(IdParam)
+      .output(QuickEpisodeActionOutput),
+    unwatchLast: oc
+      .route({
+        method: "POST",
+        path: "/tracking/titles/{id}/unwatch-last",
+        tags: ["Tracking"],
+        summary: "Unmark the most recently watched episode",
+        description: "Finds and unmarks the last watched episode of a TV series.",
+      })
+      .input(IdParam)
+      .output(QuickEpisodeActionOutput),
+    rewatch: oc
+      .route({
+        method: "POST",
+        path: "/tracking/titles/{id}/rewatch",
+        tags: ["Tracking"],
+        summary: "Start a new watch-through of a title",
+        description:
+          "TV: bumps the title's rewatch cycle so it reappears in To Watch as unwatched, without erasing previous cycles' watch history. Movies: logs another watch.",
+      })
+      .input(IdParam)
       .output(z.void()),
     userInfo: oc
       .route({
@@ -220,6 +292,17 @@ export const contract = {
         successDescription: "Library size and completed count",
       })
       .output(LibraryStatsOutput),
+    statistics: oc
+      .route({
+        method: "GET",
+        path: "/library/statistics",
+        tags: ["Library"],
+        summary: "Get extended library statistics",
+        description:
+          "Fetch extended aggregate statistics for the statistics page: watch totals, media type and status distributions, and rating stats.",
+        successDescription: "Extended library statistics",
+      })
+      .output(LibraryStatisticsOutput),
     continueWatching: oc
       .route({
         method: "GET",
@@ -230,7 +313,19 @@ export const contract = {
           "Fetch TV shows the user is currently watching, with the next unwatched episode and progress for each.",
         successDescription: "In-progress shows with next episode and watch progress",
       })
+      .input(ContinueWatchingInput)
       .output(ContinueWatchingOutput),
+    nowPlaying: oc
+      .route({
+        method: "GET",
+        path: "/library/now-playing",
+        tags: ["Library"],
+        summary: "Get currently playing Emby sessions",
+        description:
+          "Fetch sessions currently playing on Emby, matched against the Sofa library where possible, for live dashboard display.",
+        successDescription: "Currently playing sessions",
+      })
+      .output(NowPlayingOutput),
     upcoming: oc
       .route({
         method: "GET",
@@ -271,6 +366,32 @@ export const contract = {
         successDescription: "Popular items with user statuses",
       })
       .input(MediaTypeParam.merge(PageParam))
+      .output(PopularOutput)
+      .errors(tmdbNotConfiguredError),
+    upcomingMovies: oc
+      .route({
+        method: "GET",
+        path: "/discover/upcoming-movies",
+        tags: ["Discover"],
+        summary: "Get upcoming movie releases",
+        description:
+          "Fetch movies with upcoming release dates from TMDB — new releases nobody has requested yet, distinct from library.upcoming (which only covers already-tracked titles).",
+        successDescription: "Upcoming movies with user statuses",
+      })
+      .input(PageParam)
+      .output(PopularOutput)
+      .errors(tmdbNotConfiguredError),
+    upcomingSeries: oc
+      .route({
+        method: "GET",
+        path: "/discover/upcoming-series",
+        tags: ["Discover"],
+        summary: "Get upcoming series releases",
+        description:
+          "Fetch TV series with upcoming first-air dates from TMDB — new releases nobody has requested yet.",
+        successDescription: "Upcoming series with user statuses",
+      })
+      .input(PageParam)
       .output(PopularOutput)
       .errors(tmdbNotConfiguredError),
     search: oc
@@ -333,7 +454,32 @@ export const contract = {
           "Fetch personalized title recommendations based on the user's library and watch history.",
         successDescription: "Recommended titles",
       })
+      .input(OptionalMediaTypeParam)
       .output(DiscoverRecommendationsOutput),
+    untrackedEmbyLibrary: oc
+      .route({
+        method: "GET",
+        path: "/discover/untracked-emby-library",
+        tags: ["Discover"],
+        summary: "Get untracked titles available on Emby",
+        description:
+          "Fetch titles physically available on the Emby server that the user hasn't added to their library yet.",
+        successDescription: "Untracked titles available on the Emby server",
+      })
+      .input(OptionalMediaTypeParam)
+      .output(UntrackedEmbyLibraryOutput),
+    requestedNotAvailable: oc
+      .route({
+        method: "GET",
+        path: "/discover/requested-not-available",
+        tags: ["Discover"],
+        summary: "Get requested titles not yet available",
+        description:
+          "Fetch titles that were requested via Radarr/Sonarr (through Sofa's Request button or reconciled from Radarr/Sonarr directly) but aren't on Emby yet.",
+        successDescription: "Requested titles not yet on Emby",
+      })
+      .input(MediaTypeParam)
+      .output(RequestedNotAvailableOutput),
   },
 
   // ─── People ─────────────────────────────────────────────────
@@ -465,10 +611,255 @@ export const contract = {
             data: appErrorData(AppErrorCode.INTEGRATION_NOT_FOUND),
           },
         }),
+      updateEmbyUsername: oc
+        .route({
+          method: "POST",
+          path: "/account/integrations/emby/username",
+          tags: ["Account"],
+          summary: "Link Emby username",
+          description:
+            "Link an Emby username to this Sofa account, used to filter Now Playing sessions to only this user's playback.",
+          successDescription: "Integration with updated Emby username",
+        })
+        .input(UpdateEmbyUsernameInput)
+        .output(IntegrationOutput)
+        .errors({
+          NOT_FOUND: {
+            message: "Integration not found",
+            data: appErrorData(AppErrorCode.INTEGRATION_NOT_FOUND),
+          },
+        }),
+      listEmbyLibraries: oc
+        .route({
+          method: "GET",
+          path: "/account/integrations/emby/libraries",
+          tags: ["Account"],
+          summary: "List available Emby libraries",
+          description:
+            "Fetch the list of scannable Emby libraries and which ones this user has claimed as their own.",
+          successDescription: "Available Emby libraries and current selection",
+        })
+        .output(EmbyLibrariesListOutput),
+      updateEmbyLibraries: oc
+        .route({
+          method: "POST",
+          path: "/account/integrations/emby/libraries",
+          tags: ["Account"],
+          summary: "Claim Emby libraries for this user",
+          description:
+            "Set which Emby libraries belong to this user. Titles found in these libraries are automatically added to their watchlist on the next scan.",
+          successDescription: "Updated library selection",
+        })
+        .input(UpdateEmbyLibrariesInput)
+        .output(EmbyLibrariesListOutput),
     },
   },
 
-  // ─── System ─────────────────────────────────────────────────
+  // ─── Push notifications ──────────────────────────────────────
+  notifications: {
+    subscribe: oc
+      .route({
+        method: "POST",
+        path: "/notifications/subscribe",
+        tags: ["Notifications"],
+        summary: "Register a Web Push subscription",
+        description:
+          "Registers (or refreshes) this browser/device's Web Push subscription for the current user — episode-release and series-status-change notifications.",
+      })
+      .input(PushSubscribeInput)
+      .output(z.void()),
+    unsubscribe: oc
+      .route({
+        method: "POST",
+        path: "/notifications/unsubscribe",
+        tags: ["Notifications"],
+        summary: "Remove a Web Push subscription",
+        description: "Removes this browser/device's Web Push subscription for the current user.",
+      })
+      .input(PushUnsubscribeInput)
+      .output(z.void()),
+  },
+
+  mediaRequests: {
+    getOptions: oc
+      .route({
+        method: "GET",
+        path: "/media-requests/options",
+        tags: ["MediaRequests"],
+        summary: "Get Radarr/Sonarr root folders and quality profiles",
+        description:
+          "Fetch the available root folders and quality profiles from Radarr and Sonarr, for the request dialog's dropdowns.",
+        successDescription: "Root folders and quality profiles",
+      })
+      .output(RequestOptionsOutput),
+    listUserDefaults: oc
+      .route({
+        method: "GET",
+        path: "/media-requests/user-defaults",
+        tags: ["MediaRequests"],
+        summary: "List every user's default root folder + quality profile (admin only)",
+        description: "Admin-only: fetch stored request defaults for every Sofa user that has any set.",
+        successDescription: "Every user's defaults",
+      })
+      .output(AdminUserRequestDefaultsListOutput),
+    getMyDefaults: oc
+      .route({
+        method: "GET",
+        path: "/media-requests/my-defaults",
+        tags: ["MediaRequests"],
+        summary: "Get my default root folder + quality profile",
+        description: "Fetch the current user's stored default Radarr/Sonarr root folder + quality profile.",
+        successDescription: "This user's defaults",
+      })
+      .output(UserRequestDefaultsOutput),
+    setUserDefaults: oc
+      .route({
+        method: "POST",
+        path: "/media-requests/user-defaults",
+        tags: ["MediaRequests"],
+        summary: "Set a user's default root folder + quality profile (admin only)",
+        description:
+          "Admin-only: set the default Radarr/Sonarr root folder + quality profile for any Sofa user.",
+        successDescription: "No content",
+      })
+      .input(SetUserRequestDefaultsInput),
+    requestMovie: oc
+      .route({
+        method: "POST",
+        path: "/media-requests/movie",
+        tags: ["MediaRequests"],
+        summary: "Request a movie",
+        description:
+          "Push a movie straight to Radarr with a chosen (or the requesting user's default) root folder + quality profile, monitored and searched immediately. Also adds the title to the watchlist, same as a plain add.",
+        successDescription: "No content",
+      })
+      .input(RequestMovieInput)
+      .errors({
+        NOT_FOUND: {
+          message: "Title not found",
+          data: appErrorData(AppErrorCode.TITLE_NOT_FOUND),
+        },
+        BAD_REQUEST: { message: "No root folder / quality profile available" },
+      }),
+    requestSeries: oc
+      .route({
+        method: "POST",
+        path: "/media-requests/series",
+        tags: ["MediaRequests"],
+        summary: "Request a series",
+        description:
+          "Push a series straight to Sonarr with a chosen (or the requesting user's default) root folder + quality profile + season selection, monitored and searched immediately. Also adds the title to the watchlist, same as a plain add.",
+        successDescription: "No content",
+      })
+      .input(RequestSeriesInput)
+      .errors({
+        NOT_FOUND: {
+          message: "Title not found",
+          data: appErrorData(AppErrorCode.TITLE_NOT_FOUND),
+        },
+        BAD_REQUEST: {
+          message: "No root folder / quality profile available",
+          // 06.09, Sid: distinguish "TheTVDB doesn't have this show yet" (a
+          // normal, expected, retry-later case — she wanted a friendlier
+          // toast for it) from every other BAD_REQUEST here, which are real
+          // user-input problems.
+          data: appErrorData(AppErrorCode.NO_TVDB_ID).optional(),
+        },
+      }),
+    listUnresolvedSeriesRequests: oc
+      .route({
+        method: "GET",
+        path: "/media-requests/series/unresolved",
+        tags: ["MediaRequests"],
+        summary: "List series requests still waiting on TheTVDB",
+        description:
+          "Series she tried to request that TheTVDB doesn't have indexed yet (\"En attente TMDB\") — persists regardless of the show's air date, unlike the Upcoming feed, until a plain Request succeeds.",
+        successDescription: "Titles awaiting a TVDB ID",
+      })
+      .output(UnresolvedSeriesRequestsOutput),
+  },
+  playbackDevices: {
+    listAvailable: oc
+      .route({
+        method: "GET",
+        path: "/playback-devices/available",
+        tags: ["PlaybackDevices"],
+        summary: "List every device this user's Emby account has connected with",
+        description:
+          "Full device pool for this user's own Emby account (every phone/tablet/TV it's ever used), for the favorites picker to choose 2-3 from.",
+        successDescription: "Available devices",
+      })
+      .output(AvailablePlaybackDevicesOutput),
+    listFavorites: oc
+      .route({
+        method: "GET",
+        path: "/playback-devices/favorites",
+        tags: ["PlaybackDevices"],
+        summary: "List this user's saved playback device shortlist",
+        description:
+          "The user's saved shortlist, each flagged online/offline against Emby's current live sessions.",
+        successDescription: "Favorite devices",
+      })
+      .output(FavoritePlaybackDevicesOutput),
+    setFavorites: oc
+      .route({
+        method: "POST",
+        path: "/playback-devices/favorites",
+        tags: ["PlaybackDevices"],
+        summary: "Replace this user's playback device shortlist",
+        successDescription: "No content",
+      })
+      .input(SetFavoritePlaybackDevicesInput),
+    dismiss: oc
+      .route({
+        method: "POST",
+        path: "/playback-devices/dismiss",
+        tags: ["PlaybackDevices"],
+        summary: "Permanently hide a device from this user's availability picker",
+        successDescription: "No content",
+      })
+      .input(DismissPlaybackDeviceInput),
+    playOn: oc
+      .route({
+        method: "POST",
+        path: "/playback-devices/play",
+        tags: ["PlaybackDevices"],
+        summary: "Start playback of a movie or episode on another Emby session",
+        description:
+          "Remote-controls another Emby session (e.g. a TV's native Emby app) to start playing, the same mechanism Emby's own apps use to cast between devices on one account.",
+        successDescription: "No content",
+      })
+      .input(PlayOnDeviceInput)
+      .errors({
+        BAD_REQUEST: {
+          message: "Playback device error",
+          data: appErrorData(AppErrorCode.PLAYBACK_DEVICE_ERROR),
+        },
+      }),
+  },
+  playbackReporting: {
+    activity: oc
+      .route({
+        method: "GET",
+        path: "/playback-reporting/activity",
+        tags: ["PlaybackReporting"],
+        summary: "Admin-only: real Emby playback activity log (Tautulli-style)",
+        description:
+          "Queries Emby's Playback Reporting plugin directly — real Emby accounts and history, independent of Sofa's own per-user tracking.",
+        successDescription: "A page of activity",
+      })
+      .input(PlaybackActivityInput)
+      .output(PlaybackActivityOutput),
+    users: oc
+      .route({
+        method: "GET",
+        path: "/playback-reporting/users",
+        tags: ["PlaybackReporting"],
+        summary: "Admin-only: real Emby accounts with at least one logged session",
+        successDescription: "Users",
+      })
+      .output(PlaybackReportingUsersOutput),
+  },
   system: {
     publicInfo: oc
       .route({
@@ -504,7 +895,7 @@ export const contract = {
           tags: ["Admin"],
           summary: "Get admin settings",
           description:
-            "Fetch all admin-configurable settings: registration, update checks, and telemetry.",
+            "Fetch all admin-configurable settings: registration and update checks.",
           successDescription: "Current admin settings",
         })
         .output(AdminSettingsOutput),

@@ -7,13 +7,16 @@ import { useCallback, useState } from "react";
 import { PlatformGrid } from "@/components/platforms/platform-grid";
 import { RouteError } from "@/components/route-error";
 import { Button } from "@/components/ui/button";
+import { withLoaderRetry } from "@/lib/loader-retry";
 import { client, orpc } from "@/lib/orpc/client";
 
 export const Route = createFileRoute("/_app/onboarding")({
   loader: async ({ context }) => {
-    await context.queryClient.ensureQueryData(orpc.discover.platforms.queryOptions());
+    await withLoaderRetry(() =>
+      context.queryClient.ensureQueryData(orpc.discover.platforms.queryOptions()),
+    );
   },
-  head: () => ({ meta: [{ title: "Get Started — Sofa" }] }),
+  head: () => ({ meta: [{ title: "Get Started — Patoune TV" }] }),
   errorComponent: RouteError,
   component: OnboardingPage,
 });
@@ -44,14 +47,14 @@ function OnboardingPage() {
       if (selectedIds.size > 0) {
         await client.account.updatePlatforms({ platformIds: [...selectedIds] });
       }
-      void navigate({ to: "/dashboard" });
+      void navigate({ to: "/library", search: { type: "tv" } });
     } finally {
       setSaving(false);
     }
   }
 
   function handleSkip() {
-    void navigate({ to: "/dashboard" });
+    void navigate({ to: "/library", search: { type: "tv" } });
   }
 
   return (

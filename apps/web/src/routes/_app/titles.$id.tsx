@@ -2,7 +2,7 @@ import { Trans } from "@lingui/react/macro";
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 
 import { TitleActions } from "@/components/titles/title-actions";
-import { TitleAvailability } from "@/components/titles/title-availability";
+import { TitleEmbyAvailability } from "@/components/titles/title-emby-availability";
 import { TitleCast } from "@/components/titles/title-cast";
 import { TitleHero } from "@/components/titles/title-hero";
 import { TitleKeyboardShortcuts } from "@/components/titles/title-keyboard-shortcuts";
@@ -12,6 +12,7 @@ import { TitleSeasons } from "@/components/titles/title-seasons";
 import { TitleTheme } from "@/components/titles/title-theme";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getAppErrorCode } from "@/lib/error-messages";
+import { withLoaderRetry } from "@/lib/loader-retry";
 import { orpc } from "@/lib/orpc/client";
 import { getThemeCssProperties } from "@/lib/theme";
 
@@ -19,14 +20,16 @@ export const Route = createFileRoute("/_app/titles/$id")({
   staleTime: 60_000,
   loader: async ({ params, context }) => {
     try {
-      const [titleResult, userInfo] = await Promise.all([
-        context.queryClient.ensureQueryData(
-          orpc.titles.get.queryOptions({ input: { id: params.id } }),
-        ),
-        context.queryClient
-          .ensureQueryData(orpc.tracking.userInfo.queryOptions({ input: { id: params.id } }))
-          .catch(() => null),
-      ]);
+      const [titleResult, userInfo] = await withLoaderRetry(() =>
+        Promise.all([
+          context.queryClient.ensureQueryData(
+            orpc.titles.get.queryOptions({ input: { id: params.id } }),
+          ),
+          context.queryClient
+            .ensureQueryData(orpc.tracking.userInfo.queryOptions({ input: { id: params.id } }))
+            .catch(() => null),
+        ]),
+      );
       return { ...titleResult, userInfo };
     } catch (error) {
       if (getAppErrorCode(error) === "TITLE_NOT_FOUND") {
@@ -50,7 +53,7 @@ export const Route = createFileRoute("/_app/titles/$id")({
 });
 
 function TitleDetailPage() {
-  const { title, seasons, availability, cast } = Route.useLoaderData();
+  const { title, seasons, cast, embyServerId, embyUrl } = Route.useLoaderData();
 
   const themeStyle = getThemeCssProperties(title.colorPalette);
 
@@ -65,7 +68,13 @@ function TitleDetailPage() {
         seasons={seasons}
       >
         <TitleHero title={title} trailerVideoKey={title.trailerVideoKey} actions={<TitleActions />}>
-          <TitleAvailability availability={availability} />
+          <TitleEmbyAvailability
+            embyStatus={title.embyStatus}
+            embyLibraryName={title.embyLibraryName}
+            embyItemId={title.embyItemId}
+            embyServerId={embyServerId}
+            embyUrl={embyUrl}
+          />
         </TitleHero>
 
         {title.type === "tv" && seasons.length > 0 && <TitleSeasons />}
@@ -122,10 +131,11 @@ function TitleErrorComponent() {
         <Trans>Something went wrong while loading this title. Please try again.</Trans>
       </p>
       <Link
-        to="/dashboard"
+        to="/library"
+        search={{ type: "tv" }}
         className="border-border hover:border-primary/40 hover:bg-primary/5 inline-flex h-10 items-center justify-center rounded-lg border px-5 text-sm font-medium transition-colors"
       >
-        <Trans>Dashboard</Trans>
+        <Trans>Library</Trans>
       </Link>
     </div>
   );
@@ -168,10 +178,11 @@ function TitleNotFound() {
           <div className="absolute inset-0 bg-gradient-to-t from-black/10 to-transparent opacity-0 transition-opacity group-hover:opacity-100" />
         </Link>
         <Link
-          to="/dashboard"
+          to="/library"
+          search={{ type: "tv" }}
           className="border-border hover:border-primary/40 hover:bg-primary/5 inline-flex h-10 items-center justify-center rounded-lg border px-5 text-sm font-medium transition-colors"
         >
-          <Trans>Dashboard</Trans>
+          <Trans>Library</Trans>
         </Link>
       </div>
     </div>

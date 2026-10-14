@@ -7,8 +7,10 @@ import { orpc } from "@/lib/orpc/client";
 import { FeedSection } from "./feed-section";
 import { TitleGrid, TitleGridSectionSkeleton } from "./title-grid";
 
-export function RecommendationsSection() {
-  const { data, isPending } = useQuery(orpc.discover.recommendations.queryOptions());
+export function RecommendationsSection({ type }: { type?: "movie" | "tv" } = {}) {
+  const { data, isPending } = useQuery(
+    orpc.discover.recommendations.queryOptions({ input: { type } }),
+  );
 
   const { t } = useLingui();
 
@@ -19,6 +21,9 @@ export function RecommendationsSection() {
 
   return (
     <FeedSection
+      id={`recommendations-${type ?? "all"}`}
+      collapsible
+      defaultOpen
       title={t`Recommended for You`}
       icon={<IconThumbUp className="text-primary size-5" />}
     >

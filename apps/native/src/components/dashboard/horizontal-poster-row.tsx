@@ -18,7 +18,7 @@ export interface PosterRowItem {
   releaseDate?: string | null;
   firstAirDate?: string | null;
   voteAverage?: number | null;
-  userStatus?: "in_watchlist" | "watching" | "caught_up" | "completed" | null;
+  userStatus?: "in_watchlist" | "watching" | "caught_up" | "completed" | "dropped" | null;
   episodeProgress?: { watched: number; total: number } | null;
 }
 

@@ -32,7 +32,7 @@ export const openApiHandler = new OpenAPIHandler(implementedRouter, {
       schemaConverters,
       specGenerateOptions: {
         info: {
-          title: "Sofa API",
+          title: "Patoune TV API",
           version: process.env.APP_VERSION || "0.0.0",
         },
         servers: [{ url: "/api/v1" }],
@@ -90,7 +90,7 @@ export const openApiHandler = new OpenAPIHandler(implementedRouter, {
       }
 
       const spec = await generateOpenApiSpec({
-        title: "Sofa API",
+        title: "Patoune TV API",
         version: process.env.APP_VERSION || "0.0.0",
         servers: [{ url: prefix || "/api/v1" }],
         sessionCookieName,

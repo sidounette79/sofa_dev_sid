@@ -1,8 +1,5 @@
-import { useRef } from "react";
-
+import { FeedSection } from "@/components/dashboard/feed-section";
 import { TitleCard } from "@/components/title-card";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { hasReachedHorizontalEnd } from "@/hooks/use-infinite-scroll";
 
 interface TitleRowItem {
   id: string;
@@ -13,88 +10,64 @@ interface TitleRowItem {
   releaseDate: string | null;
   firstAirDate: string | null;
   voteAverage: number | null;
+  embyStatus?: "available" | "removed" | null;
+  requestedAt?: Date | string | null;
 }
 
 interface TitleRowProps {
   heading: string;
   icon: React.ReactNode;
   items: TitleRowItem[];
-  userStatuses?: Record<string, "in_watchlist" | "watching" | "caught_up" | "completed">;
+  userStatuses?: Record<string, "in_watchlist" | "watching" | "caught_up" | "completed" | "dropped">;
   episodeProgress?: Record<string, { watched: number; total: number }>;
-  onEndReached?: () => void;
-  hasNextPage?: boolean;
-  isFetchingNextPage?: boolean;
 }
 
-export function TitleRow({
-  heading,
-  icon,
-  items,
-  userStatuses,
-  episodeProgress,
-  onEndReached,
-  hasNextPage = false,
-  isFetchingNextPage = false,
-}: TitleRowProps) {
-  const scrollRef = useRef<HTMLDivElement>(null);
-
+/**
+ * Wrapping grid (24.08, Sid), same density setting as the library grid
+ * (--title-grid-columns, appearance.ts) — was a horizontal scrolling
+ * carousel. Now single-page/capped (Trending's own procedure caps 10
+ * movies + 10 series and filters anime/already-owned — see discover.ts) so
+ * there's no pagination to wire here anymore; FeedSection gives it the
+ * chevron/collapse Sid asked for, same as every dashboard section.
+ */
+export function TitleRow({ heading, icon, items, userStatuses, episodeProgress }: TitleRowProps) {
   if (items.length === 0) return null;
 
   return (
-    <section className="space-y-4">
-      <div className="flex items-center gap-2">
-        {icon}
-        <h2 className="font-display text-xl tracking-tight text-balance">{heading}</h2>
-      </div>
-      <ScrollArea
-        scrollFade
-        hideScrollbar
-        className="-mx-6 sm:-mx-2"
-        scrollRef={scrollRef}
-        onScrollEnd={() => {
-          const viewport = scrollRef.current;
-
-          if (
-            !viewport ||
-            !onEndReached ||
-            !hasNextPage ||
-            isFetchingNextPage ||
-            !hasReachedHorizontalEnd(viewport)
-          ) {
-            return;
-          }
-
-          onEndReached();
-        }}
+    <FeedSection
+      id="trending-today"
+      collapsible
+      defaultOpen
+      title={heading}
+      icon={icon}
+      countLabel={`(${items.length})`}
+    >
+      <div
+        className="grid gap-4"
+        style={{ gridTemplateColumns: "repeat(var(--title-grid-columns, 5), minmax(0, 1fr))" }}
       >
-        <div className="flex gap-4 px-6 py-2 sm:px-2">
-          {items.map((item, i) => (
-            <div key={item.id} className="w-[140px] shrink-0 sm:w-[160px]">
-              <div
-                className="animate-stagger-item"
-                style={{ "--stagger-index": i } as React.CSSProperties}
-              >
-                <TitleCard
-                  id={item.id}
-                  type={item.type}
-                  title={item.title}
-                  posterPath={item.posterPath}
-                  posterThumbHash={item.posterThumbHash}
-                  releaseDate={item.releaseDate ?? item.firstAirDate}
-                  voteAverage={item.voteAverage}
-                  userStatus={userStatuses?.[item.id]}
-                  episodeProgress={episodeProgress?.[item.id]}
-                />
-              </div>
-            </div>
-          ))}
-          {isFetchingNextPage && (
-            <div className="flex shrink-0 items-center px-4">
-              <div className="border-primary size-5 animate-spin rounded-full border-2 border-t-transparent" />
-            </div>
-          )}
-        </div>
-      </ScrollArea>
-    </section>
+        {items.map((item, i) => (
+          <div
+            key={item.id}
+            className="animate-stagger-item"
+            style={{ "--stagger-index": i } as React.CSSProperties}
+          >
+            <TitleCard
+              id={item.id}
+              type={item.type}
+              title={item.title}
+              posterPath={item.posterPath}
+              posterThumbHash={item.posterThumbHash}
+              releaseDate={item.releaseDate ?? item.firstAirDate}
+              voteAverage={item.voteAverage}
+              embyStatus={item.embyStatus}
+              requestedAt={item.requestedAt}
+              userStatus={userStatuses?.[item.id]}
+              episodeProgress={episodeProgress?.[item.id]}
+            />
+          </div>
+        ))}
+      </div>
+    </FeedSection>
   );
 }

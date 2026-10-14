@@ -16,7 +16,7 @@ export function RouteError({ reset }: ErrorComponentProps) {
         <p className="text-muted-foreground mx-auto max-w-sm text-sm leading-relaxed">
           <Trans>
             An unexpected error occurred while loading this page. You can try again or head back to
-            the dashboard.
+            the library.
           </Trans>
         </p>
       </div>
@@ -32,10 +32,11 @@ export function RouteError({ reset }: ErrorComponentProps) {
           <div className="absolute inset-0 bg-gradient-to-t from-black/10 to-transparent opacity-0 transition-opacity group-hover:opacity-100" />
         </button>
         <Link
-          to="/dashboard"
+          to="/library"
+          search={{ type: "tv" }}
           className="border-border hover:border-primary/40 hover:bg-primary/5 inline-flex h-10 items-center justify-center rounded-lg border px-5 text-sm font-medium transition-colors"
         >
-          <Trans>Dashboard</Trans>
+          <Trans>Library</Trans>
         </Link>
       </div>
     </div>

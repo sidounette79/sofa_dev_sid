@@ -2,7 +2,7 @@ import { Trans } from "@lingui/react/macro";
 import {
   IconAlertTriangle,
   IconDatabaseExport,
-  IconFileImport,
+  IconFolder,
   IconServer2,
   IconShieldLock,
   IconUser,
@@ -12,21 +12,23 @@ import { createFileRoute } from "@tanstack/react-router";
 
 import { RouteError } from "@/components/route-error";
 import { AccountSection } from "@/components/settings/account-section";
+import { AppearanceSection } from "@/components/settings/appearance-section";
 import { BackupRestoreSection } from "@/components/settings/backup-restore-section";
 import { BackupScheduleSection } from "@/components/settings/backup-schedule-section";
 import { BackupSection } from "@/components/settings/backup-section";
 import { CacheSection } from "@/components/settings/danger-section";
-import { ImportsSection } from "@/components/settings/imports-section";
 import { IntegrationsSection } from "@/components/settings/integrations-section";
 import { LanguageSection } from "@/components/settings/language-section";
+import { MediaRequestsSection } from "@/components/settings/media-requests-section";
+import { NotificationsSection } from "@/components/settings/notifications-section";
 import { RegistrationSection } from "@/components/settings/registration-section";
 import { SettingsShell } from "@/components/settings/settings-shell";
-import { StreamingServicesSection } from "@/components/settings/streaming-services-section";
 import { SystemHealthCards } from "@/components/settings/system-health-section";
 import { UpdateCheckSection } from "@/components/settings/update-check-section";
 import { TmdbLogo } from "@/components/tmdb-logo";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { withLoaderRetry } from "@/lib/loader-retry";
 import { orpc } from "@/lib/orpc/client";
 
 const GITHUB_REPO = "jakejarvis/sofa";
@@ -34,23 +36,27 @@ const GITHUB_REPO = "jakejarvis/sofa";
 export const Route = createFileRoute("/_app/settings")({
   staleTime: 30_000,
   loader: async ({ context }) => {
-    const promises: Promise<unknown>[] = [
-      context.queryClient.ensureQueryData(orpc.account.integrations.list.queryOptions()),
-      context.queryClient.ensureQueryData(orpc.system.status.queryOptions()),
-      context.queryClient.ensureQueryData(orpc.discover.platforms.queryOptions()),
-      context.queryClient.ensureQueryData(orpc.account.platforms.queryOptions()),
-    ];
     const isAdmin = context.session.user.role === "admin";
-    if (isAdmin) {
-      promises.push(
-        context.queryClient.ensureQueryData(orpc.admin.systemHealth.queryOptions()),
-        context.queryClient.ensureQueryData(orpc.admin.backups.list.queryOptions()),
-        context.queryClient.ensureQueryData(orpc.admin.backups.schedule.queryOptions()),
-      );
-    }
-    await Promise.all(promises);
+    await withLoaderRetry(() => {
+      const promises: Promise<unknown>[] = [
+        context.queryClient.ensureQueryData(orpc.account.integrations.list.queryOptions()),
+        context.queryClient.ensureQueryData(orpc.system.status.queryOptions()),
+        context.queryClient.ensureQueryData(orpc.discover.platforms.queryOptions()),
+        context.queryClient.ensureQueryData(orpc.account.platforms.queryOptions()),
+      ];
+      if (isAdmin) {
+        promises.push(
+          context.queryClient.ensureQueryData(orpc.admin.systemHealth.queryOptions()),
+          context.queryClient.ensureQueryData(orpc.admin.backups.list.queryOptions()),
+          context.queryClient.ensureQueryData(orpc.admin.backups.schedule.queryOptions()),
+          context.queryClient.ensureQueryData(orpc.mediaRequests.getOptions.queryOptions()),
+          context.queryClient.ensureQueryData(orpc.mediaRequests.listUserDefaults.queryOptions()),
+        );
+      }
+      return Promise.all(promises);
+    });
   },
-  head: () => ({ meta: [{ title: "Settings — Sofa" }] }),
+  head: () => ({ meta: [{ title: "Settings — Patoune TV" }] }),
   pendingComponent: SettingsSkeleton,
   errorComponent: RouteError,
   component: SettingsPage,
@@ -97,8 +103,11 @@ function SettingsPage() {
               role: session.user.role ?? undefined,
             }}
           />
-          <StreamingServicesSection />
           <LanguageSection />
+          <AppearanceSection />
+          <Card>
+            <NotificationsSection />
+          </Card>
         </div>
       </div>
 
@@ -111,17 +120,6 @@ function SettingsPage() {
           </h2>
         </div>
         <IntegrationsSection />
-      </div>
-
-      {/* Import */}
-      <div>
-        <div className="mb-3 flex items-center gap-2">
-          <IconFileImport aria-hidden className="text-muted-foreground size-4" />
-          <h2 className="text-muted-foreground text-xs font-medium tracking-wider uppercase">
-            <Trans>Import</Trans>
-          </h2>
-        </div>
-        <ImportsSection />
       </div>
 
       {/* Server health */}
@@ -186,6 +184,24 @@ function SettingsPage() {
               <BackupRestoreSection />
             </Card>
           </div>
+        </div>
+      )}
+
+      {/* Media requests */}
+      {isAdmin && (
+        <div>
+          <div className="mb-3 flex items-center gap-2">
+            <IconFolder aria-hidden={true} className="text-muted-foreground size-4" />
+            <h2 className="text-muted-foreground text-xs font-medium tracking-wider uppercase">
+              <Trans>Media Requests</Trans>
+            </h2>
+            <span className="bg-primary/10 text-primary rounded-md px-1.5 py-0.5 text-[10px] font-medium">
+              <Trans>Admin only</Trans>
+            </span>
+          </div>
+          <Card className="border-s-primary/30 border-s-2">
+            <MediaRequestsSection />
+          </Card>
         </div>
       )}
 

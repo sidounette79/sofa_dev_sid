@@ -21,21 +21,21 @@ export function getUserPlatformIdList(userId: string) {
   return getUserPlatformIds(userId);
 }
 
-export function updateUserPlatforms(userId: string, platformIds: string[]): void {
-  if (platformIds.length > 0 && !platformIdsExist(platformIds)) {
+export async function updateUserPlatforms(userId: string, platformIds: string[]): Promise<void> {
+  if (platformIds.length > 0 && !(await platformIdsExist(platformIds))) {
     throw new Error("One or more platform IDs do not exist");
   }
-  setUserPlatforms(userId, platformIds);
+  await setUserPlatforms(userId, platformIds);
 }
 
-export function hasUserSetPlatforms(userId: string): boolean {
+export function hasUserSetPlatforms(userId: string): Promise<boolean> {
   return hasUserPlatforms(userId);
 }
 
-export function getPlatformTmdbIds(platformId: string): number[] {
+export function getPlatformTmdbIds(platformId: string): Promise<number[]> {
   return getTmdbProviderIdsForPlatform(platformId);
 }
 
-export function getPlatformTmdbIdMap(platformIds: string[]): Map<string, number[]> {
+export function getPlatformTmdbIdMap(platformIds: string[]): Promise<Map<string, number[]>> {
   return getTmdbProviderIdsByPlatformIds(platformIds);
 }

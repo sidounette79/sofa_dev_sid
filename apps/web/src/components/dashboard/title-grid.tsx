@@ -9,8 +9,14 @@ interface TitleGridItem {
   posterThumbHash?: string | null;
   releaseDate?: string | null;
   firstAirDate?: string | null;
+  status?: string | null;
   voteAverage?: number | null;
-  userStatus?: "in_watchlist" | "watching" | "caught_up" | "completed" | null;
+  embyStatus?: "available" | "removed" | null;
+  userStatus?: "in_watchlist" | "watching" | "caught_up" | "completed" | "dropped" | null;
+  requestedAt?: Date | string | null;
+  episodeProgress?: { watched: number; total: number } | null;
+  episodeLabel?: string | null;
+  watchCount?: number | null;
 }
 
 export function TitleGridSectionSkeleton() {
@@ -33,7 +39,12 @@ export function TitleGridSectionSkeleton() {
 
 export function TitleGrid({ items }: { items: TitleGridItem[] }) {
   return (
-    <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+    <div
+      className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4"
+      style={{
+        gridTemplateColumns: "repeat(var(--title-grid-columns, 5), minmax(0, 1fr))",
+      }}
+    >
       {items.map((t, i) => (
         <div
           key={t.id}
@@ -48,7 +59,13 @@ export function TitleGrid({ items }: { items: TitleGridItem[] }) {
             posterThumbHash={t.posterThumbHash}
             releaseDate={t.releaseDate ?? t.firstAirDate}
             voteAverage={t.voteAverage}
+            embyStatus={t.embyStatus}
+            requestedAt={t.requestedAt}
+            watchCount={t.watchCount}
             userStatus={t.userStatus}
+            status={t.status}
+            episodeProgress={t.episodeProgress}
+            episodeLabel={t.episodeLabel}
           />
         </div>
       ))}

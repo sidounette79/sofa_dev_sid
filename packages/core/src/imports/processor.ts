@@ -79,7 +79,7 @@ async function processMovie(
     return;
   }
 
-  if (hasMovieWatch(userId, title.id)) {
+  if (await hasMovieWatch(userId, title.id)) {
     result.skipped++;
     return;
   }
@@ -89,7 +89,7 @@ async function processMovie(
     : movie.watchedOn
       ? new Date(movie.watchedOn)
       : undefined;
-  logMovieWatch(userId, title.id, "import", watchedAt);
+  await logMovieWatch(userId, title.id, "import", watchedAt);
   result.imported++;
 }
 
@@ -126,7 +126,7 @@ async function processEpisode(
   }
 
   // Find the specific episode in our DB
-  const season = findSeasonByTitleAndNumber(title.id, ep.seasonNumber);
+  const [season] = await findSeasonByTitleAndNumber(title.id, ep.seasonNumber);
 
   if (!season) {
     result.failed++;
@@ -134,7 +134,7 @@ async function processEpisode(
     return;
   }
 
-  const episode = findEpisodeBySeasonAndNumber(season.id, ep.episodeNumber);
+  const [episode] = await findEpisodeBySeasonAndNumber(season.id, ep.episodeNumber);
 
   if (!episode) {
     result.failed++;
@@ -142,7 +142,7 @@ async function processEpisode(
     return;
   }
 
-  if (hasEpisodeWatch(userId, episode.id)) {
+  if (await hasEpisodeWatch(userId, episode.id)) {
     result.skipped++;
     return;
   }
@@ -152,7 +152,7 @@ async function processEpisode(
     : ep.watchedOn
       ? new Date(ep.watchedOn)
       : undefined;
-  logEpisodeWatch(userId, episode.id, "import", watchedAt);
+  await logEpisodeWatch(userId, episode.id, "import", watchedAt);
   result.imported++;
 }
 
@@ -191,7 +191,7 @@ async function processWatchlistItem(
 
   const STATUS_RANK = { watchlist: 0, in_progress: 1, completed: 2 } as const;
   const targetStatus = item.status ?? "watchlist";
-  const currentStatus = getTitleStatusValue(userId, title.id);
+  const currentStatus = await getTitleStatusValue(userId, title.id);
 
   if (currentStatus && STATUS_RANK[currentStatus] >= STATUS_RANK[targetStatus]) {
     result.skipped++;
@@ -199,7 +199,7 @@ async function processWatchlistItem(
   }
 
   const addedAt = item.addedAt ? new Date(item.addedAt) : undefined;
-  setTitleStatus(userId, title.id, targetStatus, "import", addedAt);
+  await setTitleStatus(userId, title.id, targetStatus, "import", addedAt);
   result.imported++;
 }
 
@@ -236,7 +236,7 @@ async function processRating(
     return;
   }
 
-  if (hasRating(userId, title.id)) {
+  if (await hasRating(userId, title.id)) {
     result.skipped++;
     return;
   }
@@ -246,14 +246,14 @@ async function processRating(
     : item.ratedOn
       ? new Date(item.ratedOn)
       : undefined;
-  rateTitleStars(userId, title.id, item.rating, ratedAt);
+  await rateTitleStars(userId, title.id, item.rating, ratedAt);
   result.imported++;
 }
 
 // ─── Read Job Helper ─────────────────────────────────────────────────
 
-export function readImportJob(jobId: string, userId?: string): ImportJob {
-  const row = getImportJob(jobId);
+export async function readImportJob(jobId: string, userId?: string): Promise<ImportJob> {
+  const [row] = await getImportJob(jobId);
 
   if (!row) {
     throw new ORPCError("NOT_FOUND", { message: `Import job ${jobId} not found` });
@@ -284,7 +284,7 @@ export function readImportJob(jobId: string, userId?: string): ImportJob {
 // ─── Job Processor ───────────────────────────────────────────────────
 
 export async function processImportJob(jobId: string): Promise<void> {
-  const row = getImportJob(jobId);
+  const [row] = await getImportJob(jobId);
 
   if (!row) {
     log.error(`Import job ${jobId} not found`);
@@ -295,7 +295,7 @@ export async function processImportJob(jobId: string): Promise<void> {
   try {
     rawPayload = JSON.parse(row.payload);
   } catch {
-    updateImportJobProgress(jobId, {
+    await updateImportJobProgress(jobId, {
       status: "error",
       finishedAt: new Date(),
       errors: JSON.stringify([`Import job ${jobId} has invalid JSON payload`]),
@@ -306,7 +306,7 @@ export async function processImportJob(jobId: string): Promise<void> {
   }
   const parsed = NormalizedImportSchema.safeParse(rawPayload);
   if (!parsed.success) {
-    updateImportJobProgress(jobId, {
+    await updateImportJobProgress(jobId, {
       status: "error",
       finishedAt: new Date(),
       errors: JSON.stringify([`Malformed payload: ${parsed.error.message}`]),
@@ -351,7 +351,7 @@ export async function processImportJob(jobId: string): Promise<void> {
 
     if (total === 0) {
       result.warnings.push("No items to import with the selected options.");
-      updateImportJobProgress(jobId, {
+      await updateImportJobProgress(jobId, {
         status: "success",
         finishedAt: new Date(),
         totalItems: 0,
@@ -361,9 +361,9 @@ export async function processImportJob(jobId: string): Promise<void> {
     }
 
     // Check if the job was cancelled while we were preparing
-    const preStartStatus = getImportJobStatus(jobId);
+    const [preStartStatus] = await getImportJobStatus(jobId);
     if (preStartStatus?.status === "cancelled") {
-      updateImportJobProgress(jobId, {
+      await updateImportJobProgress(jobId, {
         finishedAt: new Date(),
         totalItems: total,
         currentMessage: "Import cancelled",
@@ -373,7 +373,7 @@ export async function processImportJob(jobId: string): Promise<void> {
     }
 
     // Set status to running + totalItems atomically
-    updateImportJobProgress(jobId, {
+    await updateImportJobProgress(jobId, {
       status: "running",
       startedAt: new Date(),
       totalItems: total,
@@ -388,9 +388,9 @@ export async function processImportJob(jobId: string): Promise<void> {
     for (let i = 0; i < items.length; i++) {
       // Check for cancellation periodically
       if (i % progressInterval === 0) {
-        const currentStatus = getImportJobStatus(jobId);
+        const [currentStatus] = await getImportJobStatus(jobId);
         if (currentStatus?.status === "cancelled") {
-          updateImportJobProgress(jobId, {
+          await updateImportJobProgress(jobId, {
             finishedAt: new Date(),
             processedItems: i,
             importedCount: result.imported,
@@ -448,7 +448,7 @@ export async function processImportJob(jobId: string): Promise<void> {
               ? (currentItem.showTitle ?? "Unknown")
               : "Unknown";
 
-        updateImportJobProgress(jobId, {
+        await updateImportJobProgress(jobId, {
           processedItems: i + 1,
           importedCount: result.imported,
           skippedCount: result.skipped,
@@ -459,7 +459,7 @@ export async function processImportJob(jobId: string): Promise<void> {
     }
 
     // Success
-    updateImportJobProgress(jobId, {
+    await updateImportJobProgress(jobId, {
       status: "success",
       finishedAt: new Date(),
       processedItems: total,
@@ -477,7 +477,7 @@ export async function processImportJob(jobId: string): Promise<void> {
   } catch (err) {
     // Fatal error
     result.errors.push(`Fatal: ${err instanceof Error ? err.message : String(err)}`);
-    updateImportJobProgress(jobId, {
+    await updateImportJobProgress(jobId, {
       status: "error",
       finishedAt: new Date(),
       errors: JSON.stringify(result.errors),

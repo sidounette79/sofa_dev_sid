@@ -8,12 +8,16 @@ import {
   getDisplayStatusesByTitleIds,
   getUserTitleInfo,
   logEpisodeWatch,
+  setTitleStatus,
+  unwatchLastEpisode,
+  watchNextEpisode,
   logEpisodeWatchBatch,
   logMovieWatch,
   markAllEpisodesWatched,
   quickAddTitle,
   rateTitleStars,
   removeTitleStatus,
+  rewatchTitle,
   unwatchEpisode,
   unwatchMovie,
   unwatchSeason,
@@ -31,66 +35,64 @@ const watchHistoryTypeMap = { movie: "movies", episode: "episodes" } as const;
 
 // ─── Watch handlers by scope ──────────────────────────────────
 
-// All tracking core functions are synchronous (bun:sqlite). If any become
-// async, these loops need to be awaited to surface errors properly.
-function handleWatch(userId: string, scope: WatchScopeType, ids: string[]) {
+async function handleWatch(userId: string, scope: WatchScopeType, ids: string[]) {
   switch (scope) {
     case "movie":
-      for (const id of ids) logMovieWatch(userId, id);
+      for (const id of ids) await logMovieWatch(userId, id);
       break;
     case "episode":
       if (ids.length === 1) {
-        logEpisodeWatch(userId, ids[0]);
+        await logEpisodeWatch(userId, ids[0]);
       } else {
-        logEpisodeWatchBatch(userId, ids);
+        await logEpisodeWatchBatch(userId, ids);
       }
       break;
     case "season":
-      for (const id of ids) watchSeason(userId, id);
+      for (const id of ids) await watchSeason(userId, id);
       break;
     case "series":
-      for (const id of ids) markAllEpisodesWatched(userId, id);
+      for (const id of ids) await markAllEpisodesWatched(userId, id);
       break;
   }
 }
 
-function handleUnwatch(userId: string, scope: WatchScopeType, ids: string[]) {
+async function handleUnwatch(userId: string, scope: WatchScopeType, ids: string[]) {
   switch (scope) {
     case "movie":
-      for (const id of ids) unwatchMovie(userId, id);
+      for (const id of ids) await unwatchMovie(userId, id);
       break;
     case "episode":
-      for (const id of ids) unwatchEpisode(userId, id);
+      for (const id of ids) await unwatchEpisode(userId, id);
       break;
     case "season":
-      for (const id of ids) unwatchSeason(userId, id);
+      for (const id of ids) await unwatchSeason(userId, id);
       break;
     case "series":
-      for (const id of ids) unwatchSeries(userId, id);
+      for (const id of ids) await unwatchSeries(userId, id);
       break;
   }
 }
 
 // ─── Procedures ───────────────────────────────────────────────
 
-export const watch = os.tracking.watch.use(authed).handler(({ input, context }) => {
-  handleWatch(context.user.id, input.scope, input.ids);
+export const watch = os.tracking.watch.use(authed).handler(async ({ input, context }) => {
+  await handleWatch(context.user.id, input.scope, input.ids);
 });
 
-export const unwatch = os.tracking.unwatch.use(authed).handler(({ input, context }) => {
-  handleUnwatch(context.user.id, input.scope, input.ids);
+export const unwatch = os.tracking.unwatch.use(authed).handler(async ({ input, context }) => {
+  await handleUnwatch(context.user.id, input.scope, input.ids);
 });
 
 export const updateStatus = os.tracking.updateStatus
   .use(authed)
   .handler(async ({ input, context }) => {
     if (input.status === null) {
-      removeTitleStatus(context.user.id, input.id);
+      await removeTitleStatus(context.user.id, input.id);
       return;
     }
 
     // Auto-import from TMDB if the title is a shell (absorbs quickAdd logic)
-    const result = quickAddTitle(context.user.id, input.id);
+    const result = await quickAddTitle(context.user.id, input.id);
     if (!result) {
       throw new ORPCError("NOT_FOUND", {
         message: "Title not found",
@@ -102,23 +104,41 @@ export const updateStatus = os.tracking.updateStatus
         log.warn(`Failed to import ${result.type} TMDB ${result.tmdbId}:`, err);
       });
     }
+
+    // Explicitly (re)apply the requested status, even if the title already existed
+    // (quickAddTitle only sets an initial status for brand-new library entries).
+    if (input.status === "dropped" || (input.status === "watchlist" && result.alreadyAdded)) {
+      await setTitleStatus(context.user.id, input.id, input.status);
+    }
   });
 
-export const rate = os.tracking.rate.use(authed).handler(({ input, context }) => {
-  rateTitleStars(context.user.id, input.id, input.stars);
+export const watchNext = os.tracking.watchNext.use(authed).handler(({ input, context }) => {
+  return watchNextEpisode(context.user.id, input.id);
 });
 
-export const userInfo = os.tracking.userInfo.use(authed).handler(({ input, context }) => {
-  const info = getUserTitleInfo(context.user.id, input.id);
+export const unwatchLast = os.tracking.unwatchLast.use(authed).handler(({ input, context }) => {
+  return unwatchLastEpisode(context.user.id, input.id);
+});
+
+export const rewatch = os.tracking.rewatch.use(authed).handler(async ({ input, context }) => {
+  await rewatchTitle(context.user.id, input.id);
+});
+
+export const rate = os.tracking.rate.use(authed).handler(async ({ input, context }) => {
+  await rateTitleStars(context.user.id, input.id, input.stars);
+});
+
+export const userInfo = os.tracking.userInfo.use(authed).handler(async ({ input, context }) => {
+  const info = await getUserTitleInfo(context.user.id, input.id);
   if (!info.status) return { ...info, status: null };
 
-  const displayStatuses = getDisplayStatusesByTitleIds(context.user.id, [input.id]);
+  const displayStatuses = await getDisplayStatusesByTitleIds(context.user.id, [input.id]);
   return { ...info, status: displayStatuses[input.id] ?? null };
 });
 
-export const stats = os.tracking.stats.use(authed).handler(({ input, context }) => {
+export const stats = os.tracking.stats.use(authed).handler(async ({ input, context }) => {
   const coreType = watchHistoryTypeMap[input.type];
-  const count = getWatchCount(context.user.id, coreType, input.period);
-  const history = getWatchHistory(context.user.id, coreType, input.period);
+  const count = await getWatchCount(context.user.id, coreType, input.period);
+  const history = await getWatchHistory(context.user.id, coreType, input.period);
   return { count, history };
 });

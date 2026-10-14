@@ -31,7 +31,7 @@ export const Route = createFileRoute("/setup")({
     const info = await client.system.publicInfo({});
     if (info.tmdbConfigured) throw redirect({ to: "/" });
   },
-  head: () => ({ meta: [{ title: "Setup — Sofa" }] }),
+  head: () => ({ meta: [{ title: "Setup — Patoune TV" }] }),
   component: SetupPage,
 });
 
@@ -89,7 +89,7 @@ function SetupPage() {
     {
       number: "3",
       title: t`Add it to your environment`,
-      description: t`Set the TMDB_API_READ_ACCESS_TOKEN environment variable and restart Sofa.`,
+      description: t`Set the TMDB_API_READ_ACCESS_TOKEN environment variable and restart Patoune TV.`,
     },
   ];
 
@@ -106,7 +106,7 @@ function SetupPage() {
         </h1>
         <p className="text-muted-foreground max-w-lg leading-relaxed">
           <Trans>
-            Sofa uses{" "}
+            Patoune TV uses{" "}
             <a
               href="https://www.themoviedb.org/"
               target="_blank"

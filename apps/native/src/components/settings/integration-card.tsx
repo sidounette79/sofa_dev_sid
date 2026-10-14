@@ -41,7 +41,7 @@ interface IntegrationCardProps {
 
 export function IntegrationCard({ config, connection }: IntegrationCardProps) {
   const { provider, label } = config;
-  const providerInput = provider as "plex" | "jellyfin" | "emby" | "sonarr" | "radarr";
+  const providerInput = provider as "jellyfin" | "emby" | "sonarr" | "radarr";
 
   const { t } = useLingui();
   const mutedFgColor = useCSSVariable("--color-muted-foreground") as string;

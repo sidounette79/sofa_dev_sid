@@ -52,7 +52,7 @@ export async function generateTitlePosterThumbHash(
   sourceBuffer?: Buffer | null,
 ): Promise<string | null> {
   const hash = posterPath ? await generateThumbHash(posterPath, "posters", sourceBuffer) : null;
-  updateTitlePosterThumbHash(titleId, hash);
+  await updateTitlePosterThumbHash(titleId, hash);
   return hash;
 }
 
@@ -61,7 +61,7 @@ export async function generateTitleBackdropThumbHash(
   backdropPath: string | null,
 ): Promise<string | null> {
   const hash = backdropPath ? await generateThumbHash(backdropPath, "backdrops") : null;
-  updateTitleBackdropThumbHash(titleId, hash);
+  await updateTitleBackdropThumbHash(titleId, hash);
   return hash;
 }
 
@@ -70,7 +70,7 @@ export async function generateSeasonThumbHash(
   posterPath: string | null,
 ): Promise<string | null> {
   const hash = posterPath ? await generateThumbHash(posterPath, "posters") : null;
-  updateSeasonPosterThumbHash(seasonId, hash);
+  await updateSeasonPosterThumbHash(seasonId, hash);
   return hash;
 }
 
@@ -79,7 +79,7 @@ export async function generateEpisodeThumbHash(
   stillPath: string | null,
 ): Promise<string | null> {
   const hash = stillPath ? await generateThumbHash(stillPath, "stills") : null;
-  updateEpisodeStillThumbHash(episodeId, hash);
+  await updateEpisodeStillThumbHash(episodeId, hash);
   return hash;
 }
 
@@ -88,6 +88,6 @@ export async function generatePersonThumbHash(
   profilePath: string | null,
 ): Promise<string | null> {
   const hash = profilePath ? await generateThumbHash(profilePath, "profiles") : null;
-  updatePersonProfileThumbHash(personId, hash);
+  await updatePersonProfileThumbHash(personId, hash);
   return hash;
 }

@@ -14,6 +14,7 @@ import { SofaLogo } from "@/components/sofa-logo";
 import { DirectionProvider } from "@/components/ui/direction";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { initAppearance } from "@/lib/appearance";
 import { initLocale } from "@/lib/i18n";
 import type { orpc } from "@/lib/orpc/client";
 import { getDirection, i18n } from "@sofa/i18n";
@@ -26,16 +27,17 @@ export const Route = createRootRouteWithContext<{
 }>()({
   beforeLoad: async () => {
     await initLocale();
+    initAppearance();
   },
   head: () => ({
     meta: [
       {
         name: "viewport",
         content:
-          "width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover",
+          "width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-content",
       },
       { name: "theme-color", content: "#090706" },
-      { title: "Sofa" },
+      { title: "Patoune TV" },
       { name: "description", content: "Track your movies and TV shows" },
     ],
     links: [
@@ -133,13 +135,21 @@ function GlobalNotFound() {
           className="animate-stagger-item text-muted-foreground/20 mt-16"
           style={{ "--stagger-index": 3 } as React.CSSProperties}
         >
-          <SofaLogo className="size-8" />
+          <SofaLogo className="size-8 opacity-20" />
         </div>
       </div>
     </div>
   );
 }
 
+// 22.09, Sid: "Cannot read properties of null (reading 'i18n')" - this is
+// the router's *root* errorComponent, so it's the fallback for when
+// RootComponent itself fails to render (e.g. beforeLoad's initLocale()
+// timing out under a disk-I/O stall) - in that case I18nProvider (mounted
+// *inside* RootComponent, see below) never mounted either, so <Trans>/
+// useLingui() here had no context to read and crashed a second time on
+// top of the original error. This screen's only job is to never itself
+// fail, so it's deliberately plain hardcoded English, no lingui.
 function GlobalError({ reset }: { error: Error; reset: () => void }) {
   return (
     <div className="flex flex-col items-center gap-6 py-24 text-center">
@@ -147,14 +157,10 @@ function GlobalError({ reset }: { error: Error; reset: () => void }) {
         <IconAlertTriangle className="size-6" strokeWidth={1.5} />
       </div>
       <div className="space-y-2">
-        <h1 className="font-display text-2xl tracking-tight sm:text-3xl">
-          <Trans>Something went wrong</Trans>
-        </h1>
+        <h1 className="font-display text-2xl tracking-tight sm:text-3xl">Something went wrong</h1>
         <p className="text-muted-foreground mx-auto max-w-sm text-sm leading-relaxed">
-          <Trans>
-            An unexpected error occurred while loading this page. You can try again or head back to
-            the dashboard.
-          </Trans>
+          An unexpected error occurred while loading this page. You can try again or head back to
+          the library.
         </p>
       </div>
       <div className="flex items-center gap-3">
@@ -163,16 +169,14 @@ function GlobalError({ reset }: { error: Error; reset: () => void }) {
           onClick={reset}
           className="group bg-primary text-primary-foreground hover:shadow-primary/20 relative inline-flex h-10 items-center justify-center gap-2 overflow-hidden rounded-lg px-5 text-sm font-medium transition-shadow hover:shadow-lg"
         >
-          <span className="relative z-10">
-            <Trans>Try again</Trans>
-          </span>
+          <span className="relative z-10">Try again</span>
           <div className="absolute inset-0 bg-gradient-to-t from-black/10 to-transparent opacity-0 transition-opacity group-hover:opacity-100" />
         </button>
         <a
-          href="/dashboard"
+          href="/library?type=tv"
           className="border-border hover:border-primary/40 hover:bg-primary/5 inline-flex h-10 items-center justify-center rounded-lg border px-5 text-sm font-medium transition-colors"
         >
-          <Trans>Dashboard</Trans>
+          Library
         </a>
       </div>
     </div>

@@ -17,7 +17,7 @@ export function resolveListIntegration(token: string) {
         eq(integrations.enabled, true),
       ),
     )
-    .get();
+    ;
 }
 
 export function getRadarrMovies(
@@ -35,7 +35,7 @@ export function getRadarrMovies(
         inArray(userTitleStatus.status, statuses),
       ),
     )
-    .all();
+    ;
 }
 
 export function getSonarrShows(
@@ -58,14 +58,16 @@ export function getSonarrShows(
         inArray(userTitleStatus.status, statuses),
       ),
     )
-    .all();
+    ;
 }
 
-export function batchUpdateTvdbIds(updates: { titleId: string; tvdbId: number }[]): void {
+export async function batchUpdateTvdbIds(
+  updates: { titleId: string; tvdbId: number }[],
+): Promise<void> {
   if (updates.length === 0) return;
-  db.transaction((tx) => {
+  await db.transaction(async (tx) => {
     for (const { titleId, tvdbId } of updates) {
-      tx.update(titles).set({ tvdbId }).where(eq(titles.id, titleId)).run();
+      await tx.update(titles).set({ tvdbId }).where(eq(titles.id, titleId));
     }
   });
 }

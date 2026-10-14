@@ -1,0 +1,21 @@
+{
+  "name": "@sofa/sonarr",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./client": "./src/client.ts"
+  },
+  "scripts": {
+    "check-types": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@sofa/config": "workspace:*",
+    "@sofa/logger": "workspace:*"
+  },
+  "devDependencies": {
+    "@sofa/tsconfig": "workspace:*",
+    "@types/bun": "catalog:",
+    "typescript": "catalog:"
+  }
+}

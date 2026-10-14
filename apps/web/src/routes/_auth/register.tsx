@@ -10,7 +10,7 @@ export const Route = createFileRoute("/_auth/register")({
     const publicInfo = await client.system.publicInfo({});
     return { publicInfo };
   },
-  head: () => ({ meta: [{ title: "Create account — Sofa" }] }),
+  head: () => ({ meta: [{ title: "Create account — Patoune TV" }] }),
   component: RegisterPage,
 });
 

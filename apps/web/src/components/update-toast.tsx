@@ -17,7 +17,7 @@ export function UpdateToast({ data }: { data: AdminSettings["updateCheck"] | nul
     setDismissedVersion(data.latestVersion);
     const latestVersion = data.latestVersion;
     const currentVersion = data.currentVersion;
-    toast.info(t`Sofa v${latestVersion} is available`, {
+    toast.info(t`Patoune TV v${latestVersion} is available`, {
       description: t`You're running v${currentVersion}.`,
       duration: 15_000,
       action: data.releaseUrl

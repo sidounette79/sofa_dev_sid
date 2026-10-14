@@ -32,6 +32,16 @@ function ScrollArea({
       <ScrollAreaPrimitive.Viewport
         data-slot="scroll-area-viewport"
         ref={scrollRef}
+        onWheel={(e) => {
+          // Desktop mouse wheels only produce vertical deltaY. For scroll areas
+          // that overflow horizontally (carousels), translate that into
+          // horizontal scrolling instead of doing nothing (touch/trackpad
+          // already scroll these fine via native horizontal gestures).
+          const el = e.currentTarget;
+          if (e.deltaY === 0 || el.scrollWidth <= el.clientWidth) return;
+          e.preventDefault();
+          el.scrollLeft += e.deltaY;
+        }}
         className={cn(
           "no-scrollbar focus-visible:ring-ring/50 flex-1 rounded-[inherit] outline-none focus-visible:ring-[3px] focus-visible:outline-1 data-has-overflow-x:overscroll-x-contain",
           scrollFade &&

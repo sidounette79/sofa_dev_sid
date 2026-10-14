@@ -3,22 +3,37 @@ import { eq } from "drizzle-orm";
 import { db } from "../client";
 import { episodes, persons, seasons, titles } from "../schema";
 
-export function updateTitlePosterThumbHash(titleId: string, hash: string | null): void {
-  db.update(titles).set({ posterThumbHash: hash }).where(eq(titles.id, titleId)).run();
+export async function updateTitlePosterThumbHash(
+  titleId: string,
+  hash: string | null,
+): Promise<void> {
+  await db.update(titles).set({ posterThumbHash: hash }).where(eq(titles.id, titleId));
 }
 
-export function updateTitleBackdropThumbHash(titleId: string, hash: string | null): void {
-  db.update(titles).set({ backdropThumbHash: hash }).where(eq(titles.id, titleId)).run();
+export async function updateTitleBackdropThumbHash(
+  titleId: string,
+  hash: string | null,
+): Promise<void> {
+  await db.update(titles).set({ backdropThumbHash: hash }).where(eq(titles.id, titleId));
 }
 
-export function updateSeasonPosterThumbHash(seasonId: string, hash: string | null): void {
-  db.update(seasons).set({ posterThumbHash: hash }).where(eq(seasons.id, seasonId)).run();
+export async function updateSeasonPosterThumbHash(
+  seasonId: string,
+  hash: string | null,
+): Promise<void> {
+  await db.update(seasons).set({ posterThumbHash: hash }).where(eq(seasons.id, seasonId));
 }
 
-export function updateEpisodeStillThumbHash(episodeId: string, hash: string | null): void {
-  db.update(episodes).set({ stillThumbHash: hash }).where(eq(episodes.id, episodeId)).run();
+export async function updateEpisodeStillThumbHash(
+  episodeId: string,
+  hash: string | null,
+): Promise<void> {
+  await db.update(episodes).set({ stillThumbHash: hash }).where(eq(episodes.id, episodeId));
 }
 
-export function updatePersonProfileThumbHash(personId: string, hash: string | null): void {
-  db.update(persons).set({ profileThumbHash: hash }).where(eq(persons.id, personId)).run();
+export async function updatePersonProfileThumbHash(
+  personId: string,
+  hash: string | null,
+): Promise<void> {
+  await db.update(persons).set({ profileThumbHash: hash }).where(eq(persons.id, personId));
 }

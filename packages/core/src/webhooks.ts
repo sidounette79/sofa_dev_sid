@@ -13,14 +13,10 @@ import { logEpisodeWatch, logMovieWatch } from "./tracking";
 
 const log = createLogger("webhooks");
 
-const IMDB_GUID_PREFIX = "imdb://";
-const TMDB_GUID_PREFIX = "tmdb://";
-const TVDB_GUID_PREFIX = "tvdb://";
-
 // ─── Types ──────────────────────────────────────────────────────────
 
 export interface WebhookEvent {
-  provider: "plex" | "jellyfin" | "emby";
+  provider: "jellyfin" | "emby";
   mediaType: "movie" | "episode";
   title: string;
   tmdbId?: number;
@@ -44,60 +40,6 @@ export function toOptionalInt(value: unknown): number | undefined {
 }
 
 // ─── Payload Parsers ────────────────────────────────────────────────
-
-export function parsePlexPayload(formData: FormData): WebhookEvent | null {
-  const raw = formData.get("payload");
-  if (!raw || typeof raw !== "string") return null;
-
-  let payload: Record<string, unknown>;
-  try {
-    payload = JSON.parse(raw);
-  } catch {
-    return null;
-  }
-
-  if (payload.event !== "media.scrobble") return null;
-
-  const metadata = payload.Metadata as Record<string, unknown> | undefined;
-  if (!metadata) return null;
-
-  const metaType = metadata.type as string;
-  const isMovie = metaType === "movie";
-  const isEpisode = metaType === "episode";
-  if (!isMovie && !isEpisode) return null;
-
-  // Extract external IDs from Guid array
-  const guids = (metadata.Guid ?? metadata.guid) as { id: string }[] | undefined;
-  let tmdbId: number | undefined;
-  let imdbId: string | undefined;
-  let tvdbId: string | undefined;
-
-  if (Array.isArray(guids)) {
-    for (const g of guids) {
-      const id = g.id ?? "";
-      if (id.startsWith(TMDB_GUID_PREFIX)) {
-        // Plex episode TMDB GUIDs identify episodes, not series.
-        if (isMovie) tmdbId = toOptionalInt(id.slice(TMDB_GUID_PREFIX.length));
-      } else if (id.startsWith(IMDB_GUID_PREFIX)) {
-        imdbId = id.slice(IMDB_GUID_PREFIX.length);
-      } else if (id.startsWith(TVDB_GUID_PREFIX)) {
-        tvdbId = id.slice(TVDB_GUID_PREFIX.length);
-      }
-    }
-  }
-
-  return {
-    provider: "plex",
-    mediaType: isMovie ? "movie" : "episode",
-    title: (metadata.title ?? metadata.Title ?? "") as string,
-    tmdbId,
-    imdbId,
-    tvdbId,
-    seasonNumber: toOptionalInt(metadata.parentIndex),
-    episodeNumber: toOptionalInt(metadata.index),
-    showTitle: (metadata.grandparentTitle ?? metadata.parentTitle) as string | undefined,
-  };
-}
 
 export function parseJellyfinPayload(body: Record<string, unknown>): WebhookEvent | null {
   const notifType = body.NotificationType as string | undefined;
@@ -125,10 +67,24 @@ export function parseJellyfinPayload(body: Record<string, unknown>): WebhookEven
 }
 
 export function parseEmbyPayload(body: Record<string, unknown>): WebhookEvent | null {
-  // Emby sends "playback.stop" or "PlaybackStop" depending on webhook plugin version
-  const event = body.Event as string | undefined;
-  if (event !== "playback.stop" && event !== "PlaybackStop") return null;
-  if (body.PlayedToCompletion !== true) return null;
+  // Emby sends "playback.stop" or "PlaybackStop" depending on webhook plugin version.
+  // A manual "mark as played" click fires a separate event (name contains
+  // "MarkPlayed", not "Unplayed") that we treat as an equivalent completed
+  // playback.stop.
+  const rawEvent = body.Event as string | undefined;
+  const isMarkPlayed =
+    typeof rawEvent === "string" && /markplayed/i.test(rawEvent) && !/unplayed/i.test(rawEvent);
+  const isPlaybackStop = rawEvent === "playback.stop" || rawEvent === "PlaybackStop";
+  if (!isPlaybackStop && !isMarkPlayed) return null;
+
+  // Some Emby webhook plugin versions nest PlayedToCompletion under
+  // PlaybackInfo instead of sending it at the payload root.
+  const playbackInfo = body.PlaybackInfo as Record<string, unknown> | undefined;
+  const playedToCompletion =
+    body.PlayedToCompletion === true ||
+    playbackInfo?.PlayedToCompletion === true ||
+    isMarkPlayed;
+  if (!playedToCompletion) return null;
 
   const item = body.Item as Record<string, unknown> | undefined;
   if (!item) return null;
@@ -177,35 +133,30 @@ async function resolveEpisode(event: WebhookEvent): Promise<{
 
 // ─── Deduplication ──────────────────────────────────────────────────
 
-function isDuplicateMovieWatch(userId: string, titleId: string): boolean {
+async function isDuplicateMovieWatch(userId: string, titleId: string): Promise<boolean> {
   const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
-  const recent = getRecentMovieWatch(userId, titleId, fiveMinutesAgo);
+  const [recent] = await getRecentMovieWatch(userId, titleId, fiveMinutesAgo);
   return !!recent;
 }
 
-function isDuplicateEpisodeWatch(userId: string, episodeId: string): boolean {
+async function isDuplicateEpisodeWatch(userId: string, episodeId: string): Promise<boolean> {
   const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
-  const recent = getRecentEpisodeWatch(userId, episodeId, fiveMinutesAgo);
+  const [recent] = await getRecentEpisodeWatch(userId, episodeId, fiveMinutesAgo);
   return !!recent;
 }
 
 // ─── Event Logging ──────────────────────────────────────────────────
 
-function logEvent(
+async function logEvent(
   connectionId: string,
   event: WebhookEvent | null,
   status: "success" | "ignored" | "error",
   errorMessage?: string,
-) {
-  insertIntegrationEventTransaction(
+): Promise<void> {
+  await insertIntegrationEventTransaction(
     {
       integrationId: connectionId,
-      eventType:
-        event?.provider === "plex"
-          ? "media.scrobble"
-          : event?.provider === "emby"
-            ? "playback.stop"
-            : "PlaybackStop",
+      eventType: event?.provider === "emby" ? "playback.stop" : "PlaybackStop",
       mediaType: event?.mediaType ?? null,
       mediaTitle: event?.title ?? null,
       status,
@@ -221,7 +172,7 @@ function logEvent(
 export async function processWebhook(
   connectionId: string,
   userId: string,
-  provider: "plex" | "jellyfin" | "emby",
+  provider: "jellyfin" | "emby",
   event: WebhookEvent,
 ): Promise<{ status: "success" | "ignored" | "error"; message: string }> {
   log.info(`Received ${provider} webhook: ${event.mediaType} "${event.title}"`);
@@ -238,25 +189,25 @@ export async function processWebhook(
       });
       if (!tmdbId) {
         log.warn(`Could not resolve TMDB ID for movie "${event.title}" from ${provider}`);
-        logEvent(connectionId, event, "error", "Could not resolve TMDB ID for movie");
+        await logEvent(connectionId, event, "error", "Could not resolve TMDB ID for movie");
         return { status: "error", message: "Could not resolve TMDB ID" };
       }
 
       const title = await getOrFetchTitleByTmdbId(tmdbId, "movie");
       if (!title) {
-        logEvent(connectionId, event, "error", "Failed to import movie");
+        await logEvent(connectionId, event, "error", "Failed to import movie");
         return { status: "error", message: "Failed to import movie" };
       }
 
-      if (isDuplicateMovieWatch(userId, title.id)) {
+      if (await isDuplicateMovieWatch(userId, title.id)) {
         log.debug(`Duplicate movie watch ignored: "${event.title}"`);
-        logEvent(connectionId, event, "ignored", "Duplicate watch within 5 minutes");
+        await logEvent(connectionId, event, "ignored", "Duplicate watch within 5 minutes");
         return { status: "ignored", message: "Duplicate watch" };
       }
 
-      logMovieWatch(userId, title.id, provider);
+      await logMovieWatch(userId, title.id, provider);
       log.info(`Logged movie watch: "${event.title}" (TMDB ${tmdbId})`);
-      logEvent(connectionId, event, "success");
+      await logEvent(connectionId, event, "success");
       return { status: "success", message: `Logged watch for ${event.title}` };
     }
 
@@ -264,42 +215,59 @@ export async function processWebhook(
       const resolved = await resolveEpisode(event);
       if (!resolved) {
         log.warn(`Could not resolve episode "${event.title}" from ${provider}`);
-        logEvent(connectionId, event, "error", "Could not resolve episode");
+        await logEvent(connectionId, event, "error", "Could not resolve episode");
         return { status: "error", message: "Could not resolve episode" };
       }
 
+      // 21.08: instrumenting — investigating a freeze that correlates with
+      // active Emby playback (this handler runs per watch webhook). Suspect:
+      // these two steps make real TMDB network calls (getTvDetails,
+      // refreshTvChildren's per-season fetches), and several incidents
+      // tonight showed the whole server blocked for ~100-102s — suspiciously
+      // close to a plausible multi-season-batch pileup of TMDB's own 30s
+      // per-request timeout when its API is slow/unresponsive.
+      let t0 = performance.now();
       const title = await getOrFetchTitleByTmdbId(resolved.showTmdbId, "tv");
+      let ms = Math.round(performance.now() - t0);
+      if (ms > 1000) log.warn(`Slow getOrFetchTitleByTmdbId for TMDB ${resolved.showTmdbId}: ${ms}ms`);
       if (!title) {
-        logEvent(connectionId, event, "error", "Failed to import TV show");
+        await logEvent(connectionId, event, "error", "Failed to import TV show");
         return { status: "error", message: "Failed to import TV show" };
       }
 
       // Find the episode in our DB
-      let season = findSeasonByTitleAndNumber(title.id, resolved.seasonNumber);
+      let [season] = await findSeasonByTitleAndNumber(title.id, resolved.seasonNumber);
 
       if (!season) {
         // Season might be newly released — try refreshing from TMDB
         try {
+          t0 = performance.now();
           const show = await getTvDetails(resolved.showTmdbId);
           await refreshTvChildren(title.id, resolved.showTmdbId, show.number_of_seasons);
-          season = findSeasonByTitleAndNumber(title.id, resolved.seasonNumber);
+          ms = Math.round(performance.now() - t0);
+          if (ms > 1000) {
+            log.warn(
+              `Slow season refresh for TMDB ${resolved.showTmdbId} (${show.number_of_seasons} seasons): ${ms}ms`,
+            );
+          }
+          [season] = await findSeasonByTitleAndNumber(title.id, resolved.seasonNumber);
         } catch (err) {
           log.warn(`Failed to refresh seasons for TMDB ${resolved.showTmdbId}:`, err);
         }
       }
 
       if (!season) {
-        logEvent(connectionId, event, "error", `Season ${resolved.seasonNumber} not found`);
+        await logEvent(connectionId, event, "error", `Season ${resolved.seasonNumber} not found`);
         return {
           status: "error",
           message: `Season ${resolved.seasonNumber} not found`,
         };
       }
 
-      const episode = findEpisodeBySeasonAndNumber(season.id, resolved.episodeNumber);
+      const [episode] = await findEpisodeBySeasonAndNumber(season.id, resolved.episodeNumber);
 
       if (!episode) {
-        logEvent(
+        await logEvent(
           connectionId,
           event,
           "error",
@@ -311,26 +279,26 @@ export async function processWebhook(
         };
       }
 
-      if (isDuplicateEpisodeWatch(userId, episode.id)) {
+      if (await isDuplicateEpisodeWatch(userId, episode.id)) {
         log.debug(`Duplicate episode watch ignored: "${event.title}"`);
-        logEvent(connectionId, event, "ignored", "Duplicate watch within 5 minutes");
+        await logEvent(connectionId, event, "ignored", "Duplicate watch within 5 minutes");
         return { status: "ignored", message: "Duplicate watch" };
       }
 
-      logEpisodeWatch(userId, episode.id, provider);
+      await logEpisodeWatch(userId, episode.id, provider);
       log.info(
         `Logged episode watch: "${event.title}" S${resolved.seasonNumber}E${resolved.episodeNumber}`,
       );
-      logEvent(connectionId, event, "success");
+      await logEvent(connectionId, event, "success");
       return { status: "success", message: `Logged watch for ${event.title}` };
     }
 
-    logEvent(connectionId, event, "ignored", `Unsupported media type: ${event.mediaType}`);
+    await logEvent(connectionId, event, "ignored", `Unsupported media type: ${event.mediaType}`);
     return { status: "ignored", message: "Unsupported media type" };
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown error";
     try {
-      logEvent(connectionId, event, "error", message);
+      await logEvent(connectionId, event, "error", message);
     } catch {
       // best-effort
     }

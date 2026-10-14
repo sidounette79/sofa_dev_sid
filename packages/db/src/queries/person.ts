@@ -6,21 +6,24 @@ import { personFilmography, persons, titles } from "../schema";
 // ─── Single-row lookups ──────────────────────────────────────────────
 
 export function getPersonById(personId: string) {
-  return db.select().from(persons).where(eq(persons.id, personId)).get();
+  return db.select().from(persons).where(eq(persons.id, personId));
 }
 
 export function getPersonByTmdbId(tmdbId: number) {
-  return db.select().from(persons).where(eq(persons.tmdbId, tmdbId)).get();
+  return db.select().from(persons).where(eq(persons.tmdbId, tmdbId));
 }
 
 // ─── Mutations ───────────────────────────────────────────────────────
 
-export function updatePerson(personId: string, values: Partial<typeof persons.$inferInsert>) {
-  db.update(persons).set(values).where(eq(persons.id, personId)).run();
+export async function updatePerson(
+  personId: string,
+  values: Partial<typeof persons.$inferInsert>,
+): Promise<void> {
+  await db.update(persons).set(values).where(eq(persons.id, personId));
 }
 
 export function insertPersonReturning(values: typeof persons.$inferInsert) {
-  return db.insert(persons).values(values).onConflictDoNothing().returning().get();
+  return db.insert(persons).values(values).onConflictDoNothing().returning();
 }
 
 // ─── Filmography (joined read) ───────────────────────────────────────
@@ -40,12 +43,14 @@ export function getPersonFilmographyJoined(personId: string) {
       character: personFilmography.character,
       department: personFilmography.department,
       job: personFilmography.job,
+      inEmbyLibrary: titles.inEmbyLibrary,
+      embyItemId: titles.embyItemId,
+      requestedAt: titles.requestedAt,
     })
     .from(personFilmography)
     .innerJoin(titles, eq(personFilmography.titleId, titles.id))
     .where(eq(personFilmography.personId, personId))
-    .orderBy(personFilmography.displayOrder)
-    .all();
+    .orderBy(personFilmography.displayOrder);
 }
 
 // ─── Batch shell-title insert (transaction) ──────────────────────────
@@ -69,20 +74,20 @@ interface ShellTitleEntry {
  * "tmdbId-type" composite key to internal UUID for every entry that was
  * inserted (or already existed via conflict fallback).
  */
-export function batchInsertShellTitlesTransaction(
+export async function batchInsertShellTitlesTransaction(
   entries: ShellTitleEntry[],
   existingTitleIdMap: Map<string, string>,
-): Map<string, string> {
+): Promise<Map<string, string>> {
   const titleIdMap = new Map(existingTitleIdMap);
 
   // Deduplicate by (tmdbId, type) since the unique constraint is on both columns
   const insertedKeys = new Set<string>();
-  db.transaction((tx) => {
+  await db.transaction(async (tx) => {
     for (const entry of entries) {
       const key = `${entry.tmdbId}-${entry.mediaType}`;
       if (insertedKeys.has(key)) continue;
       insertedKeys.add(key);
-      const row = tx
+      const [row] = await tx
         .insert(titles)
         .values({
           tmdbId: entry.tmdbId,
@@ -99,8 +104,7 @@ export function batchInsertShellTitlesTransaction(
           lastFetchedAt: null,
         })
         .onConflictDoNothing()
-        .returning()
-        .get();
+        .returning();
       if (row) titleIdMap.set(key, row.id);
     }
   });
@@ -110,11 +114,10 @@ export function batchInsertShellTitlesTransaction(
   const stillMissing = [...insertedKeys].filter((key) => !titleIdMap.has(key));
   if (stillMissing.length > 0) {
     const missingTmdbIds = stillMissing.map((key) => Number(key.split("-")[0]));
-    const fallbacks = db
+    const fallbacks = await db
       .select({ id: titles.id, tmdbId: titles.tmdbId, type: titles.type })
       .from(titles)
-      .where(inArray(titles.tmdbId, missingTmdbIds))
-      .all();
+      .where(inArray(titles.tmdbId, missingTmdbIds));
     for (const f of fallbacks) {
       titleIdMap.set(`${f.tmdbId}-${f.type}`, f.id);
     }
@@ -129,22 +132,22 @@ export function batchInsertShellTitlesTransaction(
  * Atomically delete all filmography rows for a person and re-insert the new
  * set, then stamp `filmographyLastFetchedAt`.
  */
-export function replaceFilmographyTransaction(
+export async function replaceFilmographyTransaction(
   personId: string,
   rows: (typeof personFilmography.$inferInsert)[],
   fetchedAt: Date,
-): void {
-  db.transaction((tx) => {
-    tx.delete(personFilmography).where(eq(personFilmography.personId, personId)).run();
+): Promise<void> {
+  await db.transaction(async (tx) => {
+    await tx.delete(personFilmography).where(eq(personFilmography.personId, personId));
 
-    for (const row of rows) {
-      tx.insert(personFilmography).values(row).run();
+    if (rows.length > 0) {
+      await tx.insert(personFilmography).values(rows);
     }
 
-    tx.update(persons)
+    await tx
+      .update(persons)
       .set({ filmographyLastFetchedAt: fetchedAt })
-      .where(eq(persons.id, personId))
-      .run();
+      .where(eq(persons.id, personId));
   });
 }
 
@@ -163,7 +166,9 @@ interface BrowsePersonInput {
  * (`lastFetchedAt = null`) for new tmdbIds.
  * Returns a map of tmdbId to internal UUID.
  */
-export function ensureBrowsePersonsTransaction(items: BrowsePersonInput[]): Map<number, string> {
+export async function ensureBrowsePersonsTransaction(
+  items: BrowsePersonInput[],
+): Promise<Map<number, string>> {
   if (items.length === 0) return new Map();
 
   const unique = new Map<number, BrowsePersonInput>();
@@ -173,11 +178,10 @@ export function ensureBrowsePersonsTransaction(items: BrowsePersonInput[]): Map<
 
   const tmdbIds = [...unique.keys()];
 
-  const existing = db
+  const existing = await db
     .select({ id: persons.id, tmdbId: persons.tmdbId })
     .from(persons)
-    .where(inArray(persons.tmdbId, tmdbIds))
-    .all();
+    .where(inArray(persons.tmdbId, tmdbIds));
 
   const result = new Map<number, string>();
   for (const row of existing) {
@@ -187,11 +191,11 @@ export function ensureBrowsePersonsTransaction(items: BrowsePersonInput[]): Map<
   const missing = tmdbIds.filter((id) => !result.has(id));
   if (missing.length === 0) return result;
 
-  db.transaction((tx) => {
+  await db.transaction(async (tx) => {
     for (const tmdbId of missing) {
       const item = unique.get(tmdbId);
       if (!item) continue;
-      const row = tx
+      const [row] = await tx
         .insert(persons)
         .values({
           tmdbId: item.tmdbId,
@@ -202,8 +206,7 @@ export function ensureBrowsePersonsTransaction(items: BrowsePersonInput[]): Map<
           lastFetchedAt: null,
         })
         .onConflictDoNothing()
-        .returning({ id: persons.id })
-        .get();
+        .returning({ id: persons.id });
       if (row) {
         result.set(tmdbId, row.id);
       }
@@ -211,11 +214,10 @@ export function ensureBrowsePersonsTransaction(items: BrowsePersonInput[]): Map<
 
     const stillMissing = missing.filter((id) => !result.has(id));
     if (stillMissing.length > 0) {
-      const fallbacks = tx
+      const fallbacks = await tx
         .select({ id: persons.id, tmdbId: persons.tmdbId })
         .from(persons)
-        .where(inArray(persons.tmdbId, stillMissing))
-        .all();
+        .where(inArray(persons.tmdbId, stillMissing));
       for (const f of fallbacks) {
         result.set(f.tmdbId, f.id);
       }

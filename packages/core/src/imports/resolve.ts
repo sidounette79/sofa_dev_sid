@@ -79,9 +79,20 @@ export async function resolveMovieTmdbId(
     await tmdbLimiter.acquire();
     const result = await findByExternalId(String(ids.tvdbId), "tvdb_id");
     const movie = result.movie_results?.[0];
+    // Real bugs found live (25.08, Sid — several unrelated titles wrongly
+    // linked, e.g. "About a Boy" resolved to "Get Real", "Oussekine" to "The
+    // Ellen DeGeneres Show"): unlike the title+year search a few lines down,
+    // this cross-reference lookup blindly trusted TMDB's first tvdbId match
+    // with zero validation — a real TMDB data-quality gap for some tvdbIds,
+    // not a bug in our own matching logic, but nothing here caught it. Same
+    // year-plausibility guard as the search fallback, so a bad crossref
+    // falls through to that safer path instead of being trusted outright.
     if (movie) {
-      cache?.set(key, movie.id);
-      return movie.id;
+      const releaseYear = movie.release_date ? new Date(movie.release_date).getFullYear() : null;
+      if (!ids.year || !releaseYear || Math.abs(releaseYear - ids.year) <= 2) {
+        cache?.set(key, movie.id);
+        return movie.id;
+      }
     }
   }
 
@@ -144,15 +155,27 @@ export async function resolveShowTmdbId(
   if (ids.tvdbId) {
     await tmdbLimiter.acquire();
     const result = await findByExternalId(String(ids.tvdbId), "tvdb_id");
+    // Episode-level crossrefs are inherently specific (one episode maps to
+    // exactly one show) — no year to sanity-check against, and no evidence
+    // tonight this branch is where the bad matches came from. Left as-is.
     const ep = result.tv_episode_results?.[0];
     if (ep) {
       cache?.set(key, ep.show_id);
       return ep.show_id;
     }
+    // Same real bug class as resolveMovieTmdbId above (see its comment) —
+    // this show-level crossref blindly trusted TMDB's first tvdbId match.
     const show = result.tv_results?.[0];
     if (show) {
-      cache?.set(key, show.id);
-      return show.id;
+      // The /find response's tv_results type is under-specified upstream
+      // (shared shape with movie/person results) — first_air_date is really
+      // there in the actual API response, just not in the generated type.
+      const firstAirDate = (show as { first_air_date?: string }).first_air_date;
+      const airYear = firstAirDate ? new Date(firstAirDate).getFullYear() : null;
+      if (!ids.year || !airYear || Math.abs(airYear - ids.year) <= 2) {
+        cache?.set(key, show.id);
+        return show.id;
+      }
     }
   }
 

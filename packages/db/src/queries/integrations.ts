@@ -4,7 +4,7 @@ import { db } from "../client";
 import { integrationEvents, integrations } from "../schema";
 
 export function getUserIntegrations(userId: string) {
-  return db.select().from(integrations).where(eq(integrations.userId, userId)).all();
+  return db.select().from(integrations).where(eq(integrations.userId, userId));
 }
 
 export function getRecentEventsForIntegration(integrationId: string, limit = 10) {
@@ -14,16 +14,16 @@ export function getRecentEventsForIntegration(integrationId: string, limit = 10)
     .where(eq(integrationEvents.integrationId, integrationId))
     .orderBy(desc(integrationEvents.receivedAt))
     .limit(limit)
-    .all();
+    ;
 }
 
-export function getRecentEventsForIntegrations(integrationIds: string[], limit = 10) {
-  if (integrationIds.length === 0)
-    return new Map<string, ReturnType<typeof getRecentEventsForIntegration>>();
+export async function getRecentEventsForIntegrations(integrationIds: string[], limit = 10) {
+  type Event = Awaited<ReturnType<typeof getRecentEventsForIntegration>>[number];
+  const result = new Map<string, Event[]>();
+  if (integrationIds.length === 0) return result;
 
-  const result = new Map<string, ReturnType<typeof getRecentEventsForIntegration>>();
   for (const integrationId of integrationIds) {
-    const events = getRecentEventsForIntegration(integrationId, limit);
+    const events = await getRecentEventsForIntegration(integrationId, limit);
     if (events.length > 0) result.set(integrationId, events);
   }
   return result;
@@ -34,7 +34,7 @@ export function getIntegrationByUserAndProvider(userId: string, provider: string
     .select()
     .from(integrations)
     .where(and(eq(integrations.userId, userId), eq(integrations.provider, provider)))
-    .get();
+    ;
 }
 
 export function updateIntegrationEnabled(integrationId: string, enabled: boolean) {
@@ -43,17 +43,20 @@ export function updateIntegrationEnabled(integrationId: string, enabled: boolean
     .set({ enabled })
     .where(eq(integrations.id, integrationId))
     .returning()
-    .get();
+    ;
 }
 
 export function insertIntegration(values: typeof integrations.$inferInsert) {
-  return db.insert(integrations).values(values).returning().get();
+  return db.insert(integrations).values(values).returning();
 }
 
-export function deleteIntegrationByUserAndProvider(userId: string, provider: string): void {
-  db.delete(integrations)
-    .where(and(eq(integrations.userId, userId), eq(integrations.provider, provider)))
-    .run();
+export async function deleteIntegrationByUserAndProvider(
+  userId: string,
+  provider: string,
+): Promise<void> {
+  await db
+    .delete(integrations)
+    .where(and(eq(integrations.userId, userId), eq(integrations.provider, provider)));
 }
 
 export function regenerateIntegrationToken(userId: string, provider: string, newToken: string) {
@@ -62,9 +65,41 @@ export function regenerateIntegrationToken(userId: string, provider: string, new
     .set({ token: newToken })
     .where(and(eq(integrations.userId, userId), eq(integrations.provider, provider)))
     .returning()
-    .get();
+    ;
 }
 
 export function getIntegrationByToken(token: string) {
-  return db.select().from(integrations).where(eq(integrations.token, token)).get();
+  return db.select().from(integrations).where(eq(integrations.token, token));
+}
+
+/** 31.08, Sid — safety net for a webhook lost while Sofa was down (no
+ * retry/queue on Sofa's side for that case, see webhooks.ts): every
+ * enabled Emby webhook integration with a linked Emby account, so a
+ * periodic job can diff Emby's real "played" state against Sofa's. */
+export async function getEnabledEmbyIntegrationsWithUsername() {
+  const rows = await db
+    .select({ userId: integrations.userId, embyUsername: integrations.embyUsername })
+    .from(integrations)
+    .where(
+      and(
+        eq(integrations.provider, "emby"),
+        eq(integrations.type, "webhook"),
+        eq(integrations.enabled, true),
+      ),
+    );
+  return rows.filter(
+    (row): row is { userId: string; embyUsername: string } => row.embyUsername !== null,
+  );
+}
+export function updateIntegrationEmbyUsername(
+  userId: string,
+  provider: string,
+  embyUsername: string | null,
+) {
+  return db
+    .update(integrations)
+    .set({ embyUsername })
+    .where(and(eq(integrations.userId, userId), eq(integrations.provider, provider)))
+    .returning()
+    ;
 }

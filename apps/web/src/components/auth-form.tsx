@@ -1,5 +1,5 @@
 import { Trans, useLingui } from "@lingui/react/macro";
-import { IconKey } from "@tabler/icons-react";
+import { IconEye, IconEyeOff, IconKey } from "@tabler/icons-react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { AnimatePresence, motion } from "motion/react";
 import { useState } from "react";
@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { authClient, signIn, signUp } from "@/lib/auth/client";
 import { useAppForm } from "@/lib/form";
+import { queryClient } from "@/lib/orpc/client";
 
 export interface AuthConfig {
   oidcEnabled: boolean;
@@ -42,6 +43,7 @@ export function AuthForm({
   const navigate = useNavigate();
   const [error, setError] = useState("");
   const [oidcLoading, setOidcLoading] = useState(false);
+  const [revealPassword, setRevealPassword] = useState(false);
 
   const isRegister = mode === "register";
   const showOidc = authConfig?.oidcEnabled ?? false;
@@ -70,7 +72,18 @@ export function AuthForm({
             return;
           }
         }
-        void navigate({ to: isRegister ? "/onboarding" : "/dashboard" });
+        // 09.10, Sid: logging in as a different account without a hard
+        // reload left the previous account's library/tracking data cached
+        // under the same query keys (the server scopes by session cookie,
+        // not by any userId in the key) — the sister saw Sid's watchlist
+        // and in-progress shows after switching accounts. Never caught
+        // before since Sid was the only one actually switching accounts.
+        queryClient.clear();
+        if (isRegister) {
+          void navigate({ to: "/onboarding" });
+        } else {
+          void navigate({ to: "/library", search: { type: "tv" } });
+        }
       } catch {
         setError(t`Something went wrong`);
       }
@@ -83,7 +96,7 @@ export function AuthForm({
     try {
       await authClient.signIn.oauth2({
         providerId: "oidc",
-        callbackURL: "/dashboard",
+        callbackURL: "/library?type=tv",
       });
     } catch {
       setError(t`Failed to start SSO login`);
@@ -226,17 +239,27 @@ export function AuthForm({
                   >
                     <Trans>Password</Trans>
                   </Label>
-                  <Input
-                    id="password"
-                    type="password"
-                    required
-                    minLength={8}
-                    autoComplete={mode === "login" ? "current-password" : "new-password"}
-                    value={field.state.value}
-                    onChange={(e) => field.handleChange(e.target.value)}
-                    className={authInputClass}
-                    placeholder={t`Min 8 characters…`}
-                  />
+                  <div className="relative">
+                    <Input
+                      id="password"
+                      type={revealPassword ? "text" : "password"}
+                      required
+                      minLength={8}
+                      autoComplete={mode === "login" ? "current-password" : "new-password"}
+                      value={field.state.value}
+                      onChange={(e) => field.handleChange(e.target.value)}
+                      className={`${authInputClass} pr-10`}
+                      placeholder={t`Min 8 characters…`}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setRevealPassword((prev) => !prev)}
+                      className="text-muted-foreground hover:text-foreground absolute inset-y-0 right-3 flex items-center"
+                      aria-label={revealPassword ? t`Hide password` : t`Show password`}
+                    >
+                      {revealPassword ? <IconEyeOff size={18} /> : <IconEye size={18} />}
+                    </button>
+                  </div>
                 </motion.div>
               )}
             </form.Field>

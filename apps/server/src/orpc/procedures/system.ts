@@ -1,4 +1,5 @@
 import { getOidcProviderName, isOidcConfigured, isPasswordLoginDisabled } from "@sofa/auth/config";
+import { VAPID_PUBLIC_KEY } from "@sofa/config";
 import { getInstanceId, getUserCount, isRegistrationOpen } from "@sofa/core/settings";
 import { isTmdbConfigured } from "@sofa/tmdb/config";
 import { tmdbImageUrl } from "@sofa/tmdb/image";
@@ -28,16 +29,22 @@ export const publicInfo = os.system.publicInfo.handler(async () => {
     .filter(Boolean) as string[];
 
   const oidcEnabled = isOidcConfigured();
+  const [instanceId, userCount, registrationOpen] = await Promise.all([
+    getInstanceId(),
+    getUserCount(),
+    isRegistrationOpen(),
+  ]);
 
   return {
-    instanceId: getInstanceId(),
+    instanceId,
     tmdbConfigured: isTmdbConfigured(),
-    userCount: getUserCount(),
-    registrationOpen: isRegistrationOpen(),
+    userCount,
+    registrationOpen,
     posterUrls,
     oidcEnabled,
     oidcProviderName: oidcEnabled ? getOidcProviderName() : null,
     passwordLoginDisabled: isPasswordLoginDisabled(),
+    vapidPublicKey: VAPID_PUBLIC_KEY,
   };
 });
 

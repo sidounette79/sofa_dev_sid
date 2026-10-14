@@ -2,16 +2,20 @@ import { ORPCError } from "@orpc/server";
 
 import { AppErrorCode } from "@sofa/api/errors";
 import { WATCH_REGION } from "@sofa/config";
-import { getRecommendationsFeed } from "@sofa/core/discovery";
+import { getRecommendationsFeed, getUntrackedEmbyLibraryFeed } from "@sofa/core/discovery";
 import { ensureBrowseTitlesExist } from "@sofa/core/metadata";
 import { ensureBrowsePersonsExist } from "@sofa/core/person";
 import { getPlatformTmdbIdMap, getPlatformTmdbIds, listPlatforms } from "@sofa/core/platforms";
+import { getEmbyStatusByTitleIds, getRequestedAtByTitleIds } from "@sofa/db/queries/discovery";
+import { getRequestedNotAvailable } from "@sofa/db/queries/title";
+import { deriveEmbyStatus, getUntrackedEmbyLibraryCount } from "@sofa/db/queries/emby-library";
 import { getDisplayStatusesByTitleIds, getEpisodeProgressByTitleIds } from "@sofa/core/tracking";
 import {
   discover as discoverTmdb,
   getGenres,
   getPopular,
   getTrending,
+  getUpcomingMovies,
   searchMovies,
   searchMulti,
   searchPerson,
@@ -34,11 +38,48 @@ function requireTmdb() {
 
 // ─── Trending ─────────────────────────────────────────────────
 
+// Genre 16 = Animation in TMDB's genre list. Animation alone also covers
+// Pixar/Disney/etc — anime specifically (24.08, Sid: "pas d'anime" in
+// Trending) is Animation genre AND Japanese original language, the same
+// heuristic most trackers use.
+const ANIME_GENRE_ID = 16;
+function isAnime(r: Record<string, unknown>): boolean {
+  const genreIds = (r.genre_ids as number[] | undefined) ?? [];
+  return genreIds.includes(ANIME_GENRE_ID) && r.original_language === "ja";
+}
+
+// TV genre IDs: Talk (10767), News (10763), Reality (10764). Excluded from
+// discovery unless French (24.08, Sid: "masquer les talk shows et les
+// journaux TV et la télé-réalité hors France") — she watches none of the US
+// ones (see project_sofa_trakt_phantom_titles memory, same pattern as the
+// 17 phantom talk-show titles found earlier this project).
+const JUNK_TV_GENRE_IDS = [10767, 10763, 10764];
+function isJunkNonFrenchTv(r: Record<string, unknown>): boolean {
+  const genreIds = (r.genre_ids as number[] | undefined) ?? [];
+  if (!genreIds.some((g) => JUNK_TV_GENRE_IDS.includes(g))) return false;
+  return r.original_language !== "fr";
+}
+
+/** Combined discovery-noise filter — anime + non-French talk/news/reality. */
+function isDiscoveryNoise(r: Record<string, unknown>): boolean {
+  return isAnime(r) || isJunkNonFrenchTv(r);
+}
+
+// 06.09, Sid: "masquer ce qui est déjà vu" — already-in-Emby was excluded
+// everywhere here, but something watched via another means (an old Trakt
+// import, since removed from Emby) has embyStatus null/removed while its
+// userStatus is still completed/caught_up, so it kept surfacing.
+const ALREADY_SEEN_STATUSES = new Set(["completed", "caught_up", "dropped"]);
+function isDiscoverable(item: { embyStatus: string | null }, userStatus: string | undefined): boolean {
+  return item.embyStatus !== "available" && !ALREADY_SEEN_STATUSES.has(userStatus ?? "");
+}
+
 export const trending = os.discover.trending.use(authed).handler(async ({ input, context }) => {
   requireTmdb();
 
   const data = await getTrending(input.type, "day", input.page);
-  const results = (data.results ?? []) as Record<string, unknown>[];
+  const rawResults = (data.results ?? []) as Record<string, unknown>[];
+  const results = rawResults.filter((r) => !isDiscoveryNoise(r));
 
   const baseItems = results
     .filter((r) => r.poster_path)
@@ -74,7 +115,7 @@ export const trending = os.discover.trending.use(authed).handler(async ({ input,
         ]
       : []),
   ];
-  const titleMap = ensureBrowseTitlesExist(allBrowseItems);
+  const titleMap = await ensureBrowseTitlesExist(allBrowseItems);
 
   const items = baseItems.map((item) => {
     const entry = titleMap.get(`${item.tmdbId}-${item.type}`);
@@ -101,22 +142,53 @@ export const trending = os.discover.trending.use(authed).handler(async ({ input,
     : null;
 
   const titleIds = items.map((r) => r.id);
-  const [userStatuses, episodeProgress] =
+  const [userStatuses, episodeProgress, embyStatusMap, requestedAtMap] =
     titleIds.length > 0
-      ? [
+      ? await Promise.all([
           getDisplayStatusesByTitleIds(context.user.id, titleIds),
           getEpisodeProgressByTitleIds(context.user.id, titleIds),
-        ]
-      : [{}, {}];
+          getEmbyStatusByTitleIds(titleIds),
+          getRequestedAtByTitleIds(titleIds),
+        ])
+      : [{}, {}, {}, {}];
+
+  const itemsWithEmby = items.map((item) => {
+    const emby = embyStatusMap[item.id];
+    return {
+      ...item,
+      embyStatus: emby ? deriveEmbyStatus(emby.inEmbyLibrary, emby.embyItemId) : null,
+      // Household-wide, not scoped to the current user — see
+      // getRequestedAtByTitleIds's own doc comment.
+      requestedAt: requestedAtMap[item.id] ?? null,
+    };
+  });
+
+  // "Filtrer ce qu'on a déjà" + "maximum 10 films et 10 séries" (24.08, Sid)
+  // — drop what's already on Emby, then cap each type separately so the row
+  // stops perpetually loading more pages to fill the screen.
+  const TRENDING_CAP_PER_TYPE = 30;
+  const notOwned = itemsWithEmby.filter(
+    (item) => isDiscoverable(item, userStatuses[item.id]),
+  );
+  const cappedMovies = notOwned.filter((item) => item.type === "movie").slice(0, TRENDING_CAP_PER_TYPE);
+  const cappedTv = notOwned.filter((item) => item.type === "tv").slice(0, TRENDING_CAP_PER_TYPE);
+  const cappedItems = notOwned.filter(
+    (item) => cappedMovies.includes(item) || cappedTv.includes(item),
+  );
 
   return {
-    items,
+    items: cappedItems,
     hero,
     userStatuses,
     episodeProgress,
     page: (data as { page?: number }).page ?? input.page,
-    totalPages: (data as { total_pages?: number }).total_pages ?? 1,
-    totalResults: (data as { total_results?: number }).total_results ?? 0,
+    // Hardcoded to 1 (not TMDB's real total_pages) — Trending is capped to a
+    // single page + a per-type limit now, not meant to paginate further.
+    // Fixes the "loads perpetually" complaint: the client's infinite-scroll
+    // sentinel kept firing because TMDB's own total_pages is in the
+    // thousands.
+    totalPages: 1,
+    totalResults: cappedItems.length,
   };
 });
 
@@ -127,7 +199,7 @@ export const popular = os.discover.popular.use(authed).handler(async ({ input, c
 
   const data = await getPopular(input.type, input.page);
   const baseItems = ((data.results ?? []) as Record<string, unknown>[])
-    .filter((r) => r.poster_path)
+    .filter((r) => r.poster_path && !isDiscoveryNoise(r))
     .map((r) => ({
       tmdbId: r.id as number,
       type: input.type,
@@ -138,7 +210,7 @@ export const popular = os.discover.popular.use(authed).handler(async ({ input, c
       voteAverage: (r.vote_average as number | undefined) ?? null,
     }));
 
-  const titleMap = ensureBrowseTitlesExist(baseItems);
+  const titleMap = await ensureBrowseTitlesExist(baseItems);
   const items = baseItems.map((item) => {
     const entry = titleMap.get(`${item.tmdbId}-${item.type}`);
     return Object.assign(item, {
@@ -149,27 +221,190 @@ export const popular = os.discover.popular.use(authed).handler(async ({ input, c
   });
 
   const titleIds = items.map((r) => r.id);
-  const [userStatuses, episodeProgress] =
+  const [userStatuses, episodeProgress, embyStatusMap, requestedAtMap] =
     titleIds.length > 0
-      ? [
+      ? await Promise.all([
           getDisplayStatusesByTitleIds(context.user.id, titleIds),
           getEpisodeProgressByTitleIds(context.user.id, titleIds),
-        ]
-      : [{}, {}];
+          getEmbyStatusByTitleIds(titleIds),
+          getRequestedAtByTitleIds(titleIds),
+        ])
+      : [{}, {}, {}, {}];
+
+  const itemsWithEmby = items.map((item) => {
+    const emby = embyStatusMap[item.id];
+    return {
+      ...item,
+      embyStatus: emby ? deriveEmbyStatus(emby.inEmbyLibrary, emby.embyItemId) : null,
+      // Household-wide, not scoped to the current user — see
+      // getRequestedAtByTitleIds's own doc comment.
+      requestedAt: requestedAtMap[item.id] ?? null,
+    };
+  });
+
+  // Same "no anime, no already-owned, capped at 15" treatment as Trending
+  // (24.08, Sid: "si y a pas de limite... tu mets aussi 15 et 15 avec les
+  // mêmes filtres que tendance") — already type-specific per call here, so
+  // just one flat cap, no per-type split needed.
+  const POPULAR_CAP = 30;
+  const cappedItems = itemsWithEmby
+    .filter((item) => isDiscoverable(item, userStatuses[item.id]))
+    .slice(0, POPULAR_CAP);
 
   return {
-    items,
+    items: cappedItems,
     userStatuses,
     episodeProgress,
     page: data.page ?? input.page,
-    totalPages: data.total_pages ?? 1,
-    totalResults: data.total_results ?? 0,
+    totalPages: 1,
+    totalResults: cappedItems.length,
   };
 });
 
+// ─── Upcoming Movies (discovery, not the tracked-library /upcoming) ────
+
+export const upcomingMovies = os.discover.upcomingMovies
+  .use(authed)
+  .handler(async ({ input, context }) => {
+    requireTmdb();
+
+    const data = await getUpcomingMovies(input.page);
+    const baseItems = ((data.results ?? []) as Record<string, unknown>[])
+      .filter((r) => r.poster_path && !isDiscoveryNoise(r))
+      .map((r) => ({
+        tmdbId: r.id as number,
+        type: "movie" as const,
+        title: (r.title as string) || "",
+        posterPath: (r.poster_path as string) ?? null,
+        releaseDate: (r.release_date as string | undefined) ?? null,
+        firstAirDate: null,
+        voteAverage: (r.vote_average as number | undefined) ?? null,
+      }));
+
+    const titleMap = await ensureBrowseTitlesExist(baseItems);
+    const items = baseItems.map((item) => {
+      const entry = titleMap.get(`${item.tmdbId}-${item.type}`);
+      return Object.assign(item, {
+        id: entry?.id ?? "",
+        posterPath: tmdbImageUrl(item.posterPath, "posters"),
+        posterThumbHash: entry?.posterThumbHash ?? null,
+      });
+    });
+
+    const titleIds = items.map((r) => r.id);
+    const [userStatuses, episodeProgress, embyStatusMap, requestedAtMap] =
+      titleIds.length > 0
+        ? await Promise.all([
+            getDisplayStatusesByTitleIds(context.user.id, titleIds),
+            getEpisodeProgressByTitleIds(context.user.id, titleIds),
+            getEmbyStatusByTitleIds(titleIds),
+            getRequestedAtByTitleIds(titleIds),
+          ])
+        : [{}, {}, {}, {}];
+
+    const itemsWithEmby = items.map((item) => {
+      const emby = embyStatusMap[item.id];
+      return {
+        ...item,
+        embyStatus: emby ? deriveEmbyStatus(emby.inEmbyLibrary, emby.embyItemId) : null,
+        // Household-wide, not scoped to the current user — see
+        // getRequestedAtByTitleIds's own doc comment.
+        requestedAt: requestedAtMap[item.id] ?? null,
+      };
+    });
+
+    const UPCOMING_MOVIES_CAP = 30;
+    const cappedItems = itemsWithEmby
+      .filter((item) => isDiscoverable(item, userStatuses[item.id]))
+      .slice(0, UPCOMING_MOVIES_CAP);
+
+    return {
+      items: cappedItems,
+      userStatuses,
+      episodeProgress,
+      page: data.page ?? input.page,
+      totalPages: 1,
+      totalResults: cappedItems.length,
+    };
+  });
+
+// ─── Upcoming Series (discovery, not the tracked-library /upcoming) ───
+
+export const upcomingSeries = os.discover.upcomingSeries
+  .use(authed)
+  .handler(async ({ input, context }) => {
+    requireTmdb();
+
+    // TMDB has no dedicated /tv/upcoming endpoint (unlike movies) — Discover
+    // TV with a first_air_date floor of today is the equivalent.
+    const today = new Date().toISOString().slice(0, 10);
+    const data = await discoverTmdb(
+      "tv",
+      { "first_air_date.gte": today, sort_by: "popularity.desc", "vote_count.gte": "5" },
+      input.page,
+    );
+    const baseItems = ((data.results ?? []) as Record<string, unknown>[])
+      .filter((r) => r.poster_path && !isDiscoveryNoise(r))
+      .map((r) => ({
+        tmdbId: r.id as number,
+        type: "tv" as const,
+        title: (r.name as string) || "",
+        posterPath: (r.poster_path as string) ?? null,
+        releaseDate: null,
+        firstAirDate: (r.first_air_date as string | undefined) ?? null,
+        voteAverage: (r.vote_average as number | undefined) ?? null,
+      }));
+
+    const titleMap = await ensureBrowseTitlesExist(baseItems);
+    const items = baseItems.map((item) => {
+      const entry = titleMap.get(`${item.tmdbId}-${item.type}`);
+      return Object.assign(item, {
+        id: entry?.id ?? "",
+        posterPath: tmdbImageUrl(item.posterPath, "posters"),
+        posterThumbHash: entry?.posterThumbHash ?? null,
+      });
+    });
+
+    const titleIds = items.map((r) => r.id);
+    const [userStatuses, episodeProgress, embyStatusMap, requestedAtMap] =
+      titleIds.length > 0
+        ? await Promise.all([
+            getDisplayStatusesByTitleIds(context.user.id, titleIds),
+            getEpisodeProgressByTitleIds(context.user.id, titleIds),
+            getEmbyStatusByTitleIds(titleIds),
+            getRequestedAtByTitleIds(titleIds),
+          ])
+        : [{}, {}, {}, {}];
+
+    const itemsWithEmby = items.map((item) => {
+      const emby = embyStatusMap[item.id];
+      return {
+        ...item,
+        embyStatus: emby ? deriveEmbyStatus(emby.inEmbyLibrary, emby.embyItemId) : null,
+        // Household-wide, not scoped to the current user — see
+        // getRequestedAtByTitleIds's own doc comment.
+        requestedAt: requestedAtMap[item.id] ?? null,
+      };
+    });
+
+    const UPCOMING_SERIES_CAP = 30;
+    const cappedItems = itemsWithEmby
+      .filter((item) => isDiscoverable(item, userStatuses[item.id]))
+      .slice(0, UPCOMING_SERIES_CAP);
+
+    return {
+      items: cappedItems,
+      userStatuses,
+      episodeProgress,
+      page: data.page ?? input.page,
+      totalPages: 1,
+      totalResults: cappedItems.length,
+    };
+  });
+
 // ─── Search ───────────────────────────────────────────────────
 
-export const search = os.discover.search.use(authed).handler(async ({ input }) => {
+export const search = os.discover.search.use(authed).handler(async ({ input, context }) => {
   requireTmdb();
 
   const query = input.query.trim();
@@ -197,7 +432,7 @@ export const search = os.discover.search.use(authed).handler(async ({ input }) =
           .map((k) => k.title ?? (k as { name?: string }).name)
           .filter((s): s is string => !!s) as string[]) ?? null,
     }));
-    const personMap = ensureBrowsePersonsExist(
+    const personMap = await ensureBrowsePersonsExist(
       personItems.map((r) => ({
         tmdbId: r.tmdbId,
         name: r.title,
@@ -211,6 +446,8 @@ export const search = os.discover.search.use(authed).handler(async ({ input }) =
         Object.assign(r, {
           id: personMap.get(r.tmdbId),
           profilePath: tmdbImageUrl(r.profilePath, "profiles"),
+          userStatus: null,
+          embyStatus: null,
         }),
       ),
       page: personResults.page ?? input.page,
@@ -280,10 +517,10 @@ export const search = os.discover.search.use(authed).handler(async ({ input }) =
   const titleResults = mapped.filter(
     (r): r is typeof r & { type: "movie" | "tv" } => r.type !== "person",
   );
-  const titleMap = ensureBrowseTitlesExist(titleResults);
+  const titleMap = await ensureBrowseTitlesExist(titleResults);
 
   const personResults = mapped.filter((r) => r.type === "person");
-  const personMap = ensureBrowsePersonsExist(
+  const personMap = await ensureBrowsePersonsExist(
     personResults.map((r) => ({
       tmdbId: r.tmdbId,
       name: r.title,
@@ -293,15 +530,42 @@ export const search = os.discover.search.use(authed).handler(async ({ input }) =
     })),
   );
 
+  const searchTitleIds = titleResults
+    .map((r) => titleMap.get(`${r.tmdbId}-${r.type}`)?.id)
+    .filter((id): id is string => !!id);
+  // 28.08, Sid — real bug: unlike every other discover procedure (trending,
+  // popular, upcomingMovies/Series, browse), search never fetched
+  // requestedAt at all — a title already requested (household-wide, see
+  // getRequestedAtByTitleIds's own doc comment) still showed the plain "+"
+  // instead of the "obtaining" badge when found by name here, no matter what
+  // was actually true in Radarr/Sonarr.
+  const [searchUserStatuses, searchEmbyStatus, searchRequestedAt] =
+    searchTitleIds.length > 0
+      ? await Promise.all([
+          getDisplayStatusesByTitleIds(context.user.id, searchTitleIds),
+          getEmbyStatusByTitleIds(searchTitleIds),
+          getRequestedAtByTitleIds(searchTitleIds),
+        ])
+      : [{}, {}, {}];
+
   const results = mapped.map((r) => {
     if (r.type === "person") {
       return Object.assign(r, {
         id: personMap.get(r.tmdbId),
         profilePath: tmdbImageUrl(r.profilePath, "profiles"),
+        userStatus: null,
+        embyStatus: null,
       });
     }
     const entry = titleMap.get(`${r.tmdbId}-${r.type}`);
-    return Object.assign(r, { id: entry?.id, posterPath: tmdbImageUrl(r.posterPath, "posters") });
+    const emby = entry?.id ? searchEmbyStatus[entry.id] : undefined;
+    return Object.assign(r, {
+      id: entry?.id,
+      posterPath: tmdbImageUrl(r.posterPath, "posters"),
+      userStatus: entry?.id ? (searchUserStatuses[entry.id] ?? null) : null,
+      embyStatus: emby ? deriveEmbyStatus(emby.inEmbyLibrary, emby.embyItemId) : null,
+      requestedAt: entry?.id ? (searchRequestedAt[entry.id] ?? null) : null,
+    });
   });
 
   return {
@@ -333,7 +597,7 @@ export const browse = os.discover.browse.use(authed).handler(async ({ input, con
   if (input.ratingMin != null) params["vote_average.gte"] = String(input.ratingMin);
   if (input.language) params.with_original_language = input.language;
   if (input.platformId) {
-    const tmdbIds = getPlatformTmdbIds(input.platformId);
+    const tmdbIds = await getPlatformTmdbIds(input.platformId);
     if (tmdbIds.length > 0) {
       params.with_watch_providers = tmdbIds.join("|");
       params.watch_region = WATCH_REGION;
@@ -350,7 +614,7 @@ export const browse = os.discover.browse.use(authed).handler(async ({ input, con
   };
 
   const baseItems = ((results.results ?? []) as DiscoverResult[])
-    .filter((r) => r.poster_path)
+    .filter((r) => r.poster_path && !isDiscoveryNoise(r as Record<string, unknown>))
     .map((r) => ({
       tmdbId: r.id,
       type: input.type,
@@ -361,7 +625,7 @@ export const browse = os.discover.browse.use(authed).handler(async ({ input, con
       voteAverage: r.vote_average ?? null,
     }));
 
-  const titleMap = ensureBrowseTitlesExist(baseItems);
+  const titleMap = await ensureBrowseTitlesExist(baseItems);
   const items = baseItems.map((item) => {
     const entry = titleMap.get(`${item.tmdbId}-${item.type}`);
     return Object.assign(item, {
@@ -372,16 +636,40 @@ export const browse = os.discover.browse.use(authed).handler(async ({ input, con
   });
 
   const titleIds = items.map((r) => r.id);
-  const [userStatuses, episodeProgress] =
+  const [userStatuses, episodeProgress, embyStatusMap, requestedAtMap] =
     titleIds.length > 0
-      ? [
+      ? await Promise.all([
           getDisplayStatusesByTitleIds(context.user.id, titleIds),
           getEpisodeProgressByTitleIds(context.user.id, titleIds),
-        ]
-      : [{}, {}];
+          getEmbyStatusByTitleIds(titleIds),
+          getRequestedAtByTitleIds(titleIds),
+        ])
+      : [{}, {}, {}, {}];
+
+  const itemsWithEmby = items.map((item) => {
+    const emby = embyStatusMap[item.id];
+    return {
+      ...item,
+      embyStatus: emby ? deriveEmbyStatus(emby.inEmbyLibrary, emby.embyItemId) : null,
+      // Household-wide, not scoped to the current user — see
+      // getRequestedAtByTitleIds's own doc comment.
+      requestedAt: requestedAtMap[item.id] ?? null,
+    };
+  });
+
+  // "Filtrer ceux qui ont le badge poubelle ou déjà dispo" (24.08, Sid) —
+  // same as Trending/Popular, plus dropped titles this time (don't
+  // re-suggest something she explicitly rejected). Page/totalPages stay
+  // TMDB's real values — this is the deep-search tool (DiscoverSection)
+  // too, unlike Trending/Popular it needs genuine multi-page depth, so a
+  // filtered page can come back with fewer than 20 items rather than
+  // faking a shorter total.
+  const cappedItems = itemsWithEmby.filter(
+    (item) => isDiscoverable(item, userStatuses[item.id]),
+  );
 
   return {
-    items,
+    items: cappedItems,
     userStatuses,
     episodeProgress,
     page: results.page ?? input.page,
@@ -406,8 +694,8 @@ export const genres = os.discover.genres.use(authed).handler(async ({ input }) =
 // ─── Platforms ────────────────────────────────────────────────
 
 export const platforms = os.discover.platforms.use(authed).handler(async () => {
-  const allPlatforms = listPlatforms();
-  const tmdbIdsMap = getPlatformTmdbIdMap(allPlatforms.map((p) => p.id));
+  const allPlatforms = await listPlatforms();
+  const tmdbIdsMap = await getPlatformTmdbIdMap(allPlatforms.map((p) => p.id));
   return {
     platforms: allPlatforms.map((p) => ({
       id: p.id,
@@ -421,12 +709,49 @@ export const platforms = os.discover.platforms.use(authed).handler(async () => {
 
 // ─── Recommendations ──────────────────────────────────────────
 
-export const recommendations = os.discover.recommendations.use(authed).handler(({ context }) => {
-  const feed = getRecommendationsFeed(context.user.id);
-  const items = feed
-    .filter((t): t is NonNullable<typeof t> => t != null)
-    .slice(0, 10)
-    .map((t) => ({
+export const recommendations = os.discover.recommendations
+  .use(authed)
+  .handler(async ({ input, context }) => {
+    const feed = await getRecommendationsFeed(context.user.id, input.type);
+    const baseItems = feed
+      .filter((t): t is NonNullable<typeof t> => t != null)
+      .slice(0, 10)
+      .map((t) => ({
+        id: t.id,
+        tmdbId: t.tmdbId,
+        type: t.type,
+        title: t.title,
+        posterPath: tmdbImageUrl(t.posterPath, "posters"),
+        posterThumbHash: t.posterThumbHash ?? null,
+        releaseDate: t.releaseDate ?? null,
+        firstAirDate: t.firstAirDate ?? null,
+        voteAverage: t.voteAverage,
+      }));
+    // 26.08, Sid — full badge audit: same gap as everywhere else, this fed
+    // "Recommended for You" cards with no embyStatus/requestedAt at all.
+    const titleIds = baseItems.map((t) => t.id);
+    const [embyStatusMap, requestedAtMap] =
+      titleIds.length > 0
+        ? await Promise.all([getEmbyStatusByTitleIds(titleIds), getRequestedAtByTitleIds(titleIds)])
+        : [{}, {}];
+    const items = baseItems.map((item) => {
+      const emby = embyStatusMap[item.id];
+      return {
+        ...item,
+        embyStatus: emby ? deriveEmbyStatus(emby.inEmbyLibrary, emby.embyItemId) : null,
+        requestedAt: requestedAtMap[item.id] ?? null,
+      };
+    });
+    return { items };
+  });
+
+// ─── Untracked Emby library ────────────────────────────────────
+
+export const untrackedEmbyLibrary = os.discover.untrackedEmbyLibrary
+  .use(authed)
+  .handler(async ({ input, context }) => {
+    const feed = await getUntrackedEmbyLibraryFeed(context.user.id, 20, input.type);
+    const items = feed.map((t) => ({
       id: t.id,
       tmdbId: t.tmdbId,
       type: t.type,
@@ -436,6 +761,53 @@ export const recommendations = os.discover.recommendations.use(authed).handler((
       releaseDate: t.releaseDate ?? null,
       firstAirDate: t.firstAirDate ?? null,
       voteAverage: t.voteAverage,
+      embyLibraryName: t.embyLibraryName,
     }));
-  return { items };
-});
+    return {
+      items,
+      totalResults: await getUntrackedEmbyLibraryCount(context.user.id, input.type),
+    };
+  });
+
+// ─── Requested, not yet available ──────────────────────────────
+
+export const requestedNotAvailable = os.discover.requestedNotAvailable
+  .use(authed)
+  .handler(async ({ input, context }) => {
+    // 26.08, Sid — real total must reflect the post-hasWatchedSomething-
+    // filter count (below), which getRequestedNotAvailableCount's raw
+    // WHERE-clause count can't see. Household "requested but not available"
+    // realistically never approaches this cap, so fetching generously here
+    // and counting the actual filtered set is simpler and exact.
+    const rows = await getRequestedNotAvailable(input.type, 500);
+
+    // Real bug found live (24.08, Sid — "Line of Duty" showed both "À jour"
+    // and "Demandé" at once): titles.inEmbyLibrary alone isn't a reliable
+    // "has she really got nothing to watch" signal — a title can be fully
+    // watched (via KOSync/WebDAV progress, a Trakt-import watch history,
+    // etc.) without ever going through the Sofa Emby scan that flips that
+    // flag. Any real display status beyond "never touched" means drop it
+    // from this list regardless of the raw Emby flag.
+    const titleIds = rows.map((t) => t.id);
+    const userStatuses =
+      titleIds.length > 0 ? await getDisplayStatusesByTitleIds(context.user.id, titleIds) : {};
+    // "in_watchlist" (just added, nothing watched yet) and "dropped" are
+    // fine here — only real playback history disqualifies.
+    const hasWatchedSomething = (status: string | undefined) =>
+      status === "watching" || status === "caught_up" || status === "completed";
+    const filteredRows = rows.filter((t) => !hasWatchedSomething(userStatuses[t.id]));
+
+    const items = filteredRows.map((t) => ({
+      id: t.id,
+      tmdbId: t.tmdbId,
+      type: t.type as "movie" | "tv",
+      title: t.title,
+      posterPath: tmdbImageUrl(t.posterPath, "posters"),
+      posterThumbHash: t.posterThumbHash ?? null,
+      releaseDate: t.releaseDate,
+      firstAirDate: t.firstAirDate,
+      voteAverage: t.voteAverage,
+      requestedAt: t.requestedAt as Date,
+    }));
+    return { items, totalResults: filteredRows.length };
+  });

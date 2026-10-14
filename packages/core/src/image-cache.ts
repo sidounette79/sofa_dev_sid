@@ -1,4 +1,4 @@
-import { mkdir, rename, unlink } from "node:fs/promises";
+import { access, mkdir, readFile, rename, unlink, writeFile } from "node:fs/promises";
 import path from "node:path";
 
 import { CACHE_DIR, TMDB_IMAGE_BASE_URL } from "@sofa/config";
@@ -33,7 +33,12 @@ export async function ensureImageDirs() {
 }
 
 export async function isImageCached(category: ImageCategory, filename: string): Promise<boolean> {
-  return Bun.file(getLocalImagePath(category, filename)).exists();
+  try {
+    await access(getLocalImagePath(category, filename));
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 export function getLocalImagePath(category: ImageCategory, filename: string): string {
@@ -45,9 +50,11 @@ export async function readCachedImage(
   filename: string,
 ): Promise<Buffer | null> {
   const filePath = getLocalImagePath(category, filename);
-  const file = Bun.file(filePath);
-  if (!(await file.exists())) return null;
-  return Buffer.from(await file.arrayBuffer());
+  try {
+    return await readFile(filePath);
+  } catch {
+    return null;
+  }
 }
 
 const FETCH_TIMEOUT_MS = 10_000;
@@ -102,7 +109,7 @@ export async function downloadAndCacheImage(
   const tmpPath = `${finalPath}.tmp.${Date.now()}`;
 
   try {
-    await Bun.write(tmpPath, buffer);
+    await writeFile(tmpPath, buffer);
     await rename(tmpPath, finalPath);
     log.debug(`Cached ${category}/${filename} (${buffer.length} bytes)`);
   } catch (err) {
@@ -137,7 +144,7 @@ export async function fetchAndMaybeCache(
   // Fire-and-forget save to disk
   const finalPath = getLocalImagePath(category, filename);
   const tmpPath = `${finalPath}.tmp.${Date.now()}`;
-  Bun.write(tmpPath, buffer)
+  writeFile(tmpPath, buffer)
     .then(() => rename(tmpPath, finalPath))
     .catch((err) => {
       log.warn(`Failed to cache ${category}/${filename}:`, err);
@@ -164,7 +171,7 @@ export async function loadImageBuffer(
 }
 
 export async function cacheImagesForTitle(titleId: string) {
-  const title = getTitleWithPaths(titleId);
+  const [title] = await getTitleWithPaths(titleId);
   if (!title) return;
 
   // Collect all candidate images, then check cache in parallel
@@ -173,7 +180,7 @@ export async function cacheImagesForTitle(titleId: string) {
   if (title.backdropPath) candidates.push({ imgPath: title.backdropPath, category: "backdrops" });
 
   if (title.type === "tv") {
-    const allSeasons = getSeasonPostersForTitle(titleId);
+    const allSeasons = await getSeasonPostersForTitle(titleId);
     for (const s of allSeasons) {
       if (s.posterPath) candidates.push({ imgPath: s.posterPath, category: "posters" });
     }
@@ -199,7 +206,7 @@ export async function cacheImagesForTitle(titleId: string) {
 }
 
 export async function cacheEpisodeStills(titleId: string) {
-  const allEps = getEpisodeStillsForTitle(titleId);
+  const allEps = await getEpisodeStillsForTitle(titleId);
 
   const epsWithStills = allEps.filter(
     (ep): ep is typeof ep & { stillPath: string } => ep.stillPath != null,
@@ -219,7 +226,7 @@ export async function cacheEpisodeStills(titleId: string) {
 }
 
 export async function cacheProviderLogos(titleId: string) {
-  const offers = getAvailabilityLogosForTitle(titleId);
+  const offers = await getAvailabilityLogosForTitle(titleId);
 
   // Deduplicate and parallel cache checks
   const uniqueLogos = new Map<string, string>();
@@ -243,7 +250,7 @@ export async function cacheProviderLogos(titleId: string) {
 }
 
 export async function cacheProfilePhotos(titleId: string) {
-  const castRows = getCastProfilePathsForTitle(titleId);
+  const castRows = await getCastProfilePathsForTitle(titleId);
 
   // Deduplicate and parallel cache checks
   const uniqueProfiles = new Map<string, string>();

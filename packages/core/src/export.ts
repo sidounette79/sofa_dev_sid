@@ -16,14 +16,16 @@ function extractYear(
   return Number.isNaN(year) ? undefined : year;
 }
 
-export function generateUserExport(
+export async function generateUserExport(
   userId: string,
   user: { name: string; email: string },
-): SofaExport {
-  const libraryRows = getUserLibrary(userId);
-  const movieWatchRows = getUserMovieWatches(userId);
-  const episodeWatchRows = getUserEpisodeWatches(userId);
-  const ratingRows = getUserRatings(userId);
+): Promise<SofaExport> {
+  const [libraryRows, movieWatchRows, episodeWatchRows, ratingRows] = await Promise.all([
+    getUserLibrary(userId),
+    getUserMovieWatches(userId),
+    getUserEpisodeWatches(userId),
+    getUserRatings(userId),
+  ]);
 
   return {
     version: 1,

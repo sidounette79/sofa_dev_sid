@@ -6,7 +6,7 @@ const app = new Hono();
 
 app.get("/:token", async (c) => {
   const token = c.req.param("token");
-  const result = resolveListToken(token);
+  const result = await resolveListToken(token);
   if (!result) {
     return c.json([]);
   }
@@ -16,7 +16,7 @@ app.get("/:token", async (c) => {
   if (result.provider === "sonarr") {
     return c.json(await getSonarrList(result.userId, statuses));
   }
-  return c.json(getRadarrList(result.userId, statuses));
+  return c.json(await getRadarrList(result.userId, statuses));
 });
 
 export default app;

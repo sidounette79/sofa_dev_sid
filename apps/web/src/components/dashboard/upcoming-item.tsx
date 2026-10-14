@@ -12,6 +12,10 @@ const statusColorClass = {
   watching: "bg-status-watching",
   caught_up: "bg-status-completed",
   completed: "bg-status-completed",
+  // Never actually reached — getUpcomingMovies/getUpcomingEpisodes already
+  // exclude dropped titles from this feed — but userStatus's type is shared
+  // with the broader displayStatusEnum, which does include it.
+  dropped: "bg-destructive",
 } as const;
 
 const statusHaloClass = statusColorClass;
@@ -33,6 +37,7 @@ export function UpcomingRow({ item }: { item: UpcomingItem }) {
     watching: t`Watching`,
     caught_up: t`Caught Up`,
     completed: t`Completed`,
+    dropped: t`Dropped`,
   } as const;
 
   let subtitle: string;
@@ -41,13 +46,13 @@ export function UpcomingRow({ item }: { item: UpcomingItem }) {
   } else if (item.episodeCount > 1 && item.seasonNumber != null) {
     const seasonNum = item.seasonNumber;
     const epCount = item.episodeCount;
-    subtitle = t`S${seasonNum} \u00b7 ${plural(epCount, { one: "# episode", other: "# episodes" })}`;
+    subtitle = t`S${seasonNum} · ${plural(epCount, { one: "# episode", other: "# episodes" })}`;
   } else {
     const episodeLabel =
       item.seasonNumber != null && item.episodeNumber != null
         ? `S${item.seasonNumber}E${item.episodeNumber}`
         : null;
-    subtitle = [episodeLabel, item.episodeName].filter(Boolean).join(" \u00b7 ");
+    subtitle = [episodeLabel, item.episodeName].filter(Boolean).join(" · ");
   }
 
   return (

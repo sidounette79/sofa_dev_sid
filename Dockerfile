@@ -1,5 +1,14 @@
 # syntax=docker/dockerfile:1
-FROM oven/bun:1-alpine AS base
+# 21.08: pinned — this NAS's CPU lacks AVX ("sse42 popcnt" only, no AVX/AVX2).
+# Bun versions after 1.3.8 have a confirmed upstream regression that
+# segfaults on non-AVX2 CPUs (oven-sh/bun#30613) — hit this live tonight
+# (crash dump: "CPU lacks AVX support" → SIGSEGV), which Docker's
+# `restart: unless-stopped` then silently restarted, making a real crash
+# look like an unpredictable multi-second "freeze" from the outside. `1-alpine`
+# floats to whatever the latest 1.x is and would pull the regression right
+# back in — do not bump this without confirming the regression is fixed AND
+# testing on this actual CPU first.
+FROM oven/bun:1.3.8-alpine AS base
 
 # --- Prune workspace for Docker layer caching ---
 FROM base AS prepare
@@ -12,8 +21,7 @@ RUN turbo prune @sofa/web @sofa/server --docker
 FROM base AS deps
 WORKDIR /app
 COPY --from=prepare /app/out/json/ .
-RUN --mount=type=cache,target=/root/.bun/install/cache \
-    bun install --no-save --frozen-lockfile
+RUN bun install --no-save --frozen-lockfile --backend=copyfile
 
 # --- Build ---
 FROM base AS builder
@@ -35,6 +43,13 @@ RUN bunx turbo run build --filter=@sofa/web --filter=@sofa/server
 # --- Production runner ---
 FROM base AS runner
 WORKDIR /app
+
+# 08.10, Sid ("ça bloque TOUT le temps"): curl for emby.ts's
+# embyFetchViaCurl() - a real OS subprocess timeout as a workaround for a
+# confirmed Bun fetch() bug (hangs reading the response body even after
+# headers arrive, immune to AbortSignal.timeout()). Not present in the base
+# Alpine image by default.
+RUN apk add --no-cache curl
 
 ARG APP_VERSION
 ARG GIT_COMMIT_SHA

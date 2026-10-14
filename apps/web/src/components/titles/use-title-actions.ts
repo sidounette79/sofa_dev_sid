@@ -10,9 +10,17 @@ import type { Season } from "@sofa/api/schemas";
 import { useTitleContext } from "./title-context";
 
 type UserInfo = {
-  status: "in_watchlist" | "watching" | "caught_up" | "completed" | null;
+  status: "in_watchlist" | "watching" | "caught_up" | "completed" | "dropped" | null;
   rating: number | null;
   episodeWatches: string[];
+  rewatchedEpisodeIds: string[];
+};
+
+const EMPTY_USER_INFO: UserInfo = {
+  status: null,
+  rating: null,
+  episodeWatches: [],
+  rewatchedEpisodeIds: [],
 };
 
 export function useTitleActions() {
@@ -22,20 +30,13 @@ export function useTitleActions() {
   const userInfoKey = orpc.tracking.userInfo.queryKey({ input: { id: titleId } });
 
   const getUserInfo = useCallback(
-    () =>
-      queryClient.getQueryData<UserInfo>(userInfoKey) ?? {
-        status: null,
-        rating: null,
-        episodeWatches: [],
-      },
+    () => queryClient.getQueryData<UserInfo>(userInfoKey) ?? EMPTY_USER_INFO,
     [queryClient, userInfoKey],
   );
 
   const setUserInfo = useCallback(
     (updater: (old: UserInfo) => UserInfo) => {
-      queryClient.setQueryData<UserInfo>(userInfoKey, (old) =>
-        updater(old ?? { status: null, rating: null, episodeWatches: [] }),
-      );
+      queryClient.setQueryData<UserInfo>(userInfoKey, (old) => updater(old ?? EMPTY_USER_INFO));
     },
     [queryClient, userInfoKey],
   );
@@ -44,6 +45,7 @@ export function useTitleActions() {
   const { mutateAsync: unwatch } = useMutation(orpc.tracking.unwatch.mutationOptions());
   const { mutateAsync: updateStatus } = useMutation(orpc.tracking.updateStatus.mutationOptions());
   const { mutateAsync: updateRating } = useMutation(orpc.tracking.rate.mutationOptions());
+  const { mutateAsync: rewatch } = useMutation(orpc.tracking.rewatch.mutationOptions());
 
   const catchUp = useCallback(
     async (episodeIds: string[]) => {
@@ -78,19 +80,43 @@ export function useTitleActions() {
   );
 
   const handleStatusChange = useCallback(
-    async (status: string | null) => {
+    async (status: "watchlist" | "dropped" | null) => {
       await queryClient.cancelQueries({ queryKey: userInfoKey });
       const prevStatus = getUserInfo().status;
+      const optimisticStatus =
+        status === "watchlist" ? "in_watchlist" : status === "dropped" ? "dropped" : null;
       setUserInfo((old) => ({
         ...old,
-        status: status ? "in_watchlist" : null,
+        status: optimisticStatus,
       }));
       try {
         await updateStatus({
           id: titleId,
-          status: status ? "watchlist" : null,
+          status,
         });
-        toast.success(status ? t`Added to watchlist` : t`Removed from library`);
+        toast.success(
+          status === "watchlist"
+            ? t`Added to watchlist`
+            : status === "dropped"
+              ? t`Marked as dropped`
+              : t`Removed from library`,
+        );
+        // 08.10, Sid: marking a title dropped from its own detail page only
+        // ever refreshed this title's own userInfo — every other cached
+        // list (library grid, "À venir", recommendations, discover feeds)
+        // kept showing it until a manual reload. Same invalidation set as
+        // the grid-card dropdown's own invalidateAfterStatusChange
+        // (title-card.tsx) — both are ways to change a title's status, both
+        // need to ripple the same way.
+        queryClient.invalidateQueries({ queryKey: orpc.library.list.key() });
+        queryClient.invalidateQueries({ queryKey: orpc.library.upcoming.key() });
+        queryClient.invalidateQueries({ queryKey: orpc.library.continueWatching.key() });
+        queryClient.invalidateQueries({ queryKey: orpc.discover.recommendations.key() });
+        queryClient.invalidateQueries({ queryKey: orpc.titles.similar.key() });
+        queryClient.invalidateQueries({ queryKey: orpc.discover.trending.key() });
+        queryClient.invalidateQueries({ queryKey: orpc.discover.popular.key() });
+        queryClient.invalidateQueries({ queryKey: orpc.discover.upcomingMovies.key() });
+        queryClient.invalidateQueries({ queryKey: orpc.discover.upcomingSeries.key() });
       } catch {
         setUserInfo((old) => ({ ...old, status: prevStatus }));
         toast.error(t`Failed to update status`);
@@ -361,6 +387,24 @@ export function useTitleActions() {
     }
   }, [getUserInfo, setUserInfo, seasons, titleId, watch, queryClient, userInfoKey, t]);
 
+  const handleRewatch = useCallback(async () => {
+    await queryClient.cancelQueries({ queryKey: userInfoKey });
+    const prevWatches = getUserInfo().episodeWatches;
+    const prevStatus = getUserInfo().status;
+    // New cycle starts with nothing watched — reflects immediately even
+    // before the server round-trip confirms it.
+    setUserInfo((old) => ({ ...old, episodeWatches: [], status: "watching" }));
+    try {
+      await rewatch({ id: titleId });
+      await queryClient.invalidateQueries({ queryKey: orpc.library.continueWatching.key() });
+      await queryClient.invalidateQueries({ queryKey: orpc.library.list.key() });
+      toast.success(t`Watching "${titleName}" again from the start`);
+    } catch {
+      setUserInfo((old) => ({ ...old, episodeWatches: prevWatches, status: prevStatus }));
+      toast.error(t`Failed to start rewatch`);
+    }
+  }, [getUserInfo, setUserInfo, queryClient, userInfoKey, titleId, titleName, rewatch, t]);
+
   return {
     handleStatusChange,
     handleRating,
@@ -370,5 +414,6 @@ export function useTitleActions() {
     handleMarkSeason,
     handleUnmarkSeason,
     handleMarkAllWatched,
+    handleRewatch,
   };
 }

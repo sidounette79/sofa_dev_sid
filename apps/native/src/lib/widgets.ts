@@ -140,7 +140,7 @@ async function refreshContinueWatching(
   iconFilePath: string,
 ): Promise<void> {
   try {
-    const { items } = await client.library.continueWatching();
+    const { items } = await client.library.continueWatching({});
 
     if (items.length === 0) {
       widget.updateSnapshot(

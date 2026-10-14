@@ -23,7 +23,7 @@ import { Text } from "@/components/ui/text";
 import { usePressAnimation } from "@/hooks/use-press-animation";
 import { titleActions } from "@/lib/title-actions";
 
-type TitleStatus = "in_watchlist" | "watching" | "caught_up" | "completed";
+type TitleStatus = "in_watchlist" | "watching" | "caught_up" | "completed" | "dropped";
 
 interface PosterCardProps {
   id: string;
@@ -59,12 +59,14 @@ export const PosterCard = memo(function PosterCard({
   const watchlistColor = useCSSVariable("--color-status-watchlist") as string;
   const watchingColor = useCSSVariable("--color-status-watching") as string;
   const completedColor = useCSSVariable("--color-status-completed") as string;
+  const destructiveColor = useCSSVariable("--color-destructive") as string;
 
   const statusColors: Record<TitleStatus, string> = {
     in_watchlist: watchlistColor,
     watching: watchingColor,
     caught_up: completedColor,
     completed: completedColor,
+    dropped: destructiveColor,
   };
 
   const { animatedStyle, gesture: pressGesture } = usePressAnimation();

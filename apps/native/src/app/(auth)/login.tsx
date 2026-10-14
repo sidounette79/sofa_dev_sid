@@ -91,7 +91,7 @@ export default function LoginScreen() {
   };
 
   return (
-    <AuthScreen title="Sofa" subtitle={t`Sign in to continue`}>
+    <AuthScreen title="Patoune TV" subtitle={t`Sign in to continue`}>
       {showOidc &&
         (() => {
           const providerName = publicInfo.data?.oidcProviderName ?? "SSO";

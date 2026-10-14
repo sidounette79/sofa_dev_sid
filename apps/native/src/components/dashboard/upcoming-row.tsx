@@ -16,6 +16,9 @@ const statusColors = {
   watching: "--color-status-watching",
   caught_up: "--color-status-completed",
   completed: "--color-status-completed",
+  // Upcoming feed filters dropped titles out server-side — never actually
+  // hit, kept only so this map covers every DisplayStatus value.
+  dropped: "--color-status-watchlist",
 } as const;
 
 function formatShortDate(dateStr: string): string {

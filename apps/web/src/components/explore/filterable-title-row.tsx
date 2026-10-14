@@ -1,11 +1,13 @@
 import { Trans } from "@lingui/react/macro";
 import { skipToken, useInfiniteQuery } from "@tanstack/react-query";
-import { useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 
+import { FeedSection } from "@/components/dashboard/feed-section";
 import { TitleCard, TitleCardSkeleton } from "@/components/title-card";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { hasReachedHorizontalEnd } from "@/hooks/use-infinite-scroll";
+import { useInfiniteScroll } from "@/hooks/use-infinite-scroll";
+import { translateGenreName } from "@/lib/genre-names";
 import { orpc } from "@/lib/orpc/client";
 
 interface Genre {
@@ -22,9 +24,11 @@ interface TitleRowItem {
   releaseDate: string | null;
   firstAirDate: string | null;
   voteAverage: number | null;
+  embyStatus?: "available" | "removed" | null;
+  requestedAt?: Date | string | null;
 }
 
-type TitleStatus = "in_watchlist" | "watching" | "caught_up" | "completed";
+type TitleStatus = "in_watchlist" | "watching" | "caught_up" | "completed" | "dropped";
 
 interface FilterableTitleRowProps {
   heading: string;
@@ -36,6 +40,14 @@ interface FilterableTitleRowProps {
   episodeProgress?: Record<string, { watched: number; total: number }>;
 }
 
+// Same cap as Trending/Popular/Upcoming — a genre chip used to keep paging
+// until it ran dry (24.08, Sid: "ça défile sans fin aussi... dans les
+// sous-menus"). The backend (discover.browse) stays uncapped for
+// DiscoverSection's real deep-search use, so this stops fetching client-side
+// once enough accumulate instead.
+const GENRE_FILTER_CAP = 30;
+
+/** Wrapping grid — see TitleRow's doc comment for the 24.08 grid-layout request. */
 export function FilterableTitleRow({
   heading,
   icon,
@@ -46,7 +58,6 @@ export function FilterableTitleRow({
   episodeProgress: initialProgress = {},
 }: FilterableTitleRowProps) {
   const [selectedGenre, setSelectedGenre] = useState<number | null>(null);
-  const scrollRef = useRef<HTMLDivElement>(null);
   const {
     data: discoverData,
     isPending,
@@ -70,9 +81,13 @@ export function FilterableTitleRow({
     }),
   );
 
-  const discoverItems = useMemo(
+  const discoverItemsRaw = useMemo(
     () => discoverData?.pages.flatMap((p) => p.items) ?? [],
     [discoverData?.pages],
+  );
+  const discoverItems = useMemo(
+    () => discoverItemsRaw.slice(0, GENRE_FILTER_CAP),
+    [discoverItemsRaw],
   );
   const discoverStatuses = useMemo(
     () =>
@@ -95,85 +110,79 @@ export function FilterableTitleRow({
   const items = selectedGenre === null ? defaultItems : discoverItems;
   const userStatuses = selectedGenre === null ? initialStatuses : discoverStatuses;
   const episodeProgress = selectedGenre === null ? initialProgress : discoverProgress;
+  const canPaginate = selectedGenre !== null && discoverItemsRaw.length < GENRE_FILTER_CAP;
+
+  const sentinelRef = useInfiniteScroll({
+    fetchNextPage,
+    hasNextPage: canPaginate && hasNextPage,
+    isFetchingNextPage,
+  });
 
   function toggleGenre(genreId: number) {
     setSelectedGenre(genreId === selectedGenre ? null : genreId);
   }
 
   return (
-    <section className="space-y-4">
-      <div className="flex items-center gap-2">
-        {icon}
-        <h2 className="font-display text-xl tracking-tight text-balance">{heading}</h2>
-      </div>
+    <FeedSection
+      id={`filterable-${mediaType}`}
+      title={heading}
+      icon={icon}
+      collapsible
+      defaultOpen
+      countLabel={`(${items.length})`}
+    >
+      <div className="space-y-4">
+        {/* Genre chips — stays a horizontal scroll, it's a filter bar, not content cards */}
+        <ScrollArea scrollFade hideScrollbar>
+          <div className="flex gap-2">
+            {genres.map((genre) => (
+              <Button
+                key={genre.id}
+                variant={selectedGenre === genre.id ? "default" : "outline"}
+                size="sm"
+                onClick={() => toggleGenre(genre.id)}
+                className={`shrink-0 rounded-full ${
+                  selectedGenre === genre.id
+                    ? "border-primary bg-primary/10 text-primary hover:bg-primary/20"
+                    : "border-border/50 bg-card/50 text-muted-foreground hover:border-primary/20 hover:text-foreground"
+                }`}
+              >
+                {translateGenreName(genre.name)}
+              </Button>
+            ))}
+          </div>
+        </ScrollArea>
 
-      {/* Genre chips */}
-      <ScrollArea scrollFade hideScrollbar>
-        <div className="flex gap-2">
-          {genres.map((genre) => (
-            <Button
-              key={genre.id}
-              variant={selectedGenre === genre.id ? "default" : "outline"}
-              size="sm"
-              onClick={() => toggleGenre(genre.id)}
-              className={`shrink-0 rounded-full ${
-                selectedGenre === genre.id
-                  ? "border-primary bg-primary/10 text-primary hover:bg-primary/20"
-                  : "border-border/50 bg-card/50 text-muted-foreground hover:border-primary/20 hover:text-foreground"
-              }`}
+        {/* Loading skeleton */}
+        {isLoading && (
+          <div
+            className="grid gap-4"
+            style={{ gridTemplateColumns: "repeat(var(--title-grid-columns, 5), minmax(0, 1fr))" }}
+          >
+            {Array.from({ length: 8 }).map((_, i) => (
+              <TitleCardSkeleton key={`skel-${i}`} />
+            ))}
+          </div>
+        )}
+
+        {/* Empty state */}
+        {!isLoading && selectedGenre !== null && items.length === 0 && (
+          <p className="text-muted-foreground py-8 text-center text-sm">
+            <Trans>No titles found for this genre.</Trans>
+          </p>
+        )}
+
+        {/* Title cards */}
+        {!isLoading && items.length > 0 && (
+          <>
+            <div
+              key={selectedGenre ?? "default"}
+              className="grid gap-4"
+              style={{ gridTemplateColumns: "repeat(var(--title-grid-columns, 5), minmax(0, 1fr))" }}
             >
-              {genre.name}
-            </Button>
-          ))}
-        </div>
-      </ScrollArea>
-
-      {/* Loading skeleton */}
-      {isLoading && (
-        <div className="-mx-4 flex gap-4 overflow-hidden px-4 sm:-mx-0 sm:px-0">
-          {Array.from({ length: 8 }).map((_, i) => (
-            <div key={`skel-${i}`} className="w-[140px] shrink-0 sm:w-[160px]">
-              <TitleCardSkeleton />
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* Empty state */}
-      {!isLoading && selectedGenre !== null && items.length === 0 && (
-        <p className="text-muted-foreground py-8 text-center text-sm">
-          <Trans>No titles found for this genre.</Trans>
-        </p>
-      )}
-
-      {/* Title cards */}
-      {!isLoading && items.length > 0 && (
-        <ScrollArea
-          key={selectedGenre ?? "default"}
-          scrollFade
-          hideScrollbar
-          className="-mx-6 sm:-mx-2"
-          scrollRef={scrollRef}
-          onScrollEnd={() => {
-            const viewport = scrollRef.current;
-
-            if (
-              selectedGenre === null ||
-              !viewport ||
-              !hasNextPage ||
-              isFetchingNextPage ||
-              !hasReachedHorizontalEnd(viewport)
-            ) {
-              return;
-            }
-
-            fetchNextPage();
-          }}
-        >
-          <div className="flex gap-4 px-6 py-2 sm:px-2">
-            {items.map((item: TitleRowItem, i: number) => (
-              <div key={item.id} className="w-[140px] shrink-0 sm:w-[160px]">
+              {items.map((item: TitleRowItem, i: number) => (
                 <div
+                  key={item.id}
                   className="animate-stagger-item"
                   style={{ "--stagger-index": i } as React.CSSProperties}
                 >
@@ -185,20 +194,23 @@ export function FilterableTitleRow({
                     posterThumbHash={item.posterThumbHash}
                     releaseDate={item.releaseDate ?? item.firstAirDate}
                     voteAverage={item.voteAverage}
+                    embyStatus={item.embyStatus}
+                    requestedAt={item.requestedAt}
                     userStatus={userStatuses[item.id]}
                     episodeProgress={episodeProgress[item.id]}
                   />
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
+            {canPaginate && <div ref={sentinelRef} />}
             {isFetchingNextPage && (
-              <div className="flex shrink-0 items-center px-4">
+              <div className="flex items-center justify-center py-4">
                 <div className="border-primary size-5 animate-spin rounded-full border-2 border-t-transparent" />
               </div>
             )}
-          </div>
-        </ScrollArea>
-      )}
-    </section>
+          </>
+        )}
+      </div>
+    </FeedSection>
   );
 }

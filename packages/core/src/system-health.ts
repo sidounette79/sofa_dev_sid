@@ -1,13 +1,16 @@
-import { access, constants, readdir } from "node:fs/promises";
+import { access, constants, readdir, stat } from "node:fs/promises";
 import path from "node:path";
 
-import { CACHE_DIR, DATA_DIR, DATABASE_URL, TMDB_API_BASE_URL } from "@sofa/config";
-import { getLatestCronRuns, getTableCounts } from "@sofa/db/queries/system-health";
+import { CACHE_DIR, DATA_DIR, TMDB_API_BASE_URL } from "@sofa/config";
+import { getDatabaseSizeBytes, getLatestCronRuns, getTableCounts } from "@sofa/db/queries/system-health";
+import { createLogger } from "@sofa/logger";
 
 import { listBackups } from "./backup";
 import { imageCacheEnabled } from "./image-cache";
-import { getSetting } from "./settings";
+import { getSetting, setSetting } from "./settings";
 import { isUpdateCheckEnabled } from "./update-check";
+
+const log = createLogger("system-health");
 
 export interface SystemHealthData {
   database: {
@@ -61,25 +64,30 @@ const JOB_NAMES = [
   "refreshRecommendations",
   "refreshTvChildren",
   "cacheImages",
+  "scanEmbyLibrary",
   "scheduledBackup",
   "updateCheck",
+  "checkWatchedAuthors",
+  "refreshWatchedAuthorsTotalBooks",
+  "watchNewAuthors",
 ];
 
-function getDatabaseHealth(): SystemHealthData["database"] {
+async function getDatabaseHealth(): Promise<SystemHealthData["database"]> {
   let dbSizeBytes = 0;
-  let walSizeBytes = 0;
   try {
-    dbSizeBytes = Bun.file(DATABASE_URL).size;
-  } catch {}
-  try {
-    walSizeBytes = Bun.file(`${DATABASE_URL}-wal`).size;
+    dbSizeBytes = await getDatabaseSizeBytes();
   } catch {}
 
-  const counts = getTableCounts();
+  const counts = await getTableCounts();
 
   return {
     dbSizeBytes,
-    walSizeBytes,
+    // 08.10, Postgres migration: no file-based WAL to stat anymore (that
+    // was SQLite-specific) - Postgres's own WAL stats need superuser
+    // access this app doesn't have, so this stays 0 rather than faking a
+    // number. Kept in the type/UI rather than removed since it's a minor
+    // diagnostics field, not worth a wider API-shape change today.
+    walSizeBytes: 0,
     ...counts,
   };
 }
@@ -148,11 +156,15 @@ export function registerJobScheduleProvider(fn: () => JobSchedule[]) {
   _getJobSchedules = fn;
 }
 
-function getJobsHealth(): SystemHealthData["jobs"] {
+async function getJobsHealth(): Promise<SystemHealthData["jobs"]> {
   const schedules = _getJobSchedules?.() ?? [];
   const scheduleMap = new Map(schedules.map((s) => [s.jobName, s]));
 
-  const latestByJob = getLatestCronRuns([...JOB_NAMES]);
+  const [latestByJob, scheduledBackupsSetting, updateCheckEnabled] = await Promise.all([
+    getLatestCronRuns([...JOB_NAMES]),
+    getSetting("scheduledBackups"),
+    isUpdateCheckEnabled(),
+  ]);
 
   return JOB_NAMES.map((jobName) => {
     const latest = latestByJob.get(jobName);
@@ -166,8 +178,8 @@ function getJobsHealth(): SystemHealthData["jobs"] {
     }
 
     const disabled =
-      (jobName === "scheduledBackup" && getSetting("scheduledBackups") !== "true") ||
-      (jobName === "updateCheck" && !isUpdateCheckEnabled());
+      (jobName === "scheduledBackup" && scheduledBackupsSetting !== "true") ||
+      (jobName === "updateCheck" && !updateCheckEnabled);
 
     return {
       jobName,
@@ -183,12 +195,109 @@ function getJobsHealth(): SystemHealthData["jobs"] {
   });
 }
 
-async function getImageCacheHealth(): Promise<SystemHealthData["imageCache"]> {
-  const enabled = imageCacheEnabled();
-  if (!enabled) {
-    return { enabled: false, totalSizeBytes: 0, imageCount: 0, categories: {} };
-  }
+// Stat-ing every cached image file (123k+ files in prod across the 5
+// categories below): ~830ms warm (17.08 measurement) up to ~55s on a cold
+// disk cache (21.08, right after a restart). This number changes slowly
+// (cache writes/evictions, not per-request), so it doesn't need to be exact
+// on every page load — cached in-process for 15 minutes.
+//
+// 20.08: the in-process cache alone still meant every *container restart*
+// paid the full scan again on the first /settings open. Fix: the last
+// computed result is also persisted to appSettings (durable across
+// restarts) and reloaded into the in-process cache at module init. A
+// restart now serves that (possibly stale) persisted value instantly and
+// refreshes it in the background instead of blocking the request.
+//
+// 21.08: that "background refresh" was still calling the original scan,
+// which used `Bun.file(path).size` — a blocking `stat()` call, not the
+// async-looking property access it appears to be — 127k+ of them back to
+// back with no `await` in between held up Bun's single JS thread for the
+// *entire* scan duration (same family of bug as the unbounded
+// `getRecommendationsFeed`/`getContinueWatchingFeed` scans documented
+// elsewhere), freezing every other request server-wide, not just whoever's
+// settings page triggered it — confirmed live: a user's unrelated page
+// navigation froze for the ~55s the background refresh was running.
+// `computeImageCacheHealth()` now uses real async `stat()` with bounded
+// concurrency (`sumFileSizes`) so the event loop stays free during the scan.
+const IMAGE_CACHE_HEALTH_TTL_MS = 15 * 60 * 1000;
+const IMAGE_CACHE_HEALTH_SETTING_KEY = "imageCacheHealthCache";
 
+type ImageCacheHealthCacheEntry = { data: SystemHealthData["imageCache"]; fetchedAt: number };
+
+let imageCacheHealthCache: ImageCacheHealthCacheEntry | null = null;
+// Loaded lazily on first real use rather than at module import time — this
+// module is imported (transitively) before apps/server/src/index.ts runs
+// migrations, so querying appSettings at the top level could hit a
+// not-yet-migrated table on a brand new database.
+let imageCacheHealthLoadedFromDb = false;
+
+async function ensurePersistedImageCacheHealthLoaded(): Promise<void> {
+  if (imageCacheHealthLoadedFromDb) return;
+  imageCacheHealthLoadedFromDb = true;
+  try {
+    const raw = await getSetting(IMAGE_CACHE_HEALTH_SETTING_KEY);
+    if (raw) imageCacheHealthCache = JSON.parse(raw) as ImageCacheHealthCacheEntry;
+  } catch (err) {
+    log.warn("Failed to load persisted image cache health cache:", err);
+  }
+}
+
+async function setImageCacheHealthCache(data: SystemHealthData["imageCache"]): Promise<void> {
+  imageCacheHealthCache = { data, fetchedAt: Date.now() };
+  try {
+    await setSetting(IMAGE_CACHE_HEALTH_SETTING_KEY, JSON.stringify(imageCacheHealthCache));
+  } catch (err) {
+    log.warn("Failed to persist image cache health cache:", err);
+  }
+}
+
+let imageCacheHealthRefreshInFlight = false;
+
+function refreshImageCacheHealthInBackground(): void {
+  if (imageCacheHealthRefreshInFlight) return;
+  imageCacheHealthRefreshInFlight = true;
+  computeImageCacheHealth()
+    .then(setImageCacheHealthCache)
+    .catch((err) => log.warn("Background image cache health refresh failed:", err))
+    .finally(() => {
+      imageCacheHealthRefreshInFlight = false;
+    });
+}
+
+// 21.08: `Bun.file(path).size` looked like an async-friendly getter but is
+// actually a synchronous stat() call under the hood — the previous version
+// ran it 127k+ times back-to-back inside a single `.map()`, with no `await`
+// between calls, so nothing yielded to the event loop for the whole scan.
+// Measured on a cold disk cache: ~55s of the single JS thread doing nothing
+// but this, freezing every other request server-wide (not just whoever
+// triggered the scan) — the same "unbounded work blocks the one thread"
+// bug family as the TVDB/recommendations issues, just hiding behind an
+// innocuous-looking property access instead of an obvious loop. Fixed by
+// using the genuinely async `node:fs/promises` `stat()` (goes through
+// libuv's thread pool, actually yields) with bounded concurrency so the
+// event loop stays free to serve other requests while this runs.
+const STAT_CONCURRENCY = 64;
+
+async function sumFileSizes(dir: string, files: string[]): Promise<number> {
+  let total = 0;
+  let next = 0;
+  async function worker() {
+    while (next < files.length) {
+      const file = files[next++];
+      try {
+        total += (await stat(path.join(dir, file))).size;
+      } catch {
+        // file removed between readdir and stat — ignore
+      }
+    }
+  }
+  await Promise.all(
+    Array.from({ length: Math.min(STAT_CONCURRENCY, files.length) }, worker),
+  );
+  return total;
+}
+
+async function computeImageCacheHealth(): Promise<SystemHealthData["imageCache"]> {
   const categoryNames = ["posters", "backdrops", "stills", "logos", "profiles"];
   const categories: Record<string, { count: number; sizeBytes: number }> = {};
   let totalSizeBytes = 0;
@@ -199,8 +308,7 @@ async function getImageCacheHealth(): Promise<SystemHealthData["imageCache"]> {
       const dir = path.join(CACHE_DIR, category);
       try {
         const files = await readdir(dir);
-        const sizes = await Promise.all(files.map((file) => Bun.file(path.join(dir, file)).size));
-        const sizeBytes = sizes.reduce((sum, s) => sum + s, 0);
+        const sizeBytes = await sumFileSizes(dir, files);
         categories[category] = { count: files.length, sizeBytes };
         totalSizeBytes += sizeBytes;
         imageCount += files.length;
@@ -211,6 +319,31 @@ async function getImageCacheHealth(): Promise<SystemHealthData["imageCache"]> {
   );
 
   return { enabled: true, totalSizeBytes, imageCount, categories };
+}
+
+async function getImageCacheHealth(): Promise<SystemHealthData["imageCache"]> {
+  const enabled = imageCacheEnabled();
+  if (!enabled) {
+    return { enabled: false, totalSizeBytes: 0, imageCount: 0, categories: {} };
+  }
+
+  await ensurePersistedImageCacheHealthLoaded();
+
+  if (imageCacheHealthCache && Date.now() - imageCacheHealthCache.fetchedAt < IMAGE_CACHE_HEALTH_TTL_MS) {
+    return imageCacheHealthCache.data;
+  }
+
+  // Fresh cache expired or absent this process, but a persisted (possibly
+  // stale) value from a prior run is available — serve it immediately and
+  // refresh for next time without blocking this request.
+  if (imageCacheHealthCache) {
+    refreshImageCacheHealthInBackground();
+    return imageCacheHealthCache.data;
+  }
+
+  const data = await computeImageCacheHealth();
+  setImageCacheHealthCache(data);
+  return data;
 }
 
 async function getBackupsHealth(): Promise<SystemHealthData["backups"]> {
@@ -295,17 +428,19 @@ async function getEnvironmentHealth(): Promise<SystemHealthData["environment"]> 
 }
 
 export async function getSystemHealth(): Promise<SystemHealthData> {
-  const [tmdb, imageCache, backups, environment] = await Promise.all([
+  const [database, tmdb, jobs, imageCache, backups, environment] = await Promise.all([
+    getDatabaseHealth(),
     getTmdbHealth(),
+    getJobsHealth(),
     getImageCacheHealth(),
     getBackupsHealth(),
     getEnvironmentHealth(),
   ]);
 
   return {
-    database: getDatabaseHealth(),
+    database,
     tmdb,
-    jobs: getJobsHealth(),
+    jobs,
     imageCache,
     backups,
     environment,

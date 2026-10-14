@@ -4,24 +4,27 @@ import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { PersonDetailClient, PersonDetailSkeleton } from "@/components/people/person-detail-client";
 import { RouteError } from "@/components/route-error";
 import { getAppErrorCode } from "@/lib/error-messages";
+import { withLoaderRetry } from "@/lib/loader-retry";
 import { orpc } from "@/lib/orpc/client";
 
 export const Route = createFileRoute("/_app/people/$id")({
   staleTime: 60_000,
   loader: async ({ params, context }) => {
     try {
-      const data = await context.queryClient.ensureInfiniteQueryData(
-        orpc.people.get.infiniteOptions({
-          input: (pageParam: number) => ({
-            id: params.id,
-            page: pageParam,
-            limit: 20,
+      const data = await withLoaderRetry(() =>
+        context.queryClient.ensureInfiniteQueryData(
+          orpc.people.get.infiniteOptions({
+            input: (pageParam: number) => ({
+              id: params.id,
+              page: pageParam,
+              limit: 20,
+            }),
+            initialPageParam: 1,
+            getNextPageParam: (lastPage) =>
+              lastPage.page < lastPage.totalPages ? lastPage.page + 1 : undefined,
+            maxPages: 10,
           }),
-          initialPageParam: 1,
-          getNextPageParam: (lastPage) =>
-            lastPage.page < lastPage.totalPages ? lastPage.page + 1 : undefined,
-          maxPages: 10,
-        }),
+        ),
       );
       return { personName: data.pages[0]?.person.name };
     } catch (error) {
@@ -83,10 +86,11 @@ function PersonNotFound() {
           <div className="absolute inset-0 bg-gradient-to-t from-black/10 to-transparent opacity-0 transition-opacity group-hover:opacity-100" />
         </Link>
         <Link
-          to="/dashboard"
+          to="/library"
+          search={{ type: "tv" }}
           className="border-border hover:border-primary/40 hover:bg-primary/5 inline-flex h-10 items-center justify-center rounded-lg border px-5 text-sm font-medium transition-colors"
         >
-          <Trans>Dashboard</Trans>
+          <Trans>Library</Trans>
         </Link>
       </div>
     </div>

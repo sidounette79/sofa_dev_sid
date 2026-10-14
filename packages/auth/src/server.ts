@@ -3,6 +3,7 @@ import { expo } from "@better-auth/expo";
 import { APIError, createAuthMiddleware } from "better-auth/api";
 import { type BetterAuthOptions, betterAuth } from "better-auth/minimal";
 import { admin, genericOAuth } from "better-auth/plugins";
+import { v7 as uuidv7 } from "uuid";
 
 import { claimInitialAdmin, isRegistrationOpen } from "@sofa/core/settings";
 import { db } from "@sofa/db/client";
@@ -13,6 +14,11 @@ import { isOidcAutoRegisterEnabled, isOidcConfigured, isPasswordLoginDisabled } 
 const authLog = createLogger("auth");
 
 export const auth = betterAuth({
+  // 21.08: was missing — better-auth then has to resolve baseURL
+  // dynamically from request headers on every call instead of using this
+  // fixed value directly. `BETTER_AUTH_URL` was already set in the
+  // environment for this exact purpose but never actually wired in here.
+  baseURL: process.env.BETTER_AUTH_URL,
   trustedOrigins: [
   "sofa://",
   ...(process.env.TRUSTED_ORIGINS?.split(",") ?? []),
@@ -27,7 +33,7 @@ export const auth = betterAuth({
     },
   },
   database: drizzleAdapter(db, {
-    provider: "sqlite",
+    provider: "pg",
   }),
   emailAndPassword: {
     enabled: !isPasswordLoginDisabled(),
@@ -69,12 +75,14 @@ export const auth = betterAuth({
       : []),
     expo(),
   ],
-advanced: {
-  trustedProxies: process.env.TRUSTED_PROXIES?.split(",") ?? [],
-  database: {
-    generateId: () => Bun.randomUUIDv7(),
+  // 08.10: `trustedProxies` removed - dead config in better-auth 1.5.6, not
+  // in the types nor referenced anywhere in the compiled package. Was a
+  // no-op even before this migration.
+  advanced: {
+    database: {
+      generateId: () => uuidv7(),
+    },
   },
-},
   hooks: {
     before: createAuthMiddleware(async (ctx) => {
       // Block email/password sign-up when registration is closed.

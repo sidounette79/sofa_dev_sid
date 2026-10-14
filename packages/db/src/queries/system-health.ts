@@ -3,14 +3,30 @@ import { count, desc, eq, inArray, sql } from "drizzle-orm";
 import { db } from "../client";
 import { cronRuns, episodes, titles, user } from "../schema";
 
-export function getTableCounts() {
-  const [titleCount] = db.select({ count: count() }).from(titles).all();
-  const [episodeCount] = db.select({ count: count() }).from(episodes).all();
-  const [userCount] = db.select({ count: count() }).from(user).all();
+/** 08.10, Postgres migration: replaces Bun.file(DATABASE_URL).size, which
+ * only worked because SQLite is a plain file - DATABASE_URL is now a
+ * connection string, not a path. No real WAL-file-size equivalent exists
+ * at this permission level (that's superuser-only pg_stat info), so the
+ * caller just shows 0 for that field now - see system-health.ts's comment. */
+export async function getDatabaseSizeBytes(): Promise<number> {
+  // node-postgres's db.execute() returns the raw pg QueryResult ({ rows })
+  // rather than the rows array directly (unlike e.g. the postgres-js driver).
+  const result = await db.execute<{ size: number }>(
+    sql`SELECT pg_database_size(current_database())::bigint AS size`,
+  );
+  return Number(result.rows[0]?.size ?? 0);
+}
+
+export async function getTableCounts() {
+  const [[titleCount], [episodeCount], [userCount]] = await Promise.all([
+    db.select({ count: count() }).from(titles),
+    db.select({ count: count() }).from(episodes),
+    db.select({ count: count() }).from(user),
+  ]);
   return {
-    titleCount: titleCount.count,
-    episodeCount: episodeCount.count,
-    userCount: userCount.count,
+    titleCount: titleCount?.count ?? 0,
+    episodeCount: episodeCount?.count ?? 0,
+    userCount: userCount?.count ?? 0,
   };
 }
 
@@ -20,13 +36,12 @@ export function getLatestCronRun(jobName: string) {
     .from(cronRuns)
     .where(eq(cronRuns.jobName, jobName))
     .orderBy(desc(cronRuns.startedAt))
-    .limit(1)
-    .get();
+    .limit(1);
 }
 
-export function getLatestCronRuns(jobNames: string[]) {
+export async function getLatestCronRuns(jobNames: string[]) {
   if (jobNames.length === 0) return new Map<string, typeof cronRuns.$inferSelect>();
-  const rows = db
+  const rows = await db
     .select({
       id: cronRuns.id,
       jobName: cronRuns.jobName,
@@ -40,9 +55,8 @@ export function getLatestCronRuns(jobNames: string[]) {
       ),
     })
     .from(cronRuns)
-    .where(inArray(cronRuns.jobName, jobNames))
-    .all()
-    .filter((r) => r.rn === 1);
+    .where(inArray(cronRuns.jobName, jobNames));
 
-  return new Map(rows.map((r) => [r.jobName, r]));
+  const latest = rows.filter((r) => r.rn === 1);
+  return new Map(latest.map((r) => [r.jobName, r]));
 }

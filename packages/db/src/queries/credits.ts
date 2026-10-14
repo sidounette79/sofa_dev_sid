@@ -11,7 +11,7 @@ interface PersonData {
 }
 
 export function getExistingPersonsByTmdbIds(tmdbIds: number[]) {
-  if (tmdbIds.length === 0) return [];
+  if (tmdbIds.length === 0) return Promise.resolve([]);
   return db
     .select({
       id: persons.id,
@@ -23,19 +23,19 @@ export function getExistingPersonsByTmdbIds(tmdbIds: number[]) {
     })
     .from(persons)
     .where(inArray(persons.tmdbId, tmdbIds))
-    .all();
+    ;
 }
 
-export function batchUpsertPersonsTransaction(
+export async function batchUpsertPersonsTransaction(
   uniquePeople: PersonData[],
-  existingMap: Map<number, ReturnType<typeof getExistingPersonsByTmdbIds>[number]>,
-): Map<number, string> {
+  existingMap: Map<number, Awaited<ReturnType<typeof getExistingPersonsByTmdbIds>>[number]>,
+): Promise<Map<number, string>> {
   const idMap = new Map<number, string>();
   for (const [tmdbId, p] of existingMap) {
     idMap.set(tmdbId, p.id);
   }
 
-  db.transaction((tx) => {
+  await db.transaction(async (tx) => {
     for (const p of uniquePeople) {
       const existingPerson = existingMap.get(p.tmdbId);
       if (existingPerson) {
@@ -47,19 +47,19 @@ export function batchUpsertPersonsTransaction(
           existingPerson.popularity !== nextPopularity;
         if (!needsUpdate) continue;
 
-        tx.update(persons)
+        await tx
+          .update(persons)
           .set({
             name: p.name,
             profilePath: p.profilePath,
             popularity: nextPopularity,
             profileThumbHash: pathChanged ? null : existingPerson.profileThumbHash,
           })
-          .where(eq(persons.id, existingPerson.id))
-          .run();
+          .where(eq(persons.id, existingPerson.id));
         continue;
       }
 
-      const row = tx
+      const [row] = await tx
         .insert(persons)
         .values({
           tmdbId: p.tmdbId,
@@ -68,8 +68,7 @@ export function batchUpsertPersonsTransaction(
           popularity: p.popularity ?? null,
         })
         .onConflictDoNothing()
-        .returning()
-        .get();
+        .returning();
       if (row) idMap.set(p.tmdbId, row.id);
     }
   });
@@ -78,12 +77,12 @@ export function batchUpsertPersonsTransaction(
 }
 
 export function getFallbackPersonsByTmdbIds(tmdbIds: number[]) {
-  if (tmdbIds.length === 0) return [];
+  if (tmdbIds.length === 0) return Promise.resolve([]);
   return db
     .select({ id: persons.id, tmdbId: persons.tmdbId })
     .from(persons)
     .where(inArray(persons.tmdbId, tmdbIds))
-    .all();
+    ;
 }
 
 export function getPersonsForTitleCast(titleId: string) {
@@ -96,23 +95,23 @@ export function getPersonsForTitleCast(titleId: string) {
     .from(titleCast)
     .innerJoin(persons, eq(titleCast.personId, persons.id))
     .where(eq(titleCast.titleId, titleId))
-    .all();
+    ;
 }
 
-export function batchUpsertTitleCast(rows: (typeof titleCast.$inferInsert)[]): void {
+export async function batchUpsertTitleCast(rows: (typeof titleCast.$inferInsert)[]): Promise<void> {
   if (rows.length === 0) return;
-  db.insert(titleCast)
+  await db
+    .insert(titleCast)
     .values(rows)
     .onConflictDoUpdate({
       target: [titleCast.titleId, titleCast.personId, titleCast.department, titleCast.character],
       set: {
         job: sql`excluded.job`,
-        displayOrder: sql`excluded.displayOrder`,
-        episodeCount: sql`excluded.episodeCount`,
-        lastFetchedAt: sql`excluded.lastFetchedAt`,
+        displayOrder: sql`excluded."displayOrder"`,
+        episodeCount: sql`excluded."episodeCount"`,
+        lastFetchedAt: sql`excluded."lastFetchedAt"`,
       },
-    })
-    .run();
+    });
 }
 
 export function getCastForTitleJoined(titleId: string) {
@@ -134,5 +133,5 @@ export function getCastForTitleJoined(titleId: string) {
     .innerJoin(persons, eq(titleCast.personId, persons.id))
     .where(eq(titleCast.titleId, titleId))
     .orderBy(titleCast.displayOrder)
-    .all();
+    ;
 }

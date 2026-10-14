@@ -21,6 +21,9 @@ export function LibrarySection() {
 
   return (
     <FeedSection
+      id="library"
+      collapsible
+      defaultOpen
       title={t`In Your Library`}
       icon={<IconBooks className="text-primary size-5" />}
       seeAllLink="/library"

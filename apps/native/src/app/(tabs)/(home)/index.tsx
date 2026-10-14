@@ -62,9 +62,9 @@ export default function DashboardScreen() {
       input: { type: "episode", period: episodePeriod },
     }),
   );
-  const continueWatching = useQuery(orpc.library.continueWatching.queryOptions());
+  const continueWatching = useQuery(orpc.library.continueWatching.queryOptions({ input: {} }));
   const library = useQuery(orpc.library.list.queryOptions({ input: { page: 1, limit: 10 } }));
-  const recommendations = useQuery(orpc.discover.recommendations.queryOptions());
+  const recommendations = useQuery(orpc.discover.recommendations.queryOptions({ input: {} }));
 
   const isRefreshing =
     libraryStats.isRefetching ||

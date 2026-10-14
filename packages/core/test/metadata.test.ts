@@ -11,8 +11,8 @@ import {
   pickBestTrailer,
 } from "../src/metadata";
 
-beforeEach(() => {
-  clearAllTables();
+beforeEach(async () => {
+  await clearAllTables();
 });
 
 function makeVideo(overrides: Partial<TmdbVideo> = {}): TmdbVideo {
@@ -224,8 +224,8 @@ describe("extractTvContentRating", () => {
 // ─── ensureBrowseTitlesExist ────────────────────────────────────────
 
 describe("ensureBrowseTitlesExist", () => {
-  test("creates shell titles for new entries", () => {
-    const result = ensureBrowseTitlesExist([
+  test("creates shell titles for new entries", async () => {
+    const result = await ensureBrowseTitlesExist([
       { tmdbId: 100, type: "movie", title: "Movie A", posterPath: "/a.jpg" },
       { tmdbId: 200, type: "tv", title: "Show B", posterPath: "/b.jpg" },
     ]);
@@ -234,31 +234,31 @@ describe("ensureBrowseTitlesExist", () => {
     expect(result.get("100-movie")).toBeDefined();
     expect(result.get("200-tv")).toBeDefined();
 
-    const allTitles = testDb.select().from(titles).all();
+    const allTitles = await testDb.select().from(titles);
     expect(allTitles).toHaveLength(2);
     // Shell titles have no lastFetchedAt
     expect(allTitles[0].lastFetchedAt).toBeNull();
     expect(allTitles[1].lastFetchedAt).toBeNull();
   });
 
-  test("returns existing titles without creating duplicates", () => {
-    insertTitle({ id: "existing-1", tmdbId: 100, type: "movie", title: "Movie A" });
+  test("returns existing titles without creating duplicates", async () => {
+    await insertTitle({ id: "existing-1", tmdbId: 100, type: "movie", title: "Movie A" });
 
-    const result = ensureBrowseTitlesExist([
+    const result = await ensureBrowseTitlesExist([
       { tmdbId: 100, type: "movie", title: "Movie A", posterPath: "/a.jpg" },
     ]);
 
     expect(result.size).toBe(1);
     expect(result.get("100-movie")?.id).toBe("existing-1");
 
-    const allTitles = testDb.select().from(titles).all();
+    const allTitles = await testDb.select().from(titles);
     expect(allTitles).toHaveLength(1);
   });
 
-  test("handles mix of existing and new titles", () => {
-    insertTitle({ id: "existing-1", tmdbId: 100, type: "movie", title: "Movie A" });
+  test("handles mix of existing and new titles", async () => {
+    await insertTitle({ id: "existing-1", tmdbId: 100, type: "movie", title: "Movie A" });
 
-    const result = ensureBrowseTitlesExist([
+    const result = await ensureBrowseTitlesExist([
       { tmdbId: 100, type: "movie", title: "Movie A", posterPath: "/a.jpg" },
       { tmdbId: 200, type: "tv", title: "Show B", posterPath: "/b.jpg" },
     ]);
@@ -267,12 +267,12 @@ describe("ensureBrowseTitlesExist", () => {
     expect(result.get("100-movie")?.id).toBe("existing-1");
     expect(result.get("200-tv")).toBeDefined();
 
-    const allTitles = testDb.select().from(titles).all();
+    const allTitles = await testDb.select().from(titles);
     expect(allTitles).toHaveLength(2);
   });
 
-  test("returns empty map for empty input", () => {
-    const result = ensureBrowseTitlesExist([]);
+  test("returns empty map for empty input", async () => {
+    const result = await ensureBrowseTitlesExist([]);
     expect(result.size).toBe(0);
   });
 });

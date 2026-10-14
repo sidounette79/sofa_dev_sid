@@ -24,35 +24,32 @@ import { processImportJob, readImportJob } from "../src/imports/processor";
 // ── Helpers ─────────────────────────────────────────────────────────
 
 /** Insert a fully-fetched movie title (lastFetchedAt set so metadata won't re-fetch). */
-function insertMovieTitle(id: string, tmdbId: number, movieTitle = "Test Movie") {
-  testDb
-    .insert(titles)
-    .values({
-      id,
-      tmdbId,
-      type: "movie",
-      title: movieTitle,
-      lastFetchedAt: new Date(),
-    })
-    .run();
+async function insertMovieTitle(id: string, tmdbId: number, movieTitle = "Test Movie") {
+  await testDb.insert(titles).values({
+    id,
+    tmdbId,
+    type: "movie",
+    title: movieTitle,
+    lastFetchedAt: new Date(),
+  });
   return id;
 }
 
 /** Insert a fully-fetched TV title with seasons/episodes (lastFetchedAt set). */
-function insertTvShowWithFetchedAt(
+async function insertTvShowWithFetchedAt(
   titleId: string,
   tmdbId: number,
   seasonCount = 1,
   epsPerSeason = 3,
 ) {
-  const result = insertTvShow(titleId, tmdbId, seasonCount, epsPerSeason);
+  const result = await insertTvShow(titleId, tmdbId, seasonCount, epsPerSeason);
   // Mark as fully fetched so getOrFetchTitleByTmdbId skips TMDB API calls
-  testDb.update(titles).set({ lastFetchedAt: new Date() }).where(eq(titles.id, titleId)).run();
+  await testDb.update(titles).set({ lastFetchedAt: new Date() }).where(eq(titles.id, titleId));
   return result;
 }
 
 /** Create an import job row in the DB and return its ID. */
-function createJob(
+async function createJob(
   userId: string,
   payload: NormalizedImport,
   options: {
@@ -60,35 +57,32 @@ function createJob(
     importWatchlist?: boolean;
     importRatings?: boolean;
   } = {},
-): string {
+): Promise<string> {
   const id = `job-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
-  testDb
-    .insert(importJobs)
-    .values({
-      id,
-      userId,
-      source: payload.source,
-      status: "pending",
-      payload: JSON.stringify(payload),
-      importWatches: options.importWatches ?? true,
-      importWatchlist: options.importWatchlist ?? true,
-      importRatings: options.importRatings ?? true,
-      createdAt: new Date(),
-    })
-    .run();
+  await testDb.insert(importJobs).values({
+    id,
+    userId,
+    source: payload.source,
+    status: "pending",
+    payload: JSON.stringify(payload),
+    importWatches: options.importWatches ?? true,
+    importWatchlist: options.importWatchlist ?? true,
+    importRatings: options.importRatings ?? true,
+    createdAt: new Date(),
+  });
   return id;
 }
 
-beforeEach(() => {
-  clearAllTables();
+beforeEach(async () => {
+  await clearAllTables();
 });
 
 // ── Movie Import ────────────────────────────────────────────────────
 
 describe("processImportJob — movies", () => {
   test("imports a movie with direct tmdbId", async () => {
-    const userId = insertUser();
-    insertMovieTitle("movie-1", 550, "Fight Club");
+    const userId = await insertUser();
+    await insertMovieTitle("movie-1", 550, "Fight Club");
 
     const payload: NormalizedImport = {
       source: "trakt",
@@ -105,29 +99,28 @@ describe("processImportJob — movies", () => {
       ratings: [],
     };
 
-    const jobId = createJob(userId, payload);
+    const jobId = await createJob(userId, payload);
     await processImportJob(jobId);
 
-    const job = readImportJob(jobId);
+    const job = await readImportJob(jobId);
     expect(job.status).toBe("success");
     expect(job.importedCount).toBe(1);
     expect(job.skippedCount).toBe(0);
     expect(job.failedCount).toBe(0);
 
     // Verify watch record created
-    const watches = testDb
+    const watches = await testDb
       .select()
       .from(userMovieWatches)
-      .where(eq(userMovieWatches.userId, userId))
-      .all();
+      .where(eq(userMovieWatches.userId, userId));
     expect(watches).toHaveLength(1);
     expect(watches[0].titleId).toBe("movie-1");
   });
 
   test("deduplicates existing movie watches", async () => {
-    const userId = insertUser();
-    insertMovieTitle("movie-1", 550, "Fight Club");
-    insertMovieWatch(userId, "movie-1");
+    const userId = await insertUser();
+    await insertMovieTitle("movie-1", 550, "Fight Club");
+    await insertMovieWatch(userId, "movie-1");
 
     const payload: NormalizedImport = {
       source: "trakt",
@@ -137,20 +130,19 @@ describe("processImportJob — movies", () => {
       ratings: [],
     };
 
-    const jobId = createJob(userId, payload);
+    const jobId = await createJob(userId, payload);
     await processImportJob(jobId);
 
-    const job = readImportJob(jobId);
+    const job = await readImportJob(jobId);
     expect(job.status).toBe("success");
     expect(job.importedCount).toBe(0);
     expect(job.skippedCount).toBe(1);
 
     // Should still be just the original watch
-    const watches = testDb
+    const watches = await testDb
       .select()
       .from(userMovieWatches)
-      .where(eq(userMovieWatches.userId, userId))
-      .all();
+      .where(eq(userMovieWatches.userId, userId));
     expect(watches).toHaveLength(1);
   });
 });
@@ -159,8 +151,8 @@ describe("processImportJob — movies", () => {
 
 describe("processImportJob — episodes", () => {
   test("imports episodes for a pre-seeded TV show", async () => {
-    const userId = insertUser();
-    insertTvShowWithFetchedAt("tv-1", 1399, 1, 3);
+    const userId = await insertUser();
+    await insertTvShowWithFetchedAt("tv-1", 1399, 1, 3);
 
     const payload: NormalizedImport = {
       source: "trakt",
@@ -185,19 +177,18 @@ describe("processImportJob — episodes", () => {
       ratings: [],
     };
 
-    const jobId = createJob(userId, payload);
+    const jobId = await createJob(userId, payload);
     await processImportJob(jobId);
 
-    const job = readImportJob(jobId);
+    const job = await readImportJob(jobId);
     expect(job.status).toBe("success");
     expect(job.importedCount).toBe(2);
     expect(job.failedCount).toBe(0);
 
-    const watches = testDb
+    const watches = await testDb
       .select()
       .from(userEpisodeWatches)
-      .where(eq(userEpisodeWatches.userId, userId))
-      .all();
+      .where(eq(userEpisodeWatches.userId, userId));
     expect(watches).toHaveLength(2);
   });
 });
@@ -206,8 +197,8 @@ describe("processImportJob — episodes", () => {
 
 describe("processImportJob — watchlist", () => {
   test("sets title status to watchlist", async () => {
-    const userId = insertUser();
-    insertMovieTitle("movie-wl", 999, "Watchlist Movie");
+    const userId = await insertUser();
+    await insertMovieTitle("movie-wl", 999, "Watchlist Movie");
 
     const payload: NormalizedImport = {
       source: "simkl",
@@ -217,22 +208,21 @@ describe("processImportJob — watchlist", () => {
       ratings: [],
     };
 
-    const jobId = createJob(userId, payload, {
+    const jobId = await createJob(userId, payload, {
       importWatches: false,
       importWatchlist: true,
       importRatings: false,
     });
     await processImportJob(jobId);
 
-    const job = readImportJob(jobId);
+    const job = await readImportJob(jobId);
     expect(job.status).toBe("success");
     expect(job.importedCount).toBe(1);
 
-    const statusRow = testDb
+    const statusRow = await testDb
       .select()
       .from(userTitleStatus)
-      .where(eq(userTitleStatus.userId, userId))
-      .all();
+      .where(eq(userTitleStatus.userId, userId));
     expect(statusRow).toHaveLength(1);
     expect(statusRow[0].status).toBe("watchlist");
     expect(statusRow[0].titleId).toBe("movie-wl");
@@ -243,8 +233,8 @@ describe("processImportJob — watchlist", () => {
 
 describe("processImportJob — ratings", () => {
   test("stores rating correctly", async () => {
-    const userId = insertUser();
-    insertMovieTitle("movie-r", 888, "Rated Movie");
+    const userId = await insertUser();
+    await insertMovieTitle("movie-r", 888, "Rated Movie");
 
     const payload: NormalizedImport = {
       source: "trakt",
@@ -262,22 +252,21 @@ describe("processImportJob — ratings", () => {
       ],
     };
 
-    const jobId = createJob(userId, payload, {
+    const jobId = await createJob(userId, payload, {
       importWatches: false,
       importWatchlist: false,
       importRatings: true,
     });
     await processImportJob(jobId);
 
-    const job = readImportJob(jobId);
+    const job = await readImportJob(jobId);
     expect(job.status).toBe("success");
     expect(job.importedCount).toBe(1);
 
-    const ratingRows = testDb
+    const ratingRows = await testDb
       .select()
       .from(userRatings)
-      .where(eq(userRatings.userId, userId))
-      .all();
+      .where(eq(userRatings.userId, userId));
     expect(ratingRows).toHaveLength(1);
     expect(ratingRows[0].ratingStars).toBe(4);
     expect(ratingRows[0].titleId).toBe("movie-r");
@@ -288,8 +277,8 @@ describe("processImportJob — ratings", () => {
 
 describe("processImportJob — state transitions", () => {
   test("job starts as pending, ends as success", async () => {
-    const userId = insertUser();
-    insertMovieTitle("movie-st", 111, "State Test");
+    const userId = await insertUser();
+    await insertMovieTitle("movie-st", 111, "State Test");
 
     const payload: NormalizedImport = {
       source: "letterboxd",
@@ -299,10 +288,10 @@ describe("processImportJob — state transitions", () => {
       ratings: [],
     };
 
-    const jobId = createJob(userId, payload);
+    const jobId = await createJob(userId, payload);
 
     // Before processing
-    const before = readImportJob(jobId);
+    const before = await readImportJob(jobId);
     expect(before.status).toBe("pending");
     expect(before.startedAt).toBeNull();
     expect(before.finishedAt).toBeNull();
@@ -310,14 +299,14 @@ describe("processImportJob — state transitions", () => {
     await processImportJob(jobId);
 
     // After processing
-    const after = readImportJob(jobId);
+    const after = await readImportJob(jobId);
     expect(after.status).toBe("success");
     expect(after.startedAt).not.toBeNull();
     expect(after.finishedAt).not.toBeNull();
   });
 
   test("empty import with no matching options succeeds with warning", async () => {
-    const userId = insertUser();
+    const userId = await insertUser();
 
     const payload: NormalizedImport = {
       source: "trakt",
@@ -328,36 +317,55 @@ describe("processImportJob — state transitions", () => {
     };
 
     // Disable all import options — movies exist but importWatches is false
-    const jobId = createJob(userId, payload, {
+    const jobId = await createJob(userId, payload, {
       importWatches: false,
       importWatchlist: false,
       importRatings: false,
     });
     await processImportJob(jobId);
 
-    const job = readImportJob(jobId);
+    const job = await readImportJob(jobId);
     expect(job.status).toBe("success");
     expect(job.warnings.length).toBeGreaterThan(0);
     expect(job.warnings[0]).toContain("No items to import");
   });
 
-  test("readImportJob throws for non-existent job", () => {
-    expect(() => readImportJob("non-existent-id")).toThrow("Import job non-existent-id not found");
+  test("readImportJob throws for non-existent job", async () => {
+    await expect(readImportJob("non-existent-id")).rejects.toThrow(
+      "Import job non-existent-id not found",
+    );
   });
 
-  test("schema allows only one active import job per user", () => {
-    const userId = insertUser();
+  test("schema allows only one active import job per user", async () => {
+    const userId = await insertUser();
     const createdAt = new Date();
 
-    testDb
-      .insert(importJobs)
-      .values({
-        id: "job-1",
-        userId,
+    await testDb.insert(importJobs).values({
+      id: "job-1",
+      userId,
+      source: "trakt",
+      status: "pending",
+      payload: JSON.stringify({
         source: "trakt",
-        status: "pending",
+        movies: [],
+        episodes: [],
+        watchlist: [],
+        ratings: [],
+      }),
+      importWatches: true,
+      importWatchlist: true,
+      importRatings: true,
+      createdAt,
+    });
+
+    await expect(
+      testDb.insert(importJobs).values({
+        id: "job-2",
+        userId,
+        source: "simkl",
+        status: "running",
         payload: JSON.stringify({
-          source: "trakt",
+          source: "simkl",
           movies: [],
           episodes: [],
           watchlist: [],
@@ -367,56 +375,30 @@ describe("processImportJob — state transitions", () => {
         importWatchlist: true,
         importRatings: true,
         createdAt,
-      })
-      .run();
+      }),
+    ).rejects.toThrow(/duplicate key value violates unique constraint/);
 
-    expect(() =>
-      testDb
-        .insert(importJobs)
-        .values({
-          id: "job-2",
-          userId,
-          source: "simkl",
-          status: "running",
-          payload: JSON.stringify({
-            source: "simkl",
-            movies: [],
-            episodes: [],
-            watchlist: [],
-            ratings: [],
-          }),
-          importWatches: true,
-          importWatchlist: true,
-          importRatings: true,
-          createdAt,
-        })
-        .run(),
-    ).toThrow("UNIQUE constraint");
+    await testDb.update(importJobs).set({ status: "success" }).where(eq(importJobs.id, "job-1"));
 
-    testDb.update(importJobs).set({ status: "success" }).where(eq(importJobs.id, "job-1")).run();
-
-    expect(() =>
-      testDb
-        .insert(importJobs)
-        .values({
-          id: "job-3",
-          userId,
+    await expect(
+      testDb.insert(importJobs).values({
+        id: "job-3",
+        userId,
+        source: "letterboxd",
+        status: "pending",
+        payload: JSON.stringify({
           source: "letterboxd",
-          status: "pending",
-          payload: JSON.stringify({
-            source: "letterboxd",
-            movies: [],
-            episodes: [],
-            watchlist: [],
-            ratings: [],
-          }),
-          importWatches: true,
-          importWatchlist: true,
-          importRatings: true,
-          createdAt,
-        })
-        .run(),
-    ).not.toThrow();
+          movies: [],
+          episodes: [],
+          watchlist: [],
+          ratings: [],
+        }),
+        importWatches: true,
+        importWatchlist: true,
+        importRatings: true,
+        createdAt,
+      }),
+    ).resolves.not.toThrow();
   });
 });
 
@@ -424,7 +406,7 @@ describe("processImportJob — state transitions", () => {
 
 describe("processImportJob — failed resolution", () => {
   test("records failure when movie cannot be resolved", async () => {
-    const userId = insertUser();
+    const userId = await insertUser();
 
     const payload: NormalizedImport = {
       source: "letterboxd",
@@ -440,10 +422,10 @@ describe("processImportJob — failed resolution", () => {
     } as never);
 
     try {
-      const jobId = createJob(userId, payload);
+      const jobId = await createJob(userId, payload);
       await processImportJob(jobId);
 
-      const job = readImportJob(jobId);
+      const job = await readImportJob(jobId);
       expect(job.status).toBe("success");
       expect(job.failedCount).toBe(1);
       expect(job.importedCount).toBe(0);

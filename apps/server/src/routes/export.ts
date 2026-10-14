@@ -11,7 +11,7 @@ app.get("/user-data", async (c) => {
     return c.json({ error: "Unauthorized" }, 401);
   }
 
-  const data = generateUserExport(session.user.id, {
+  const data = await generateUserExport(session.user.id, {
     name: session.user.name,
     email: session.user.email,
   });

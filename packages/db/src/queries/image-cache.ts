@@ -23,7 +23,7 @@ export function getTitleWithPaths(titleId: string) {
     })
     .from(titles)
     .where(eq(titles.id, titleId))
-    .get();
+    ;
 }
 
 // ─── Season posters ──────────────────────────────────────────────────
@@ -33,7 +33,7 @@ export function getSeasonPostersForTitle(titleId: string) {
     .select({ posterPath: seasons.posterPath })
     .from(seasons)
     .where(eq(seasons.titleId, titleId))
-    .all();
+    ;
 }
 
 // ─── Episode stills ──────────────────────────────────────────────────
@@ -44,7 +44,7 @@ export function getEpisodeStillsForTitle(titleId: string) {
     .from(episodes)
     .innerJoin(seasons, eq(episodes.seasonId, seasons.id))
     .where(eq(seasons.titleId, titleId))
-    .all();
+    ;
 }
 
 // ─── Availability logos ──────────────────────────────────────────────
@@ -55,7 +55,7 @@ export function getAvailabilityLogosForTitle(titleId: string) {
     .from(titleAvailability)
     .innerJoin(platforms, eq(titleAvailability.platformId, platforms.id))
     .where(eq(titleAvailability.titleId, titleId))
-    .all();
+    ;
 }
 
 // ─── Cast profile paths ─────────────────────────────────────────────
@@ -66,5 +66,5 @@ export function getCastProfilePathsForTitle(titleId: string) {
     .from(titleCast)
     .innerJoin(persons, eq(titleCast.personId, persons.id))
     .where(eq(titleCast.titleId, titleId))
-    .all();
+    ;
 }

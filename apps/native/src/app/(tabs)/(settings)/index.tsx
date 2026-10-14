@@ -559,7 +559,7 @@ export default function SettingsScreen() {
               if (isLocaleRTL(locale) !== isLocaleRTL(previousLocale)) {
                 Alert.alert(
                   t`Restart Required`,
-                  t`Sofa needs to restart to apply the new layout direction.`,
+                  t`Patoune TV needs to restart to apply the new layout direction.`,
                   [{ text: t`Restart`, onPress: () => reloadAppAsync() }],
                 );
               }

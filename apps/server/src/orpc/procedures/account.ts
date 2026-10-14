@@ -1,4 +1,4 @@
-import { mkdir, rename } from "node:fs/promises";
+import { mkdir, readdir, rename, unlink, writeFile } from "node:fs/promises";
 import path from "node:path";
 
 import { ORPCError } from "@orpc/server";
@@ -12,7 +12,9 @@ import {
   listUserIntegrations,
   regenerateToken as coreRegenerateToken,
   serializeIntegration,
+  setEmbyUsername,
 } from "@sofa/core/integrations";
+import { listEmbyLibrariesForUser, setEmbyLibrariesForUser } from "@sofa/core/emby-library";
 import { getUserPlatformIdList, updateUserPlatforms } from "@sofa/core/platforms";
 
 import { os } from "../context";
@@ -41,14 +43,14 @@ export const uploadAvatar = os.account.uploadAvatar
     const filename = `${context.user.id}.${ext}`;
     const filePath = path.join(AVATAR_DIR, filename);
     const tmpPath = `${filePath}.tmp.${Date.now()}`;
-    await Bun.write(tmpPath, file);
+    await writeFile(tmpPath, Buffer.from(await file.arrayBuffer()));
     await rename(tmpPath, filePath);
 
-    const glob = new Bun.Glob(`${context.user.id}.*`);
-    const existing = await Array.fromAsync(glob.scan(AVATAR_DIR));
-    for (const match of existing) {
-      if (match !== filename) {
-        await Bun.file(path.join(AVATAR_DIR, match)).delete();
+    const dirEntries = await readdir(AVATAR_DIR);
+    const prefix = `${context.user.id}.`;
+    for (const match of dirEntries) {
+      if (match.startsWith(prefix) && match !== filename) {
+        await unlink(path.join(AVATAR_DIR, match));
       }
     }
 
@@ -62,10 +64,12 @@ export const uploadAvatar = os.account.uploadAvatar
   });
 
 export const removeAvatar = os.account.removeAvatar.use(authed).handler(async ({ context }) => {
-  const glob = new Bun.Glob(`${context.user.id}.*`);
-  const matches = await Array.fromAsync(glob.scan(AVATAR_DIR));
-  for (const match of matches) {
-    await Bun.file(path.join(AVATAR_DIR, match)).delete();
+  const dirEntries = await readdir(AVATAR_DIR).catch(() => []);
+  const prefix = `${context.user.id}.`;
+  for (const match of dirEntries) {
+    if (match.startsWith(prefix)) {
+      await unlink(path.join(AVATAR_DIR, match));
+    }
   }
   await auth.api.updateUser({
     body: { image: "" },
@@ -74,20 +78,22 @@ export const removeAvatar = os.account.removeAvatar.use(authed).handler(async ({
 });
 
 export const platforms = os.account.platforms.use(authed).handler(async ({ context }) => {
-  return { platformIds: getUserPlatformIdList(context.user.id) };
+  return { platformIds: await getUserPlatformIdList(context.user.id) };
 });
 
 export const updatePlatformsHandler = os.account.updatePlatforms
   .use(authed)
   .handler(async ({ input, context }) => {
-    updateUserPlatforms(context.user.id, input.platformIds);
+    await updateUserPlatforms(context.user.id, input.platformIds);
   });
 
 // ─── Integrations ─────────────────────────────────────────────
 
-export const integrationsList = os.account.integrations.list.use(authed).handler(({ context }) => {
-  return listUserIntegrations(context.user.id);
-});
+export const integrationsList = os.account.integrations.list
+  .use(authed)
+  .handler(({ context }) => {
+    return listUserIntegrations(context.user.id);
+  });
 
 export const integrationsCreate = os.account.integrations.create
   .use(authed)
@@ -97,14 +103,14 @@ export const integrationsCreate = os.account.integrations.create
 
 export const integrationsDelete = os.account.integrations.delete
   .use(authed)
-  .handler(({ input, context }) => {
-    coreDeleteIntegration(context.user.id, input.provider);
+  .handler(async ({ input, context }) => {
+    await coreDeleteIntegration(context.user.id, input.provider);
   });
 
 export const integrationsRegenerateToken = os.account.integrations.regenerateToken
   .use(authed)
-  .handler(({ input, context }) => {
-    const row = coreRegenerateToken(context.user.id, input.provider);
+  .handler(async ({ input, context }) => {
+    const [row] = await coreRegenerateToken(context.user.id, input.provider);
 
     if (!row) {
       throw new ORPCError("NOT_FOUND", {
@@ -114,4 +120,31 @@ export const integrationsRegenerateToken = os.account.integrations.regenerateTok
     }
 
     return serializeIntegration(row);
+  });
+
+export const integrationsUpdateEmbyUsername = os.account.integrations.updateEmbyUsername
+  .use(authed)
+  .handler(async ({ input, context }) => {
+    const row = await setEmbyUsername(context.user.id, input.embyUsername);
+
+    if (!row) {
+      throw new ORPCError("NOT_FOUND", {
+        message: "Integration not found",
+        data: { code: AppErrorCode.INTEGRATION_NOT_FOUND },
+      });
+    }
+
+    return row;
+  });
+
+export const integrationsListEmbyLibraries = os.account.integrations.listEmbyLibraries
+  .use(authed)
+  .handler(async ({ context }) => {
+    return listEmbyLibrariesForUser(context.user.id);
+  });
+
+export const integrationsUpdateEmbyLibraries = os.account.integrations.updateEmbyLibraries
+  .use(authed)
+  .handler(async ({ input, context }) => {
+    return setEmbyLibrariesForUser(context.user.id, input.libraryNames);
   });

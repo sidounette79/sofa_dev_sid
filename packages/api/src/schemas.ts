@@ -2,12 +2,20 @@ import { z } from "zod";
 
 // ─── Shared input schemas ─────────────────────────────────────
 
+export const QuickEpisodeActionOutput = z
+  .object({
+    id: z.string().describe("Episode ID"),
+    seasonNumber: z.number().describe("Season number"),
+    episodeNumber: z.number().describe("Episode number"),
+  })
+  .nullable()
+  .describe("The episode that was marked/unmarked, or null if there was nothing to change");
 export const IdParam = z.object({
   id: z.string().min(1).describe("Internal UUIDv7 identifier"),
 });
 export const ProviderParam = z.object({
   provider: z
-    .enum(["plex", "jellyfin", "emby", "sonarr", "radarr"])
+    .enum(["jellyfin", "emby", "sonarr", "radarr"])
     .describe("Media server provider type"),
 });
 export const FilenameParam = z.object({
@@ -15,6 +23,9 @@ export const FilenameParam = z.object({
 });
 export const MediaTypeParam = z.object({
   type: z.enum(["movie", "tv"]).describe("Media type filter"),
+});
+export const OptionalMediaTypeParam = z.object({
+  type: z.enum(["movie", "tv"]).optional().describe("Media type filter — omit for both"),
 });
 export const TrendingTypeParam = z.object({
   type: z.enum(["all", "movie", "tv"]).describe("Trending category: all, movie, or tv"),
@@ -50,10 +61,10 @@ export const UpdateStatusInput = z
   .object({
     id: z.string().min(1).describe("Title ID"),
     status: z
-      .enum(["watchlist"])
+      .enum(["watchlist", "dropped"])
       .nullable()
       .describe(
-        "Set to watchlist to add to library, or null to remove. Other transitions happen via watch endpoints.",
+        "Set to watchlist to add to library, dropped to mark as abandoned, or null to remove. Other transitions happen via watch endpoints.",
       ),
   })
   .meta({ description: "Add a title to the user's watchlist or remove from library" });
@@ -139,7 +150,7 @@ export const WatchHistoryInput = z
 export const CreateIntegrationInput = z
   .object({
     provider: z
-      .enum(["plex", "jellyfin", "emby", "sonarr", "radarr"])
+      .enum(["jellyfin", "emby", "sonarr", "radarr"])
       .describe("Media server provider to integrate"),
     enabled: z
       .boolean()
@@ -147,6 +158,34 @@ export const CreateIntegrationInput = z
       .describe("Whether the integration starts enabled (default: true)"),
   })
   .meta({ description: "Create a new media server integration" });
+
+export const UpdateEmbyUsernameInput = z
+  .object({
+    provider: z.literal("emby").describe("Provider type (always emby for this endpoint)"),
+    embyUsername: z
+      .string()
+      .nullable()
+      .describe("Emby username to link, or null to unlink"),
+  })
+  .meta({ description: "Link an Emby username to filter Now Playing sessions" });
+
+export const UpdateEmbyLibrariesInput = z
+  .object({
+    libraryNames: z
+      .array(z.string())
+      .describe("Emby library names to claim as this user's own"),
+  })
+  .meta({
+    description:
+      "Set which Emby libraries belong to this user — matched titles are auto-added to their watchlist",
+  });
+
+export const EmbyLibrariesListOutput = z
+  .object({
+    libraries: z.array(z.string()).describe("Available Emby library names, excluding excluded ones"),
+    selected: z.array(z.string()).describe("Library names currently claimed by this user"),
+  })
+  .meta({ description: "Available Emby libraries and this user's current selection" });
 
 // ─── Admin inputs ──────────────────────────────────────────────
 
@@ -163,15 +202,8 @@ export const AdminSettingsOutput = z
       releaseUrl: z.string().nullable().describe("URL to the latest release page"),
       lastCheckedAt: z.string().nullable().describe("When the last check was performed (ISO 8601)"),
     }),
-    telemetry: z.object({
-      enabled: z.boolean().describe("Whether anonymous telemetry is enabled"),
-      lastReportedAt: z
-        .string()
-        .nullable()
-        .describe("ISO 8601 timestamp of the last telemetry report"),
-    }),
   })
-  .meta({ description: "Combined admin settings for registration, update checks, and telemetry" });
+  .meta({ description: "Combined admin settings for registration and update checks" });
 
 export const AdminSettingsUpdateInput = z
   .object({
@@ -180,9 +212,6 @@ export const AdminSettingsUpdateInput = z
       .optional(),
     updateCheck: z
       .object({ enabled: z.boolean().describe("Whether automatic update checks are enabled") })
-      .optional(),
-    telemetry: z
-      .object({ enabled: z.boolean().describe("Whether anonymous telemetry is enabled") })
       .optional(),
   })
   .meta({ description: "Partial update to admin settings" });
@@ -195,8 +224,11 @@ const cronJobName = z.enum([
   "refreshTvChildren",
   "cacheImages",
   "refreshCredits",
+  "scanEmbyLibrary",
+  "syncRequestedFromRadarrSonarr",
   "updateCheck",
-  "telemetryReport",
+  "optimizeDb",
+  "refreshTitleEpisodeStats",
 ]);
 
 export const TriggerJobInput = z
@@ -247,6 +279,18 @@ export const UpdateScheduleInput = z
 
 export const UpdateNameInput = z.object({
   name: z.string().min(1).max(100).describe("New display name"),
+});
+
+export const PushSubscribeInput = z.object({
+  endpoint: z.string().url().describe("Push service endpoint URL from the browser subscription"),
+  keys: z.object({
+    p256dh: z.string().describe("Subscription's public key"),
+    auth: z.string().describe("Subscription's auth secret"),
+  }),
+});
+
+export const PushUnsubscribeInput = z.object({
+  endpoint: z.string().url().describe("Push service endpoint URL to remove"),
 });
 
 export const UploadAvatarInput = z
@@ -393,6 +437,14 @@ export const ResolvedTitleSchema = z
     colorPalette: ColorPaletteSchema.nullable(),
     trailerVideoKey: z.string().nullable().describe("YouTube video key for the trailer"),
     genres: z.array(z.string()).describe("Genre names"),
+    embyStatus: z
+      .enum(["available", "removed"])
+      .nullable()
+      .describe(
+        "Emby availability: 'available' (currently on the server), 'removed' (was on the server, no longer), or null (never seen)",
+      ),
+    embyLibraryName: z.string().nullable().describe("Emby library this title was found in"),
+    embyItemId: z.string().nullable().describe("Emby item ID for deep-linking into the Emby app"),
   })
   .meta({ description: "A fully resolved movie or TV show from TMDB" });
 
@@ -432,6 +484,13 @@ export const PersonCreditSchema = z
     character: z.string().nullable().describe("Character name (for acting credits)"),
     department: z.string().describe("Department (e.g. Acting, Directing)"),
     job: z.string().nullable().describe("Job title (for crew credits)"),
+    embyStatus: z
+      .enum(["available", "removed"])
+      .nullable()
+      .describe(
+        "Emby availability: 'available' (currently on the server), 'removed' (was on the server, no longer), or null (never seen)",
+      ),
+    requestedAt: z.coerce.date().nullable().describe("When this title was requested, if ever"),
   })
   .meta({ description: "A person's credit in a movie or TV show" });
 
@@ -447,6 +506,23 @@ export const TmdbBrowseItem = z
     releaseDate: z.string().nullable().describe("Release date (ISO 8601)"),
     firstAirDate: z.string().nullable().describe("First air date (ISO 8601)"),
     voteAverage: z.number().nullable().describe("Average rating (0-10)"),
+    embyStatus: z
+      .enum(["available", "removed"])
+      .nullable()
+      .describe(
+        "Emby availability: 'available' (currently on the server), 'removed' (was on the server, no longer), or null (never seen)",
+      ),
+    // 28.08, Sid — real bug: every trending/popular/upcoming/browse handler
+    // already attached requestedAt to each item, but this schema never
+    // declared the field, so oRPC's Zod output validation silently stripped
+    // it from every response (confirmed live: a title with requestedAt set
+    // in the DB still came back with the key entirely absent, not even
+    // null) — the "already requested" badge could never show outside the
+    // one place (title detail page) that used a different schema.
+    requestedAt: z.coerce
+      .date()
+      .nullable()
+      .describe("When this title was requested, household-wide, or null if never requested"),
   })
   .meta({
     description: "A TMDB title card used in browse/trending/popular lists",
@@ -464,10 +540,24 @@ export const RecommendationItemSchema = z
     releaseDate: z.string().nullable().describe("Release date (ISO 8601)"),
     firstAirDate: z.string().nullable().describe("First air date (ISO 8601)"),
     voteAverage: z.number().nullable().describe("Average rating (0-10)"),
+    embyStatus: z
+      .enum(["available", "removed"])
+      .nullable()
+      .describe("Emby availability, title-level — see library.ts's deriveEmbyStatus"),
+    requestedAt: z.coerce
+      .date()
+      .nullable()
+      .describe("When this title was requested, household-wide, or null if never requested"),
   })
   .meta({ description: "A recommended title" });
 
-const displayStatusEnum = z.enum(["in_watchlist", "watching", "caught_up", "completed"]);
+const displayStatusEnum = z.enum([
+  "in_watchlist",
+  "watching",
+  "caught_up",
+  "completed",
+  "dropped",
+]);
 
 const userStatusMap = z
   .record(z.string(), displayStatusEnum)
@@ -496,10 +586,29 @@ export const TitleDetailOutput = z
     seasons: z.array(SeasonSchema).describe("TV seasons (empty for movies)"),
     availability: z.array(AvailabilityOfferSchema).describe("Streaming availability offers"),
     cast: z.array(CastMemberSchema).describe("Cast and crew credits"),
+    embyServerId: z
+      .string()
+      .nullable()
+      .describe("Emby server ID for deep-linking, or null if not on Emby / not configured"),
+    embyUrl: z
+      .string()
+      .nullable()
+      .describe("Public Emby URL for web fallback deep-linking, or null if not configured"),
   })
   .meta({
     description: "Full title details with seasons, cast, and streaming availability",
   });
+
+export const PendingLibraryOutput = z
+  .object({
+    rootFolderPath: z
+      .string()
+      .nullable()
+      .describe(
+        "The Radarr/Sonarr root folder already assigned to this request, or null if not requested / not found there / Radarr-Sonarr unreachable",
+      ),
+  })
+  .meta({ description: "Where a requested-but-not-available title will land once received" });
 
 export const UserInfoOutput = z
   .object({
@@ -508,6 +617,19 @@ export const UserInfoOutput = z
       .describe("User's display status, or null if not in library"),
     rating: z.number().nullable().describe("User's star rating (0-5), or null if unrated"),
     episodeWatches: z.array(z.string()).describe("IDs of episodes the user has watched"),
+    rewatchedEpisodeIds: z
+      .array(z.string())
+      .describe("IDs of episodes watched in 2+ distinct rewatch cycles"),
+    requestedAt: z.coerce
+      .date()
+      .nullable()
+      .describe("When this title was requested via Radarr/Sonarr, or null if never requested"),
+    embyStatus: z
+      .enum(["available", "removed"])
+      .nullable()
+      .describe(
+        "Emby availability: 'available' (currently on the server), 'removed' (was on the server, no longer), or null (never seen) — title-level, not scoped to this user",
+      ),
   })
   .meta({
     description: "The current user's tracking info for a title",
@@ -543,6 +665,43 @@ export const LibraryStatsOutput = z
     completed: z.number().describe("Total titles with completed status"),
   })
   .meta({ description: "Aggregate library statistics" });
+const StatusCountsSchema = z.object({
+  in_watchlist: z.number(),
+  watching: z.number(),
+  caught_up: z.number(),
+  completed: z.number(),
+  dropped: z.number(),
+});
+export const LibraryStatisticsOutput = z
+  .object({
+    librarySize: z.number().describe("Total titles tracked by the user"),
+    totalMoviesWatched: z.number().describe("All-time count of movie watches"),
+    totalEpisodesWatched: z.number().describe("All-time count of episode watches"),
+    mediaTypeDistribution: z
+      .object({ movie: z.number(), tv: z.number() })
+      .describe("Count of titles by media type"),
+    statusDistribution: StatusCountsSchema.describe(
+      "Count of titles by display status, across all media types",
+    ),
+    statusByType: z
+      .object({ movie: StatusCountsSchema, tv: StatusCountsSchema })
+      .describe("Count of titles by display status, split by media type"),
+    averageRating: z.number().nullable().describe("Average user star rating (1-5), or null"),
+    ratedCount: z.number().describe("Number of titles the user has rated"),
+    percentRated: z.number().describe("Percentage of the library that has been rated"),
+    totalWatchTimeMinutes: z
+      .object({ movie: z.number(), tv: z.number() })
+      .describe("All-time watch time in minutes, by media type — every watch counted separately"),
+    genreStats: z
+      .array(z.object({ name: z.string(), count: z.number() }))
+      .describe("Genres of watched (completed/in-progress) titles, ranked by count"),
+  })
+  .meta({ description: "Extended library statistics for the statistics page" });
+
+export const ContinueWatchingInput = z.object({
+  sortBy: z.enum(["watched", "aired"]).default("watched").describe("Sort field"),
+  sortDirection: z.enum(["asc", "desc"]).default("desc").describe("Sort direction"),
+});
 
 export const ContinueWatchingOutput = z
   .object({
@@ -552,11 +711,25 @@ export const ContinueWatchingOutput = z
           title: z.object({
             id: z.string().describe("Title ID"),
             title: z.string().describe("Display title"),
+            type: z.string().describe("Title type (always tv here)"),
+            posterPath: z.string().nullable().describe("Poster image path"),
+            posterThumbHash: z
+              .string()
+              .nullable()
+              .describe("ThumbHash blur placeholder for the poster"),
             backdropPath: z.string().nullable().describe("Backdrop image path"),
             backdropThumbHash: z
               .string()
               .nullable()
               .describe("ThumbHash blur placeholder for the backdrop"),
+            firstAirDate: z.string().nullable().describe("First air date"),
+            status: z.string().nullable().describe("TMDB series status"),
+            voteAverage: z.number().nullable().describe("TMDB vote average"),
+            embyStatus: z
+              .enum(["available", "removed"])
+              .nullable()
+              .describe("Availability on the user's Emby server"),
+            watchCount: z.number().describe("Total watch-throughs, 1 = never rewatched"),
           }),
           nextEpisode: z
             .object({
@@ -568,18 +741,63 @@ export const ContinueWatchingOutput = z
                 .string()
                 .nullable()
                 .describe("ThumbHash blur placeholder for the still"),
+              embyItemId: z
+                .string()
+                .nullable()
+                .describe("Emby item ID for this specific episode, for deep-linking"),
             })
             .nullable()
             .describe("Next unwatched episode, or null if all caught up"),
           totalEpisodes: z.number().describe("Total episodes across all seasons"),
           watchedEpisodes: z.number().describe("Episodes the user has watched"),
+          lastWatchedAt: z
+            .string()
+            .nullable()
+            .describe("ISO date of the most recently watched episode"),
+          lastAiredAt: z
+            .string()
+            .nullable()
+            .describe("ISO date of the most recently aired episode"),
         })
         .meta({ description: "An in-progress show with watch progress" }),
     ),
+    embyServerId: z
+      .string()
+      .nullable()
+      .describe("Emby server ID for deep-linking, or null if not configured"),
+    embyUrl: z
+      .string()
+      .nullable()
+      .describe("Public Emby URL for web fallback deep-linking, or null if not configured"),
   })
   .meta({
     description: "TV shows the user is currently watching with next episode info",
   });
+export const NowPlayingOutput = z
+  .object({
+    items: z.array(
+      z
+        .object({
+          sessionId: z.string().describe("Emby session ID"),
+          userName: z.string().nullable().describe("Emby user currently playing"),
+          titleId: z.string().nullable().describe("Matched Sofa title ID, if found"),
+          type: z.enum(["movie", "tv"]).describe("Media type"),
+          title: z.string().describe("Movie title or TV series name"),
+          posterPath: z.string().nullable().describe("Poster image path"),
+          posterThumbHash: z
+            .string()
+            .nullable()
+            .describe("ThumbHash blur placeholder for the poster"),
+          episodeName: z.string().nullable().describe("Episode title, for TV only"),
+          seasonNumber: z.number().nullable().describe("Season number, for TV only"),
+          episodeNumber: z.number().nullable().describe("Episode number, for TV only"),
+          progressPercent: z.number().describe("Playback progress, 0-100"),
+          isPaused: z.boolean().describe("Whether playback is currently paused"),
+        })
+        .meta({ description: "A currently playing Emby session" }),
+    ),
+  })
+  .meta({ description: "Currently playing sessions from Emby, for live dashboard display" });
 
 // ─── Library (filtered) ───────────────────────────────────────
 
@@ -602,7 +820,16 @@ export const LibraryListInput = z
       .optional()
       .describe("Only show titles available on the user's streaming services"),
     sortBy: z
-      .enum(["title", "added_at", "release_date", "popularity", "user_rating", "vote_average"])
+      .enum([
+        "title",
+        "added_at",
+        "release_date",
+        "popularity",
+        "user_rating",
+        "vote_average",
+        "next_air_date",
+        "last_watched",
+      ])
       .default("added_at")
       .describe("Sort field"),
     sortDirection: z.enum(["asc", "desc"]).default("desc").describe("Sort direction"),
@@ -626,9 +853,24 @@ export const LibraryListOutput = z
             .describe("ThumbHash blur placeholder for the poster"),
           releaseDate: z.string().nullable().describe("Release date (ISO 8601)"),
           firstAirDate: z.string().nullable().describe("First air date (ISO 8601)"),
+          status: z.string().nullable().describe("Production status (e.g. Ended, Canceled)"),
           voteAverage: z.number().nullable().describe("Average rating (0-10)"),
+          embyStatus: z
+            .enum(["available", "removed"])
+            .nullable()
+            .describe(
+              "Emby availability: 'available' (currently on the server), 'removed' (was on the server, no longer), or null (never seen)",
+            ),
           userStatus: displayStatusEnum.nullable().describe("User's display status"),
           userRating: z.number().nullable().describe("User's star rating (1-5), or null"),
+          episodeProgress: z
+            .object({ watched: z.number(), total: z.number() })
+            .nullable()
+            .describe("Watched/total episode count for TV shows, or null"),
+          watchCount: z
+            .number()
+            .nullable()
+            .describe("Number of times this movie has been watched, or null for TV"),
         })
         .meta({ description: "A library item with user status and rating" }),
     ),
@@ -650,6 +892,56 @@ export const DiscoverRecommendationsOutput = z
   })
   .meta({
     description: "Personalized title recommendations based on the user's library",
+  });
+
+export const UntrackedEmbyLibraryItemSchema = z
+  .object({
+    id: z.string().describe("Internal title ID"),
+    tmdbId: z.number().describe("TMDB numeric ID"),
+    type: mediaType,
+    title: z.string().describe("Display title"),
+    posterPath: z.string().nullable().describe("Poster image path"),
+    posterThumbHash: z.string().nullable().describe("ThumbHash blur placeholder for the poster"),
+    releaseDate: z.string().nullable().describe("Release date (ISO 8601)"),
+    firstAirDate: z.string().nullable().describe("First air date (ISO 8601)"),
+    voteAverage: z.number().nullable().describe("Average rating (0-10)"),
+    embyLibraryName: z.string().nullable().describe("Emby library this title was found in"),
+  })
+  .meta({ description: "A title physically available on the Emby server, not yet tracked" });
+
+export const RequestedNotAvailableItemSchema = z
+  .object({
+    id: z.string().describe("Internal title ID"),
+    tmdbId: z.number().describe("TMDB numeric ID"),
+    type: mediaType,
+    title: z.string().describe("Display title"),
+    posterPath: z.string().nullable().describe("Poster image path"),
+    posterThumbHash: z.string().nullable().describe("ThumbHash blur placeholder for the poster"),
+    releaseDate: z.string().nullable().describe("Release date (ISO 8601)"),
+    firstAirDate: z.string().nullable().describe("First air date (ISO 8601)"),
+    voteAverage: z.number().nullable().describe("Average rating (0-10)"),
+    requestedAt: z.coerce.date().describe("When this title was requested"),
+  })
+  .meta({ description: "A requested title not yet available on Emby" });
+
+export const RequestedNotAvailableOutput = z
+  .object({
+    items: z.array(RequestedNotAvailableItemSchema),
+    totalResults: z
+      .number()
+      .describe("Real total count of matching titles, independent of the feed's item cap"),
+  })
+  .meta({ description: "Requested titles not yet on Emby, for the \"Demandé - pas dispo\" section" });
+
+export const UntrackedEmbyLibraryOutput = z
+  .object({
+    items: z.array(UntrackedEmbyLibraryItemSchema),
+    totalResults: z
+      .number()
+      .describe("Real total count of matching titles, independent of the feed's item cap"),
+  })
+  .meta({
+    description: "Titles available on the Emby server that the user hasn't tracked yet",
   });
 
 // ─── Upcoming outputs ─────────────────────────────────────────
@@ -716,6 +1008,9 @@ export const UpcomingOutput = z
       .string()
       .nullable()
       .describe("Cursor for the next page, or null if no more items"),
+    totalResults: z
+      .number()
+      .describe("Real total count of upcoming items in the date window, independent of `limit`"),
   })
   .meta({ description: "Upcoming episodes and movie releases for tracked titles" });
 
@@ -782,6 +1077,24 @@ export const SearchOutput = z
             .array(z.string())
             .nullable()
             .describe("Notable works (people only, up to 3 titles)"),
+          userStatus: displayStatusEnum
+            .nullable()
+            .describe("User's display status, or null for people/untracked"),
+          embyStatus: z
+            .enum(["available", "removed"])
+            .nullable()
+            .describe(
+              "Emby availability: 'available' (currently on the server), 'removed' (was on the server, no longer), or null (never seen)",
+            ),
+          // 28.08, Sid — same fix as TmdbBrowseItem: the handler already
+          // attaches requestedAt, but it was never declared here either, so
+          // it was silently stripped by output validation. See that
+          // schema's comment for the full diagnosis.
+          requestedAt: z.coerce
+            .date()
+            .nullable()
+            .optional()
+            .describe("When this title was requested, household-wide, or null/absent for people"),
         })
         .meta({ description: "A search result (movie, TV show, or person)" }),
     ),
@@ -909,11 +1222,15 @@ export const SystemHealthOutput = SystemHealthSchema;
 export const IntegrationSchema = z
   .object({
     id: z.string().describe("Integration ID"),
-    provider: z.string().describe("Provider name (plex, jellyfin, etc.)"),
+    provider: z.string().describe("Provider name (jellyfin, emby, etc.)"),
     type: z
       .enum(["webhook", "list"])
-      .describe("Integration type: webhook (Plex/Jellyfin/Emby) or list (Sonarr/Radarr)"),
+      .describe("Integration type: webhook (Jellyfin/Emby) or list (Sonarr/Radarr)"),
     token: z.string().describe("Webhook authentication token"),
+    embyUsername: z
+      .string()
+      .nullable()
+      .describe("Emby username linked to this account, used to filter Now Playing sessions"),
     enabled: z.boolean().describe("Whether the integration is active"),
     lastEventAt: z.string().nullable().describe("Last received event timestamp (ISO 8601)"),
     createdAt: z.string().describe("When the integration was created (ISO 8601)"),
@@ -1013,6 +1330,10 @@ export const PublicInfoOutput = z
       .nullable()
       .describe("Display name of the OIDC provider (e.g. Authelia, Keycloak)"),
     passwordLoginDisabled: z.boolean().describe("Whether password-based login is disabled"),
+    vapidPublicKey: z
+      .string()
+      .nullable()
+      .describe("VAPID public key for Web Push subscription, or null if push isn't configured"),
   })
   .meta({
     description: "Public instance information and authentication configuration",
@@ -1201,6 +1522,167 @@ export const SofaExportSchema = z.object({
 });
 
 export type SofaExport = z.infer<typeof SofaExportSchema>;
+
+// ─── Media Requests (Radarr/Sonarr root-folder picker) ──────────────
+const RootFolderSchema = z.object({ path: z.string().describe("Absolute path on the *arr host") });
+const QualityProfileSchema = z.object({
+  id: z.number().describe("Quality profile ID"),
+  name: z.string().describe("Quality profile name (e.g. \"HD-1080p\")"),
+});
+
+export const RequestOptionsOutput = z
+  .object({
+    radarr: z.object({
+      rootFolders: z.array(RootFolderSchema),
+      qualityProfiles: z.array(QualityProfileSchema),
+    }),
+    sonarr: z.object({
+      rootFolders: z.array(RootFolderSchema),
+      qualityProfiles: z.array(QualityProfileSchema),
+    }),
+  })
+  .meta({ description: "Root folders + quality profiles for the request dialog's dropdowns" });
+
+const UserRequestDefaultsShape = {
+  radarrRootFolder: z.string().nullable().describe("Default Radarr root folder for this user"),
+  radarrQualityProfileId: z.number().nullable().describe("Default Radarr quality profile ID"),
+  sonarrRootFolder: z.string().nullable().describe("Default Sonarr root folder for this user"),
+  sonarrQualityProfileId: z.number().nullable().describe("Default Sonarr quality profile ID"),
+};
+
+export const UserRequestDefaultsOutput = z
+  .object(UserRequestDefaultsShape)
+  .meta({ description: "A user's default root folder + quality profile" });
+
+export const AdminUserRequestDefaultsListOutput = z
+  .object({
+    items: z.array(z.object({ userId: z.string(), ...UserRequestDefaultsShape })),
+  })
+  .meta({ description: "Every user's stored request defaults (admin only)" });
+
+export const SetUserRequestDefaultsInput = z
+  .object({ userId: z.string().describe("Sofa user ID"), ...UserRequestDefaultsShape })
+  .meta({ description: "Admin-only: set a user's default root folder + quality profile" });
+
+export const RequestMovieInput = z
+  .object({
+    id: z.string().describe("Sofa title ID"),
+    rootFolderPath: z.string().optional().describe("Falls back to the requesting user's default"),
+    qualityProfileId: z.number().optional(),
+  })
+  .meta({ description: "Push a movie request to Radarr with an immediate search" });
+
+export const RequestSeriesInput = z
+  .object({
+    id: z.string().describe("Sofa title ID"),
+    rootFolderPath: z.string().optional().describe("Falls back to the requesting user's default"),
+    qualityProfileId: z.number().optional(),
+    seasonNumbers: z
+      .array(z.number())
+      .optional()
+      .describe("Which seasons to monitor/download — omit to request every season"),
+  })
+  .meta({ description: "Push a series request to Sonarr with an immediate search" });
+
+// 06.09, Sid — "En attente TMDB": persists regardless of the show's air
+// date (unlike the date-bucketed Upcoming feed), same principle as
+// Grimmory's "missing books" — until TheTVDB catches up and a plain
+// "Request" (the poster's own + button) succeeds.
+export const UnresolvedSeriesRequestsOutput = z
+  .object({
+    items: z.array(
+      z.object({
+        id: z.string().describe("Title ID"),
+        type: z.literal("tv"),
+        title: z.string(),
+        posterPath: z.string().nullable(),
+        posterThumbHash: z.string().nullable(),
+        firstAirDate: z.string().nullable(),
+        voteAverage: z.number().nullable(),
+      }),
+    ),
+  })
+  .meta({ description: "Series requested but not yet on TheTVDB, awaiting retry" });
+
+const PlaybackDeviceShape = {
+  embyDeviceId: z.string().describe("Emby's stable device ID (Devices API ReportedDeviceId)"),
+  embyDeviceName: z.string(),
+};
+
+export const AvailablePlaybackDevicesOutput = z
+  .object({
+    items: z.array(
+      z.object({
+        ...PlaybackDeviceShape,
+        appName: z.string(),
+        iconUrl: z.string().nullable(),
+        lastActivityAt: z.string().nullable(),
+      }),
+    ),
+  })
+  .meta({ description: "Every device this user's Emby account has ever connected with" });
+
+export const FavoritePlaybackDevicesOutput = z
+  .object({
+    items: z.array(
+      z.object({
+        ...PlaybackDeviceShape,
+        online: z.boolean().describe("Whether this device currently has a live Emby session"),
+        nowPlaying: z.string().nullable(),
+      }),
+    ),
+  })
+  .meta({ description: "This user's saved shortlist of playback devices" });
+
+export const SetFavoritePlaybackDevicesInput = z
+  .object({ devices: z.array(z.object(PlaybackDeviceShape)).max(5) })
+  .meta({ description: "Replace this user's playback device shortlist" });
+
+export const PlaybackActivityInput = z
+  .object({
+    limit: z.number().min(1).max(200).default(50),
+    offset: z.number().min(0).default(0),
+    userId: z.string().optional().describe("Real Emby user ID — filter to just this account"),
+    search: z.string().optional().describe("Substring match on the item's name"),
+  })
+  .meta({ description: "Admin-only: query Emby's Playback Reporting activity log" });
+
+export const PlaybackActivityOutput = z
+  .object({
+    items: z.array(
+      z.object({
+        date: z.string(),
+        userId: z.string(),
+        userName: z.string(),
+        itemName: z.string(),
+        itemType: z.string(),
+        deviceName: z.string(),
+        clientName: z.string(),
+        playDurationSeconds: z.number(),
+      }),
+    ),
+    total: z.number(),
+  })
+  .meta({ description: "A page of Emby's real playback activity log, independent of Sofa users" });
+
+export const PlaybackReportingUsersOutput = z
+  .object({ items: z.array(z.object({ userId: z.string(), userName: z.string() })) })
+  .meta({ description: "Real Emby accounts that have at least one logged playback session" });
+
+export const DismissPlaybackDeviceInput = z
+  .object({ embyDeviceId: z.string() })
+  .meta({ description: "Permanently hide a device from this user's availability picker" });
+
+export const PlayOnDeviceInput = z
+  .object({
+    embyDeviceId: z.string(),
+    titleId: z.string().optional().describe("Movie title ID — exactly one of titleId/episodeId"),
+    episodeId: z.string().optional(),
+  })
+  .refine((v) => (v.titleId ? !v.episodeId : !!v.episodeId), {
+    message: "Provide exactly one of titleId or episodeId",
+  })
+  .meta({ description: "Start playback of a movie or episode on another Emby session" });
 
 // ═══════════════════════════════════════════════════════════════
 // Inferred types — use these instead of hand-written interfaces

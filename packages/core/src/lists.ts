@@ -12,10 +12,10 @@ import { getTvExternalIds } from "@sofa/tmdb/client";
 const log = createLogger("lists");
 
 /** Look up a list integration token and return the userId + provider, or null. */
-export function resolveListToken(
+export async function resolveListToken(
   token: string,
-): { userId: string; provider: "sonarr" | "radarr" } | null {
-  const row = resolveListIntegration(token);
+): Promise<{ userId: string; provider: "sonarr" | "radarr" } | null> {
+  const [row] = await resolveListIntegration(token);
   if (!row) return null;
   return {
     userId: row.userId,
@@ -34,11 +34,11 @@ export function parseStatusParam(param: string | null): Status[] {
 }
 
 /** Radarr custom list format: `[{ Id: tmdbId }]` for movies. */
-export function getRadarrList(
+export async function getRadarrList(
   userId: string,
   statuses: Status[] = ["watchlist"],
-): { Id: number }[] {
-  const rows = getRadarrMovies(userId, statuses);
+): Promise<{ Id: number }[]> {
+  const rows = await getRadarrMovies(userId, statuses);
   return rows.map((r) => ({ Id: r.tmdbId }));
 }
 
@@ -52,7 +52,7 @@ export async function getSonarrList(
   const mappedStatuses = [
     ...new Set(statuses.map((s) => (s === "completed" ? "in_progress" : s))),
   ] as Status[];
-  const rows = getSonarrShows(userId, mappedStatuses);
+  const rows = await getSonarrShows(userId, mappedStatuses);
 
   // Resolve missing TVDB IDs in parallel instead of sequentially
   const needsResolution = rows.filter((r) => r.tvdbId == null);
@@ -76,7 +76,7 @@ export async function getSonarrList(
         updates.push({ titleId: row.id, tvdbId });
       }
     }
-    batchUpdateTvdbIds(updates);
+    await batchUpdateTvdbIds(updates);
   }
 
   return rows

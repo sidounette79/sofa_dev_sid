@@ -7,9 +7,9 @@ const log = createLogger("health");
 
 const app = new Hono();
 
-app.get("/", (c) => {
+app.get("/", async (c) => {
   try {
-    return c.json({ status: "healthy", instanceId: getInstanceId() }, 200);
+    return c.json({ status: "healthy", instanceId: await getInstanceId() }, 200);
   } catch (err) {
     log.error("Health check failed:", err);
     return c.json({ status: "unhealthy" }, 503);

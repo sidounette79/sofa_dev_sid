@@ -13,11 +13,11 @@ const log = createLogger("purge");
  * Delete un-enriched "shell" titles that aren't in any user's library,
  * then clean up orphaned person records and their cached images.
  */
-export function purgeMetadataCache(): {
+export async function purgeMetadataCache(): Promise<{
   deletedTitles: number;
   deletedPersons: number;
-} {
-  const result = purgeShellTitlesTransaction();
+}> {
+  const result = await purgeShellTitlesTransaction();
 
   if (result.deletedTitles > 0) {
     log.info(`Purged ${result.deletedTitles} un-enriched titles`);
@@ -31,7 +31,7 @@ export function purgeMetadataCache(): {
 
   // Fire-and-forget cleanup of cached images for deleted titles/persons
   for (const img of result.orphanedImages) {
-    deleteOrphanedImage(img.category, img.path);
+    await deleteOrphanedImage(img.category, img.path);
   }
 
   if (result.orphanedImages.length > 0) {

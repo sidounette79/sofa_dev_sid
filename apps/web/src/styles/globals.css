@@ -52,7 +52,9 @@
   --radius-4xl: calc(var(--radius) + 16px);
   --color-status-watchlist: var(--status-watchlist);
   --color-status-watching: var(--status-watching);
+  --color-status-obtaining: var(--status-obtaining);
   --color-status-completed: var(--status-completed);
+  --color-status-ended: var(--status-ended);
 }
 
 /* Dark cinema — warm charcoal base, amber accent light */
@@ -94,7 +96,17 @@
   --sidebar-ring: oklch(0.8 0.14 65);
   --status-watchlist: oklch(0.72 0.12 220);
   --status-watching: oklch(0.78 0.14 65);
+  /* 26.08, Sid — real bug found live: the "obtaining" title-card badge used
+     to reuse --status-watching for its color, which collides with
+     title-theme.tsx's per-title poster-accent theming (same variable name,
+     completely different purpose — it overwrites this on
+     document.documentElement while a title detail page is mounted). Its own
+     dedicated token now, and Sid liked the accidental dark-blue collision
+     color better than the original orange anyway (#3f5e97), so it's the
+     real intended color now, not just a bug-for-bug workaround. */
+  --status-obtaining: #3f5e97;
   --status-completed: oklch(0.75 0.14 155);
+  --status-ended: oklch(0.7 0.16 300);
 }
 
 @layer base {

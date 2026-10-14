@@ -11,85 +11,76 @@ import {
 
 // ─── Existence checks (deduplication) ────────────────────────────────
 
-export function hasMovieWatch(userId: string, titleId: string): boolean {
-  const existing = db
+export async function hasMovieWatch(userId: string, titleId: string): Promise<boolean> {
+  const [existing] = await db
     .select({ id: userMovieWatches.id })
     .from(userMovieWatches)
-    .where(and(eq(userMovieWatches.userId, userId), eq(userMovieWatches.titleId, titleId)))
-    .get();
+    .where(and(eq(userMovieWatches.userId, userId), eq(userMovieWatches.titleId, titleId)));
   return !!existing;
 }
 
-export function hasEpisodeWatch(userId: string, episodeId: string): boolean {
-  const existing = db
+export async function hasEpisodeWatch(userId: string, episodeId: string): Promise<boolean> {
+  const [existing] = await db
     .select({ id: userEpisodeWatches.id })
     .from(userEpisodeWatches)
-    .where(and(eq(userEpisodeWatches.userId, userId), eq(userEpisodeWatches.episodeId, episodeId)))
-    .get();
+    .where(and(eq(userEpisodeWatches.userId, userId), eq(userEpisodeWatches.episodeId, episodeId)));
   return !!existing;
 }
 
-export function hasTitleStatus(userId: string, titleId: string): boolean {
-  return !!getTitleStatusValue(userId, titleId);
+export async function hasTitleStatus(userId: string, titleId: string): Promise<boolean> {
+  return !!(await getTitleStatusValue(userId, titleId));
 }
 
-export function getTitleStatusValue(
+export async function getTitleStatusValue(
   userId: string,
   titleId: string,
-): "watchlist" | "in_progress" | "completed" | null {
-  const existing = db
+): Promise<"watchlist" | "in_progress" | "completed" | null> {
+  const [existing] = await db
     .select({ status: userTitleStatus.status })
     .from(userTitleStatus)
-    .where(and(eq(userTitleStatus.userId, userId), eq(userTitleStatus.titleId, titleId)))
-    .get();
+    .where(and(eq(userTitleStatus.userId, userId), eq(userTitleStatus.titleId, titleId)));
   return (existing?.status as "watchlist" | "in_progress" | "completed") ?? null;
 }
 
-export function hasRating(userId: string, titleId: string): boolean {
-  const existing = db
+export async function hasRating(userId: string, titleId: string): Promise<boolean> {
+  const [existing] = await db
     .select({ ratingStars: userRatings.ratingStars })
     .from(userRatings)
-    .where(and(eq(userRatings.userId, userId), eq(userRatings.titleId, titleId)))
-    .get();
+    .where(and(eq(userRatings.userId, userId), eq(userRatings.titleId, titleId)));
   return !!existing;
 }
 
 // ─── Import job CRUD ─────────────────────────────────────────────────
 
 export function getImportJob(jobId: string) {
-  return db.select().from(importJobs).where(eq(importJobs.id, jobId)).get();
+  return db.select().from(importJobs).where(eq(importJobs.id, jobId));
 }
 
-export function updateImportJobProgress(
+export async function updateImportJobProgress(
   jobId: string,
   values: Partial<typeof importJobs.$inferInsert>,
-) {
-  db.update(importJobs).set(values).where(eq(importJobs.id, jobId)).run();
+): Promise<void> {
+  await db.update(importJobs).set(values).where(eq(importJobs.id, jobId));
 }
 
 export function getImportJobStatus(jobId: string) {
-  return db
-    .select({ status: importJobs.status })
-    .from(importJobs)
-    .where(eq(importJobs.id, jobId))
-    .get();
+  return db.select({ status: importJobs.status }).from(importJobs).where(eq(importJobs.id, jobId));
 }
 
 export function insertImportJob(values: typeof importJobs.$inferInsert) {
-  return db.insert(importJobs).values(values).returning().get();
+  return db.insert(importJobs).values(values).returning();
 }
 
 export function getActiveImportJobForUser(userId: string) {
   return db
     .select()
     .from(importJobs)
-    .where(and(eq(importJobs.userId, userId), inArray(importJobs.status, ["pending", "running"])))
-    .get();
+    .where(and(eq(importJobs.userId, userId), inArray(importJobs.status, ["pending", "running"])));
 }
 
 /** Mark any running/pending import jobs as errored — called on server startup to recover from crashes. */
-export function recoverStaleImportJobs(): number {
-  return db
+export async function recoverStaleImportJobs(): Promise<number> {
+  const updated = await db
     .update(importJobs)
     .set({
       status: "error",
@@ -97,6 +88,6 @@ export function recoverStaleImportJobs(): number {
       errors: JSON.stringify(["Import interrupted by server restart"]),
     })
     .where(inArray(importJobs.status, ["pending", "running"]))
-    .returning({ id: importJobs.id })
-    .all().length;
+    .returning({ id: importJobs.id });
+  return updated.length;
 }

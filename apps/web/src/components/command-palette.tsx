@@ -6,6 +6,7 @@ import {
   IconKeyboard,
   IconMovie,
   IconSearch,
+  IconServer2,
   IconUser,
   IconX,
 } from "@tabler/icons-react";
@@ -57,7 +58,7 @@ const SHORTCUT_GROUPS = [
   {
     scope: msg`Navigation`,
     shortcuts: [
-      { description: msg`Go to dashboard`, keys: ["g", "h"] },
+      { description: msg`Go to library`, keys: ["g", "h"] },
       { description: msg`Go to explore`, keys: ["g", "e"] },
       { description: msg`Go to upcoming`, keys: ["g", "u"] },
       { description: msg`Go to settings`, keys: ["g", "s"] },
@@ -89,6 +90,8 @@ interface SearchResult {
   voteAverage: number | null;
   knownFor: string[] | null;
   knownForDepartment: string | null;
+  userStatus: "in_watchlist" | "watching" | "caught_up" | "completed" | "dropped" | null;
+  embyStatus: "available" | "removed" | null;
 }
 
 export function CommandPalette() {
@@ -125,7 +128,7 @@ export function CommandPalette() {
   useHotkeySequence(
     ["G", "H"],
     () => {
-      void navigate({ to: "/dashboard" });
+      void navigate({ to: "/library", search: { type: "tv" } });
     },
     { enabled, timeout: 500 },
   );
@@ -182,6 +185,11 @@ export function CommandPalette() {
     [setCommandPaletteOpen, navigate],
   );
 
+  const handleSeeAllResults = useCallback(() => {
+    setCommandPaletteOpen(false);
+    void navigate({ to: "/search", search: { q: trimmedQuery } });
+  }, [setCommandPaletteOpen, navigate, trimmedQuery]);
+
   const handleRecentSearch = useCallback((q: string) => {
     setQuery(q);
   }, []);
@@ -211,7 +219,7 @@ export function CommandPalette() {
           </DialogDescription>
         </DialogHeader>
         <DialogContent
-          className="top-1/3 translate-y-0 overflow-hidden rounded-xl! p-0 sm:max-w-lg"
+          className="top-4 translate-y-0 overflow-hidden rounded-xl! p-0 sm:top-1/3 sm:max-w-lg"
           showCloseButton={false}
         >
           <Command shouldFilter={false}>
@@ -308,10 +316,23 @@ export function CommandPalette() {
                           {r.type === "person" && r.knownFor && r.knownFor.length > 0 && (
                             <span className="truncate">{r.knownFor.join(", ")}</span>
                           )}
+                          {r.type !== "person" && r.embyStatus && (
+                            <span
+                              className={`flex items-center gap-0.5 ${r.embyStatus === "available" ? "text-status-completed" : "text-destructive"}`}
+                            >
+                              <IconServer2 aria-hidden={true} className="size-[11px]" />
+                              {r.embyStatus === "available" ? t`On your server` : t`No longer available`}
+                            </span>
+                          )}
                         </div>
                       </div>
                     </CommandItem>
                   ))}
+                  {(searchData?.totalResults ?? 0) > results.length && (
+                    <CommandItem onSelect={handleSeeAllResults} className="justify-center">
+                      <Trans>See all {searchData?.totalResults} results</Trans>
+                    </CommandItem>
+                  )}
                 </CommandGroup>
               )}
 
@@ -367,11 +388,11 @@ export function CommandPalette() {
                     <CommandItem
                       onSelect={() => {
                         setCommandPaletteOpen(false);
-                        void navigate({ to: "/dashboard" });
+                        void navigate({ to: "/library", search: { type: "tv" } });
                       }}
                     >
                       <IconHome aria-hidden={true} className="size-3.5" />
-                      <Trans>Go to Dashboard</Trans>
+                      <Trans>Go to Library</Trans>
                       <CommandShortcut>G H</CommandShortcut>
                     </CommandItem>
                     <CommandItem

@@ -4,6 +4,7 @@ import {
   IconCheck,
   IconPlayerPlayFilled,
   IconPlus,
+  IconTrash,
   IconX,
 } from "@tabler/icons-react";
 import { AnimatePresence, motion } from "motion/react";
@@ -22,7 +23,7 @@ import {
 
 interface StatusButtonProps {
   currentStatus: string | null;
-  onChange: (status: string | null) => void;
+  onChange: (status: "watchlist" | null) => void;
 }
 
 export function StatusButton({ currentStatus, onChange }: StatusButtonProps) {
@@ -59,6 +60,13 @@ export function StatusButton({ currentStatus, onChange }: StatusButtonProps) {
       label: t`Completed`,
       icon: IconCheck,
       ...completedStyle,
+    },
+    dropped: {
+      label: t`Dropped`,
+      icon: IconTrash,
+      class: "text-destructive",
+      bgClass: "bg-destructive/10 hover:bg-destructive/15",
+      borderClass: "ring-destructive/20",
     },
   } as const;
 

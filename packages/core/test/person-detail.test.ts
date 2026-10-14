@@ -56,8 +56,8 @@ import { fetchFullFilmography, getOrFetchPerson } from "../src/person";
 
 let combinedCreditsCalls = 0;
 
-beforeEach(() => {
-  clearAllTables();
+beforeEach(async () => {
+  await clearAllTables();
   process.env.IMAGE_CACHE_ENABLED = "false";
   combinedCreditsCalls = 0;
   mockGetPersonDetails.mockImplementation(async () => ({ ...defaultPersonDetails }));
@@ -82,40 +82,34 @@ afterEach(() => {
 
 describe("getOrFetchPerson", () => {
   test("backfills a missing profile thumbhash for an already-fetched person", async () => {
-    testDb
-      .insert(persons)
-      .values({
-        id: "p1",
-        tmdbId: 100,
-        name: "Existing Person",
-        profilePath: "/profile.png",
-        profileThumbHash: null,
-        lastFetchedAt: new Date(),
-      })
-      .run();
+    await testDb.insert(persons).values({
+      id: "p1",
+      tmdbId: 100,
+      name: "Existing Person",
+      profilePath: "/profile.png",
+      profileThumbHash: null,
+      lastFetchedAt: new Date(),
+    });
 
     const person = await getOrFetchPerson("p1");
-    const stored = testDb.select().from(persons).where(eq(persons.id, "p1")).get();
+    const [stored] = await testDb.select().from(persons).where(eq(persons.id, "p1"));
 
     expect(person?.profileThumbHash).toBeTypeOf("string");
     expect(stored?.profileThumbHash).toBe(person?.profileThumbHash);
   });
 
   test("replaces a stale profile thumbhash when shell hydration changes the image path", async () => {
-    testDb
-      .insert(persons)
-      .values({
-        id: "p1",
-        tmdbId: 100,
-        name: "Shell Person",
-        profilePath: "/old-profile.png",
-        profileThumbHash: "stale-hash",
-        lastFetchedAt: null,
-      })
-      .run();
+    await testDb.insert(persons).values({
+      id: "p1",
+      tmdbId: 100,
+      name: "Shell Person",
+      profilePath: "/old-profile.png",
+      profileThumbHash: "stale-hash",
+      lastFetchedAt: null,
+    });
 
     const person = await getOrFetchPerson("p1");
-    const stored = testDb.select().from(persons).where(eq(persons.id, "p1")).get();
+    const [stored] = await testDb.select().from(persons).where(eq(persons.id, "p1"));
 
     expect(stored?.profilePath).toBe("/new-profile.png");
     expect(person?.profileThumbHash).toBeTypeOf("string");
@@ -126,24 +120,20 @@ describe("getOrFetchPerson", () => {
 
 describe("fetchFullFilmography", () => {
   test("stores and reuses synced filmography rows from the database", async () => {
-    testDb
-      .insert(persons)
-      .values({
-        id: "p1",
-        tmdbId: 100,
-        name: "Cached Person",
-        lastFetchedAt: new Date(),
-      })
-      .run();
+    await testDb.insert(persons).values({
+      id: "p1",
+      tmdbId: 100,
+      name: "Cached Person",
+      lastFetchedAt: new Date(),
+    });
 
     const first = await fetchFullFilmography("p1");
     const second = await fetchFullFilmography("p1");
-    const storedPerson = testDb.select().from(persons).where(eq(persons.id, "p1")).get();
-    const storedCredits = testDb
+    const [storedPerson] = await testDb.select().from(persons).where(eq(persons.id, "p1"));
+    const storedCredits = await testDb
       .select()
       .from(personFilmography)
-      .where(eq(personFilmography.personId, "p1"))
-      .all();
+      .where(eq(personFilmography.personId, "p1"));
 
     expect(first).toHaveLength(1);
     expect(second).toEqual(first);

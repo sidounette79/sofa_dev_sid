@@ -1,3 +1,4 @@
+import { access, unlink, writeFile } from "node:fs/promises";
 import path from "node:path";
 
 import { ORPCError } from "@orpc/server";
@@ -15,10 +16,9 @@ import {
   purgeImageCache as purgeImagesFn,
   purgeMetadataCache as purgeMetadataFn,
 } from "@sofa/core/cache";
-import { getSetting, setSetting } from "@sofa/core/settings";
+import { getSetting, getSettings, setSetting } from "@sofa/core/settings";
 import { getSystemHealth } from "@sofa/core/system-health";
-import { isTelemetryEnabled } from "@sofa/core/telemetry";
-import { getCachedUpdateCheck, isUpdateCheckEnabled } from "@sofa/core/update-check";
+import { getCachedUpdateCheck } from "@sofa/core/update-check";
 
 import { pauseJobs, rescheduleBackup, resumeJobs, triggerJob as triggerCronJob } from "../../cron";
 import { os } from "../context";
@@ -26,13 +26,16 @@ import { admin } from "../middleware";
 
 // ─── Settings (consolidated) ──────────────────────────────────
 
-export const settingsGet = os.admin.settings.get.use(admin).handler(() => {
-  const updateCheckEnabled = isUpdateCheckEnabled();
-  const check = updateCheckEnabled ? getCachedUpdateCheck() : null;
+export const settingsGet = os.admin.settings.get.use(admin).handler(async () => {
+  // Batch all appSettings lookups for this panel into a single query
+  // instead of one round-trip per key.
+  const settings = await getSettings(["registrationOpen", "updateCheckEnabled"]);
+  const updateCheckEnabled = settings.updateCheckEnabled !== "false";
+  const check = updateCheckEnabled ? await getCachedUpdateCheck() : null;
 
   return {
     registration: {
-      open: getSetting("registrationOpen") === "true",
+      open: settings.registrationOpen === "true",
     },
     updateCheck: {
       enabled: updateCheckEnabled,
@@ -42,22 +45,15 @@ export const settingsGet = os.admin.settings.get.use(admin).handler(() => {
       releaseUrl: check?.releaseUrl ?? null,
       lastCheckedAt: check?.lastCheckedAt ?? null,
     },
-    telemetry: {
-      enabled: isTelemetryEnabled(),
-      lastReportedAt: getSetting("telemetryLastReportedAt") ?? null,
-    },
   };
 });
 
-export const settingsUpdate = os.admin.settings.update.use(admin).handler(({ input }) => {
+export const settingsUpdate = os.admin.settings.update.use(admin).handler(async ({ input }) => {
   if (input.registration) {
-    setSetting("registrationOpen", String(input.registration.open));
+    await setSetting("registrationOpen", String(input.registration.open));
   }
   if (input.updateCheck) {
-    setSetting("updateCheckEnabled", String(input.updateCheck.enabled));
-  }
-  if (input.telemetry) {
-    setSetting("telemetryEnabled", String(input.telemetry.enabled));
+    await setSetting("updateCheckEnabled", String(input.updateCheck.enabled));
   }
 });
 
@@ -83,11 +79,15 @@ export const backupsRestore = os.admin.backups.restore
     const tmpPath = path.join(BACKUP_DIR, `.upload-${Date.now()}-${crypto.randomUUID()}.db`);
     pauseJobs();
     try {
-      await Bun.write(tmpPath, file);
+      await writeFile(tmpPath, Buffer.from(await file.arrayBuffer()));
       await restoreFromBackup(tmpPath);
     } catch (err) {
-      const f = Bun.file(tmpPath);
-      if (await f.exists()) await f.delete();
+      try {
+        await access(tmpPath);
+        await unlink(tmpPath);
+      } catch {
+        // Nothing to clean up
+      }
       if (err instanceof ORPCError) throw err;
       const msg = err instanceof Error ? err.message : String(err);
       throw new ORPCError("BAD_REQUEST", {
@@ -99,28 +99,37 @@ export const backupsRestore = os.admin.backups.restore
     }
   });
 
-export const backupsSchedule = os.admin.backups.schedule.use(admin).handler(() => {
+export const backupsSchedule = os.admin.backups.schedule.use(admin).handler(async () => {
+  const [enabled, maxRetention, frequency, time, dayOfWeek] = await Promise.all([
+    getSetting("scheduledBackups"),
+    getSetting("maxBackupRetention"),
+    getSetting("backupScheduleFrequency"),
+    getSetting("backupScheduleTime"),
+    getSetting("backupScheduleDow"),
+  ]);
   return {
-    enabled: getSetting("scheduledBackups") === "true",
-    maxRetention: Number.parseInt(getSetting("maxBackupRetention") ?? "7", 10),
-    frequency: (getSetting("backupScheduleFrequency") ?? "1d") as "6h" | "12h" | "1d" | "7d",
-    time: getSetting("backupScheduleTime") ?? "02:00",
-    dayOfWeek: Number.parseInt(getSetting("backupScheduleDow") ?? "0", 10),
+    enabled: enabled === "true",
+    maxRetention: Number.parseInt(maxRetention ?? "7", 10),
+    frequency: (frequency ?? "1d") as "6h" | "12h" | "1d" | "7d",
+    time: time ?? "02:00",
+    dayOfWeek: Number.parseInt(dayOfWeek ?? "0", 10),
   };
 });
 
 export const backupsUpdateSchedule = os.admin.backups.updateSchedule
   .use(admin)
-  .handler(({ input }) => {
-    if (input.enabled !== undefined) setSetting("scheduledBackups", String(input.enabled));
-    if (input.frequency !== undefined) setSetting("backupScheduleFrequency", input.frequency);
-    if (input.time !== undefined) setSetting("backupScheduleTime", input.time);
-    if (input.dayOfWeek !== undefined) setSetting("backupScheduleDow", String(input.dayOfWeek));
+  .handler(async ({ input }) => {
+    if (input.enabled !== undefined) await setSetting("scheduledBackups", String(input.enabled));
+    if (input.frequency !== undefined)
+      await setSetting("backupScheduleFrequency", input.frequency);
+    if (input.time !== undefined) await setSetting("backupScheduleTime", input.time);
+    if (input.dayOfWeek !== undefined)
+      await setSetting("backupScheduleDow", String(input.dayOfWeek));
     if (input.maxRetention !== undefined)
-      setSetting("maxBackupRetention", String(input.maxRetention));
+      await setSetting("maxBackupRetention", String(input.maxRetention));
 
     if (input.frequency || input.time || input.dayOfWeek !== undefined) {
-      rescheduleBackup();
+      await rescheduleBackup();
     }
   });
 

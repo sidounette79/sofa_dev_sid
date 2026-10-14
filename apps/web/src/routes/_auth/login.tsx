@@ -10,7 +10,7 @@ export const Route = createFileRoute("/_auth/login")({
 
     return { publicInfo };
   },
-  head: () => ({ meta: [{ title: "Sign in — Sofa" }] }),
+  head: () => ({ meta: [{ title: "Sign in — Patoune TV" }] }),
   component: LoginPage,
 });
 

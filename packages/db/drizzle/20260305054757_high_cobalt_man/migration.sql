@@ -1,1 +1,0 @@
-ALTER TABLE `webhookConnections` DROP COLUMN `mediaServerUsername`;

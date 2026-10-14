@@ -3,7 +3,7 @@ import { IconExternalLink, IconInfoCircle } from "@tabler/icons-react";
 
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
-import { EmbyIcon, JellyfinIcon, PlexIcon, RadarrIcon, SonarrIcon } from "./icons";
+import { EmbyIcon, JellyfinIcon, RadarrIcon, SonarrIcon } from "./icons";
 import type { IntegrationConfig } from "./integration-card";
 import { listStatus, webhookStatus } from "./integration-card";
 
@@ -23,67 +23,6 @@ function RequirementAlert({ children }: { children: React.ReactNode }) {
 
 export const INTEGRATION_CONFIGS: IntegrationConfig[] = [
   // ─── Webhook integrations ───────────────────────────────────────
-  {
-    provider: "plex",
-    label: "Plex",
-    icon: PlexIcon,
-    buildUrl: (token) => `${origin()}/api/webhooks/${token}`,
-    urlLabel: "Webhook URL",
-    connectedStatus: webhookStatus,
-    alert: (
-      <RequirementAlert>
-        <Trans>
-          Requires an active{" "}
-          <a
-            href="https://www.plex.tv/plex-pass/"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-foreground inline-flex items-center gap-0.5 font-medium underline-offset-2 hover:underline"
-          >
-            Plex Pass
-            <IconExternalLink
-              aria-hidden={true}
-              className="inline-block size-3 translate-y-[-1px]"
-            />
-          </a>{" "}
-          subscription.
-        </Trans>
-      </RequirementAlert>
-    ),
-    setupSteps: (
-      <>
-        <li>
-          <Trans>
-            Open Plex, go to{" "}
-            <a
-              href="https://app.plex.tv/desktop/#!/settings/webhooks"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-foreground inline-flex items-center gap-0.5 font-medium underline-offset-2 hover:underline"
-            >
-              Settings &gt; Webhooks
-              <IconExternalLink
-                aria-hidden={true}
-                className="inline-block size-3 translate-y-[-1px]"
-              />
-            </a>
-          </Trans>
-        </li>
-        <li>
-          <Trans>
-            Click <span className="text-foreground font-medium">Add Webhook</span> and paste the URL
-            above
-          </Trans>
-        </li>
-        <li>
-          <Trans>
-            Sofa will automatically log movies and episodes when you finish watching them
-          </Trans>
-        </li>
-      </>
-    ),
-    docsUrl: "https://support.plex.tv/hc/en-us/articles/115002267687-Webhooks/",
-  },
   {
     provider: "jellyfin",
     label: "Jellyfin",
@@ -131,7 +70,7 @@ export const INTEGRATION_CONFIGS: IntegrationConfig[] = [
         </li>
         <li>
           <Trans>
-            Sofa will automatically log movies and episodes when you finish watching them
+            Patoune TV will automatically log movies and episodes when you finish watching them
           </Trans>
         </li>
       </>
@@ -184,7 +123,7 @@ export const INTEGRATION_CONFIGS: IntegrationConfig[] = [
         </li>
         <li>
           <Trans>
-            Sofa will automatically log movies and episodes when you finish watching them
+            Patoune TV will automatically log movies and episodes when you finish watching them
           </Trans>
         </li>
       </>
@@ -222,7 +161,7 @@ export const INTEGRATION_CONFIGS: IntegrationConfig[] = [
         </li>
         <li>
           <Trans>
-            Titles on your Sofa watchlist will be automatically added for download when Sonarr polls
+            Titles on your Patoune TV watchlist will be automatically added for download when Sonarr polls
             this list (every 6 hours by default)
           </Trans>
         </li>
@@ -259,7 +198,7 @@ export const INTEGRATION_CONFIGS: IntegrationConfig[] = [
         </li>
         <li>
           <Trans>
-            Titles on your Sofa watchlist will be automatically added for download when Radarr polls
+            Titles on your Patoune TV watchlist will be automatically added for download when Radarr polls
             this list (every 12 hours by default)
           </Trans>
         </li>

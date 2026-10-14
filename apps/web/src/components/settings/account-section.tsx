@@ -42,7 +42,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { authClient, signOut } from "@/lib/auth/client";
 import { getErrorMessage } from "@/lib/error-messages";
 import { useAppForm } from "@/lib/form";
-import { client, orpc } from "@/lib/orpc/client";
+import { client, orpc, queryClient } from "@/lib/orpc/client";
 import type { NormalizedImport } from "@sofa/api/schemas";
 import { formatDate } from "@sofa/i18n/format";
 
@@ -164,7 +164,7 @@ export function AccountSection({
 
   return (
     <Card className="pb-0">
-      <CardContent className="flex items-center gap-4">
+      <CardContent className="flex flex-wrap items-center gap-4">
         {/* Avatar: click to upload (no avatar) or remove (has avatar) */}
         <Tooltip>
           <TooltipTrigger
@@ -318,6 +318,7 @@ export function AccountSection({
             variant="destructive"
             onClick={async () => {
               await signOut();
+              queryClient.clear();
               void navigate({ to: "/" });
             }}
           >

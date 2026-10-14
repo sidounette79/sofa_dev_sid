@@ -2,13 +2,14 @@ import { Trans, useLingui } from "@lingui/react/macro";
 import {
   IconBooks,
   IconCalendarEvent,
+  IconChartBar,
   IconCompass,
-  IconHome,
+  IconDeviceTv,
   IconLogout,
   IconSearch,
   IconSettings,
 } from "@tabler/icons-react";
-import { Link, useLocation, useNavigate } from "@tanstack/react-router";
+import { Link, useLocation, useNavigate, useSearch } from "@tanstack/react-router";
 import { useSetAtom } from "jotai";
 import { motion } from "motion/react";
 import { useLayoutEffect, useRef, useState } from "react";
@@ -27,6 +28,7 @@ import { Kbd } from "@/components/ui/kbd";
 import { Separator } from "@/components/ui/separator";
 import { commandPaletteOpenAtom } from "@/lib/atoms/command-palette";
 import { signOut } from "@/lib/auth/client";
+import { queryClient } from "@/lib/orpc/client";
 
 /** Horizontal inset (px) of the desktop indicator within each link (Tailwind `inset-x-2`). */
 const DESKTOP_INDICATOR_INSET = 8;
@@ -41,12 +43,16 @@ const springTransition = {
 
 // navLinks and mobileTabs moved inside components for LingUI
 
-function isLinkActive(pathname: string, href: string) {
-  return (
-    pathname === href ||
-    pathname.startsWith(`${href}/`) ||
-    (href === "/dashboard" && pathname === "/")
-  );
+function isLinkActive(
+  pathname: string,
+  href: string,
+  currentType?: string,
+  itemType?: string,
+) {
+  const pathMatches = pathname === href || pathname.startsWith(`${href}/`);
+  if (!pathMatches) return false;
+  if (itemType === undefined) return true;
+  return currentType === itemType;
 }
 
 function measureDesktopIndicator(itemRect: DOMRect, containerRect: DOMRect) {
@@ -119,15 +125,19 @@ export function NavBar({
   const setCommandPaletteOpen = useSetAtom(commandPaletteOpenAtom);
 
   const navLinks = [
-    { href: "/dashboard", label: t`Home` },
-    { href: "/library", label: t`Library` },
-    { href: "/explore", label: t`Explore` },
+    { href: "/library", label: t`TV Shows`, type: "tv" },
+    { href: "/library", label: t`Movies`, type: "movie" },
+    { href: "/explore", label: t`Discover` },
     { href: "/upcoming", label: t`Upcoming` },
+    { href: "/statistics", label: t`Stats` },
   ] as const;
 
   const initial = userName?.charAt(0).toUpperCase() ?? "?";
 
-  const activeIndex = navLinks.findIndex((link) => isLinkActive(pathname, link.href));
+  const currentType = (useSearch({ strict: false }) as { type?: string }).type;
+  const activeIndex = navLinks.findIndex((link) =>
+    isLinkActive(pathname, link.href, currentType, "type" in link ? link.type : undefined),
+  );
   const navRef = useRef<HTMLElement>(null);
   const linkRefs = useRef<(HTMLAnchorElement | null)[]>([]);
   const { value: indicator, instant: desktopInstant } = useActiveIndicator(
@@ -142,7 +152,8 @@ export function NavBar({
       <div className="mx-auto flex h-14 max-w-6xl items-center justify-between gap-5 pr-[max(1rem,env(safe-area-inset-right))] pl-[max(1rem,env(safe-area-inset-left))] sm:gap-0 sm:pr-[max(1.5rem,env(safe-area-inset-right))] sm:pl-[max(1.5rem,env(safe-area-inset-left))]">
         <div className="flex items-center gap-3 sm:gap-6">
           <Link
-            to="/dashboard"
+            to="/library"
+            search={{ type: "tv" }}
             className="text-foreground hover:text-primary shrink-0 transition-colors"
           >
             <SofaLogo className="size-7" />
@@ -153,14 +164,16 @@ export function NavBar({
             className="relative hidden items-center gap-1 sm:flex"
           >
             {navLinks.map((link, i) => {
-              const isActive = isLinkActive(pathname, link.href);
+              const linkType = "type" in link ? link.type : undefined;
+              const isActive = isLinkActive(pathname, link.href, currentType, linkType);
               return (
                 <Link
-                  key={link.href}
+                  key={`${link.href}-${linkType ?? "none"}`}
                   ref={(el) => {
                     linkRefs.current[i] = el;
                   }}
                   to={link.href}
+                  search={linkType ? { type: linkType } : undefined}
                   aria-current={isActive ? "page" : undefined}
                   className="text-muted-foreground hover:text-foreground focus-visible:text-foreground focus-visible:ring-primary/40 relative inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm transition-colors focus-visible:ring-2 focus-visible:outline-none"
                 >
@@ -247,8 +260,9 @@ export function NavBar({
               <DropdownMenuSeparator />
               <DropdownMenuItem
                 variant="destructive"
-                onSelect={async () => {
+                onClick={async () => {
                   await signOut();
+                  queryClient.clear();
                   void navigate({ to: "/" });
                 }}
                 className="cursor-pointer text-[13px]"
@@ -282,14 +296,18 @@ export function MobileTabBar() {
   const { pathname } = useLocation();
 
   const mobileTabs = [
-    { href: "/dashboard", label: t`Home`, icon: IconHome },
-    { href: "/library", label: t`Library`, icon: IconBooks },
-    { href: "/explore", label: t`Explore`, icon: IconCompass },
+    { href: "/library", label: t`TV Shows`, icon: IconDeviceTv, type: "tv" },
+    { href: "/library", label: t`Movies`, icon: IconBooks, type: "movie" },
+    { href: "/explore", label: t`Discover`, icon: IconCompass },
     { href: "/upcoming", label: t`Upcoming`, icon: IconCalendarEvent },
+    { href: "/statistics", label: t`Stats`, icon: IconChartBar },
     { href: "/settings", label: t`Settings`, icon: IconSettings },
   ] as const;
 
-  const activeIndex = mobileTabs.findIndex((tab) => isLinkActive(pathname, tab.href));
+  const currentType = (useSearch({ strict: false }) as { type?: string }).type;
+  const activeIndex = mobileTabs.findIndex((tab) =>
+    isLinkActive(pathname, tab.href, currentType, "type" in tab ? tab.type : undefined),
+  );
   const containerRef = useRef<HTMLDivElement>(null);
   const tabRefs = useRef<(HTMLAnchorElement | null)[]>([]);
   const { value: indicatorLeft, instant: mobileInstant } = useActiveIndicator(
@@ -307,14 +325,16 @@ export function MobileTabBar() {
       <div ref={containerRef} className="relative flex h-14 items-stretch">
         {mobileTabs.map((tab, i) => {
           const Icon = tab.icon;
-          const isActive = isLinkActive(pathname, tab.href);
+          const tabType = "type" in tab ? tab.type : undefined;
+          const isActive = isLinkActive(pathname, tab.href, currentType, tabType);
           return (
             <Link
-              key={tab.href}
+              key={`${tab.href}-${tabType ?? "none"}`}
               ref={(el) => {
                 tabRefs.current[i] = el;
               }}
               to={tab.href}
+              search={tabType ? { type: tabType } : undefined}
               aria-current={isActive ? "page" : undefined}
               className="focus-visible:text-foreground relative flex flex-1 flex-col items-center justify-center gap-0.5 focus-visible:outline-none"
             >

@@ -33,7 +33,7 @@ interface PersonData {
   popularity?: number;
 }
 
-function batchUpsertPersons(people: PersonData[]): Map<number, string> {
+async function batchUpsertPersons(people: PersonData[]): Promise<Map<number, string>> {
   if (people.length === 0) return new Map();
 
   // Deduplicate by tmdbId
@@ -45,10 +45,10 @@ function batchUpsertPersons(people: PersonData[]): Map<number, string> {
   const tmdbIds = uniquePeople.map((p) => p.tmdbId);
 
   // Batch prefetch existing persons (1 query)
-  const existing = getExistingPersonsByTmdbIds(tmdbIds);
+  const existing = await getExistingPersonsByTmdbIds(tmdbIds);
   const existingMap = new Map(existing.map((p) => [p.tmdbId, p]));
 
-  const idMap = batchUpsertPersonsTransaction(uniquePeople, existingMap);
+  const idMap = await batchUpsertPersonsTransaction(uniquePeople, existingMap);
 
   // Clean up orphaned profile images when paths change
   for (const p of uniquePeople) {
@@ -61,7 +61,7 @@ function batchUpsertPersons(people: PersonData[]): Map<number, string> {
   // One fallback query for any concurrent inserts that conflicted
   const stillMissing = uniquePeople.filter((p) => !idMap.has(p.tmdbId)).map((p) => p.tmdbId);
   if (stillMissing.length > 0) {
-    const fallbacks = getFallbackPersonsByTmdbIds(stillMissing);
+    const fallbacks = await getFallbackPersonsByTmdbIds(stillMissing);
     for (const f of fallbacks) idMap.set(f.tmdbId, f.id);
   }
 
@@ -77,7 +77,7 @@ export async function syncCastProfileThumbHashes(
     await cacheProfilePhotos(titleId);
   }
 
-  const personRows = getPersonsForTitleCast(titleId);
+  const personRows = await getPersonsForTitleCast(titleId);
 
   const allowedIds = personIds ? new Set(personIds) : null;
   const uniqueRows = new Map(personRows.map((p) => [p.id, p]));
@@ -90,7 +90,7 @@ export async function syncCastProfileThumbHashes(
 }
 
 export async function refreshCredits(titleId: string) {
-  const title = getTitleById(titleId);
+  const [title] = await getTitleById(titleId);
   if (!title) return;
 
   log.debug(`Refreshing credits for "${title.title}" (${title.type})`);
@@ -128,7 +128,7 @@ export async function refreshCredits(titleId: string) {
           popularity: c.popularity,
         })),
       ];
-      personIds = batchUpsertPersons(allPeople);
+      personIds = await batchUpsertPersons(allPeople);
 
       // Collect all titleCast rows (cast + crew) and batch insert
       const now = new Date();
@@ -164,7 +164,7 @@ export async function refreshCredits(titleId: string) {
         });
         crewOrder++;
       }
-      batchUpsertTitleCast(allCastRows);
+      await batchUpsertTitleCast(allCastRows);
     } else {
       const credits = await getTvAggregateCredits(title.tmdbId);
       const tvCast = credits.cast ?? [];
@@ -207,7 +207,7 @@ export async function refreshCredits(titleId: string) {
           popularity: c.person.popularity,
         })),
       ];
-      personIds = batchUpsertPersons(allPeople);
+      personIds = await batchUpsertPersons(allPeople);
 
       // Collect all titleCast rows (cast + crew) and batch insert
       const now = new Date();
@@ -244,7 +244,7 @@ export async function refreshCredits(titleId: string) {
         });
         crewOrder++;
       }
-      batchUpsertTitleCast(allCastRows);
+      await batchUpsertTitleCast(allCastRows);
     }
 
     log.debug(`Credits refreshed for "${title.title}"`);
@@ -257,8 +257,8 @@ export async function refreshCredits(titleId: string) {
   }
 }
 
-export function getCastForTitle(titleId: string): CastMember[] {
-  const rows = getCastForTitleJoined(titleId);
+export async function getCastForTitle(titleId: string): Promise<CastMember[]> {
+  const rows = await getCastForTitleJoined(titleId);
 
   return rows.map((r) =>
     Object.assign(r, { profilePath: tmdbImageUrl(r.profilePath, "profiles") }),

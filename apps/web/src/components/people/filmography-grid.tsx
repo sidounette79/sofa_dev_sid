@@ -126,6 +126,8 @@ export function FilmographyGrid({ credits, userStatuses }: FilmographyGridProps)
               releaseDate={credit.releaseDate ?? credit.firstAirDate}
               voteAverage={credit.voteAverage}
               userStatus={userStatuses?.[credit.titleId]}
+              embyStatus={credit.embyStatus}
+              requestedAt={credit.requestedAt}
             />
           </div>
         ))}

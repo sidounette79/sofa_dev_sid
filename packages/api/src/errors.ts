@@ -15,6 +15,8 @@ export const AppErrorCode = {
   IMPORT_CANNOT_CANCEL: "IMPORT_CANNOT_CANCEL",
   REGISTRATION_CLOSED: "REGISTRATION_CLOSED",
   EXPORT_FAILED: "EXPORT_FAILED",
+  PLAYBACK_DEVICE_ERROR: "PLAYBACK_DEVICE_ERROR",
+  NO_TVDB_ID: "NO_TVDB_ID",
 } as const;
 
 export type AppErrorCode = (typeof AppErrorCode)[keyof typeof AppErrorCode];

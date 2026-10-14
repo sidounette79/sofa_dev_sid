@@ -1,6 +1,12 @@
 import { plural } from "@lingui/core/macro";
 import { useLingui } from "@lingui/react/macro";
-import { IconChevronDown, IconFilter, IconSearch, IconSortDescending } from "@tabler/icons-react";
+import {
+  IconChevronDown,
+  IconFilter,
+  IconSearch,
+  IconSortAscending,
+  IconSortDescending,
+} from "@tabler/icons-react";
 import { useMemo, useState } from "react";
 
 import { LibraryFilters, type LibraryFiltersProps } from "@/components/library/library-filters";
@@ -43,18 +49,27 @@ export function LibraryToolbar({
   const { t } = useLingui();
   const [filtersOpen, setFiltersOpen] = useState(false);
 
-  const sortOptions = useMemo(
+  const sortCategories = useMemo(
     () => [
-      { label: t`Date Added`, sortBy: "added_at", direction: "desc" },
-      { label: t`Title A-Z`, sortBy: "title", direction: "asc" },
-      { label: t`Title Z-A`, sortBy: "title", direction: "desc" },
-      { label: t`Release Date`, sortBy: "release_date", direction: "desc" },
-      { label: t`User Rating`, sortBy: "user_rating", direction: "desc" },
-      { label: t`TMDB Rating`, sortBy: "vote_average", direction: "desc" },
-      { label: t`Popularity`, sortBy: "popularity", direction: "desc" },
+      { label: t`Date Added`, value: "added_at", defaultDirection: "desc" },
+      { label: t`Title`, value: "title", defaultDirection: "asc" },
+      { label: t`Release Date`, value: "release_date", defaultDirection: "desc" },
+      { label: t`Next Air Date`, value: "next_air_date", defaultDirection: "asc" },
+      { label: t`Last Watched`, value: "last_watched", defaultDirection: "desc" },
+      { label: t`User Rating`, value: "user_rating", defaultDirection: "desc" },
+      { label: t`TMDB Rating`, value: "vote_average", defaultDirection: "desc" },
+      { label: t`Popularity`, value: "popularity", defaultDirection: "desc" },
     ],
     [t],
   );
+
+  function handleCategoryClick(category: string, defaultDirection: string) {
+    onSortChange(category, sortBy === category ? sortDirection : defaultDirection);
+  }
+
+  function toggleDirection() {
+    onSortChange(sortBy, sortDirection === "asc" ? "desc" : "asc");
+  }
 
   return (
     <Collapsible open={filtersOpen} onOpenChange={setFiltersOpen}>
@@ -103,27 +118,41 @@ export function LibraryToolbar({
               render={
                 <Button variant="outline">
                   <IconSortDescending aria-hidden={true} className="size-3.5" />
-                  {t`Sort`}
+                  {sortCategories.find((c) => c.value === sortBy)?.label ?? t`Sort`}
                 </Button>
               }
             />
             <DropdownMenuContent align="end">
-              {sortOptions.map((option) => {
-                const isActive = sortBy === option.sortBy && sortDirection === option.direction;
+              {sortCategories.map((category) => {
+                const isActive = sortBy === category.value;
                 return (
                   <DropdownMenuItem
-                    key={`${option.sortBy}-${option.direction}`}
+                    key={category.value}
                     className="cursor-pointer"
-                    onClick={() => onSortChange(option.sortBy, option.direction)}
+                    onClick={() => handleCategoryClick(category.value, category.defaultDirection)}
                   >
                     <span className={isActive ? "text-primary font-medium" : ""}>
-                      {option.label}
+                      {category.label}
                     </span>
                   </DropdownMenuItem>
                 );
               })}
             </DropdownMenuContent>
           </DropdownMenu>
+
+          {/* Direction toggle */}
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={toggleDirection}
+            aria-label={sortDirection === "asc" ? t`Ascending` : t`Descending`}
+          >
+            {sortDirection === "asc" ? (
+              <IconSortAscending aria-hidden={true} className="size-3.5" />
+            ) : (
+              <IconSortDescending aria-hidden={true} className="size-3.5" />
+            )}
+          </Button>
         </div>
       </div>
 

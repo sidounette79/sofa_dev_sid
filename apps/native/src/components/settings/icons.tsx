@@ -1,18 +1,6 @@
 import type { SvgProps } from "react-native-svg";
 import Svg, { Path } from "react-native-svg";
 
-export function PlexIcon(props: SvgProps) {
-  return (
-    <Svg width={24} height={24} viewBox="0 0 32 32" {...props}>
-      {/* Icon from CoreUI Brands by creativeLabs Łukasz Holeczek - https://creativecommons.org/publicdomain/zero/1.0/ */}
-      <Path
-        fill={props.color ?? "currentColor"}
-        d="M15.527 0H6.24l10.239 16L6.24 32h9.287L25.76 16z"
-      />
-    </Svg>
-  );
-}
-
 export function JellyfinIcon(props: SvgProps) {
   return (
     <Svg width={24} height={24} viewBox="0 0 24 24" {...props}>

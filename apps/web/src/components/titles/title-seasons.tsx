@@ -4,7 +4,10 @@ import {
   IconChecks,
   IconChevronDown,
   IconChevronUp,
+  IconDeviceTv,
   IconDeviceTvOld,
+  IconSortAscending,
+  IconSortDescending,
 } from "@tabler/icons-react";
 import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useMemo, useState } from "react";
@@ -26,8 +29,26 @@ import { Skeleton } from "@/components/ui/skeleton";
 import type { Season } from "@sofa/api/schemas";
 import { formatShortDate } from "@sofa/i18n/format";
 
+import { PlayOnDialog } from "./play-on-dialog";
 import { useTitleContext, useTitleUserInfo } from "./title-context";
 import { useTitleActions } from "./use-title-actions";
+
+// 26.08, Sid — real bug found live: TMDB's season "name" field is
+// frequently just "Season 1"/"Season 2" in English even when the rest of
+// the title's metadata is correctly localized to French — TMDB doesn't
+// always translate season names. Trusting it blindly left English text
+// stranded in an otherwise-French page. request-dialog.tsx already
+// translates its own fallback (never hits this since it only uses the
+// fallback when name is absent) — this detects the generic English name
+// TMDB itself sent and swaps it for the translated fallback too.
+const GENERIC_ENGLISH_SEASON_NAME = /^season\s+\d+$/i;
+function isGenericEnglishSeasonName(
+  name: string | null | undefined,
+  seasonNumber: number,
+): boolean {
+  if (!name) return true;
+  return GENERIC_ENGLISH_SEASON_NAME.test(name) && name.trim() === `Season ${seasonNumber}`;
+}
 
 export function SeasonsSkeleton() {
   return (
@@ -61,7 +82,7 @@ export function TitleSeasons({
 } = {}) {
   const { t } = useLingui();
   const { seasons, setSeasons, watchingEp } = useTitleContext();
-  const { episodeWatches, userStatus } = useTitleUserInfo();
+  const { episodeWatches, rewatchedEpisodeIds, userStatus } = useTitleUserInfo();
 
   // When seasons are streamed via Suspense, sync them into context
   useEffect(() => {
@@ -71,6 +92,7 @@ export function TitleSeasons({
   }, [streamedSeasons, setSeasons]);
 
   const watchedSet = useMemo(() => new Set(episodeWatches), [episodeWatches]);
+  const rewatchedSet = useMemo(() => new Set(rewatchedEpisodeIds), [rewatchedEpisodeIds]);
   const { handleWatchEpisode, handleMarkSeason, handleUnmarkSeason, handleMarkAllWatched } =
     useTitleActions();
   const seasonProgress = useMemo(() => {
@@ -86,7 +108,25 @@ export function TitleSeasons({
   }, [seasons, watchedSet]);
 
   const [openSeason, setOpenSeason] = useState<number | null>(null);
+  const [expandedEpisodes, setExpandedEpisodes] = useState<Set<string>>(new Set());
+  const toggleEpisodeExpanded = (episodeId: string) => {
+    setExpandedEpisodes((prev) => {
+      const next = new Set(prev);
+      if (next.has(episodeId)) next.delete(episodeId);
+      else next.add(episodeId);
+      return next;
+    });
+  };
   const [markAllOpen, setMarkAllOpen] = useState(false);
+  // 01.09, Sid — "Lire sur..." per episode: a single dialog instance
+  // (rather than one per episode row) keyed to whichever episode's button
+  // was last clicked.
+  const [playOnEpisodeId, setPlayOnEpisodeId] = useState<string | null>(null);
+  const [seasonOrder, setSeasonOrder] = useState<"asc" | "desc">("asc");
+  const orderedSeasons = useMemo(
+    () => (seasonOrder === "asc" ? seasons : [...seasons].reverse()),
+    [seasons, seasonOrder],
+  );
 
   return (
     <div className="space-y-3">
@@ -97,6 +137,20 @@ export function TitleSeasons({
             <Trans>Episodes</Trans>
           </h2>
         </div>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="ghost"
+            size="xs"
+            onClick={() => setSeasonOrder(seasonOrder === "asc" ? "desc" : "asc")}
+            aria-label={seasonOrder === "asc" ? t`First season first` : t`Last season first`}
+            className="text-muted-foreground"
+          >
+            {seasonOrder === "asc" ? (
+              <IconSortAscending aria-hidden={true} className="size-3.5" />
+            ) : (
+              <IconSortDescending aria-hidden={true} className="size-3.5" />
+            )}
+          </Button>
         {userStatus !== "completed" && (
           <AlertDialog open={markAllOpen} onOpenChange={setMarkAllOpen}>
             <AlertDialogTrigger
@@ -139,9 +193,10 @@ export function TitleSeasons({
             </AlertDialogContent>
           </AlertDialog>
         )}
+        </div>
       </div>
       <div className="space-y-2">
-        {seasons.map((season) => {
+        {orderedSeasons.map((season) => {
           const isOpen = openSeason === season.seasonNumber;
           const watchedCount = seasonProgress.get(season.id) ?? 0;
           const totalCount = season.episodes.length;
@@ -159,12 +214,20 @@ export function TitleSeasons({
               >
                 <div className="flex items-center gap-3">
                   <span className="font-medium">
-                    {season.name ?? `Season ${season.seasonNumber}`}
+                    {isGenericEnglishSeasonName(season.name, season.seasonNumber)
+                      ? t`Season ${season.seasonNumber}`
+                      : season.name}
                   </span>
                 </div>
                 <div className="flex items-center gap-3">
+                  {/* Real bug found live (24.08, Sid): the per-season "Watch
+                      all" button used to only appear on :hover of the season
+                      row on desktop — invisible/undiscoverable in practice,
+                      she only ever saw the whole-series button. Always show
+                      the progress bar and the action button side by side
+                      instead of swapping one for the other on hover. */}
                   {totalCount > 0 && (
-                    <div className="hidden w-24 sm:block sm:group-hover/season:hidden">
+                    <div className="hidden w-16 sm:block">
                       <Progress value={progressPercent} />
                     </div>
                   )}
@@ -176,7 +239,7 @@ export function TitleSeasons({
                         e.stopPropagation();
                         handleMarkSeason(season);
                       }}
-                      className="text-primary hover:bg-primary/10 hover:text-primary tracking-wider uppercase sm:hidden sm:w-24 sm:group-hover/season:block"
+                      className="text-primary hover:bg-primary/10 hover:text-primary tracking-wider uppercase"
                     >
                       <IconChecks aria-hidden={true} className="size-3.5 sm:hidden" />
                       <span className="hidden sm:inline">
@@ -192,7 +255,7 @@ export function TitleSeasons({
                         e.stopPropagation();
                         handleUnmarkSeason(season);
                       }}
-                      className="text-muted-foreground hover:bg-destructive/10 hover:text-destructive tracking-wider uppercase sm:hidden sm:w-24 sm:group-hover/season:block"
+                      className="text-muted-foreground hover:bg-destructive/10 hover:text-destructive tracking-wider uppercase"
                     >
                       <IconChecks aria-hidden={true} className="size-3.5 sm:hidden" />
                       <span className="hidden sm:inline">
@@ -228,8 +291,10 @@ export function TitleSeasons({
                   >
                     {season.episodes.map((ep) => {
                       const isWatched = watchedSet.has(ep.id);
+                      const isRewatched = rewatchedSet.has(ep.id);
                       const { stillPath } = ep;
                       const epNum = ep.episodeNumber;
+                      const isExpanded = expandedEpisodes.has(ep.id);
                       return (
                         <div
                           key={ep.id}
@@ -272,9 +337,12 @@ export function TitleSeasons({
                               disabled={watchingEp === ep.id}
                               className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-md border-2 transition-all ${
                                 isWatched
-                                  ? "border-primary bg-primary text-primary-foreground"
+                                  ? isRewatched
+                                    ? "border-status-ended bg-status-ended text-primary-foreground"
+                                    : "border-primary bg-primary text-primary-foreground"
                                   : "border-muted-foreground/40 bg-muted-foreground/5 hover:border-primary/70 hover:bg-primary/10"
                               }`}
+                              title={isRewatched ? t`Watched more than once` : undefined}
                             >
                               {isWatched && (
                                 <motion.div
@@ -304,7 +372,11 @@ export function TitleSeasons({
                                 />
                               </div>
                             )}
-                            <div className="min-w-0 flex-1">
+                            <button
+                              type="button"
+                              onClick={() => ep.overview && toggleEpisodeExpanded(ep.id)}
+                              className={`min-w-0 flex-1 text-start ${ep.overview ? "cursor-pointer" : "cursor-default"}`}
+                            >
                               <p className="text-sm">
                                 {/* Episode number shown inline on desktop, or mobile without still */}
                                 <span
@@ -323,11 +395,21 @@ export function TitleSeasons({
                                 {ep.runtimeMinutes ? `${ep.runtimeMinutes}m` : ""}
                               </p>
                               {ep.overview && (
-                                <p className="text-muted-foreground/70 mt-1 line-clamp-2 text-xs leading-relaxed">
+                                <p
+                                  className={`text-muted-foreground/70 mt-1 text-xs leading-relaxed ${isExpanded ? "" : "line-clamp-2"}`}
+                                >
                                   {ep.overview}
                                 </p>
                               )}
-                            </div>
+                            </button>
+                            <button
+                              type="button"
+                              aria-label={t`Play episode ${epNum} on...`}
+                              onClick={() => setPlayOnEpisodeId(ep.id)}
+                              className="text-muted-foreground hover:text-primary mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-md transition-colors"
+                            >
+                              <IconDeviceTv className="size-4" />
+                            </button>
                           </div>
                         </div>
                       );
@@ -339,6 +421,13 @@ export function TitleSeasons({
           );
         })}
       </div>
+      {playOnEpisodeId && (
+        <PlayOnDialog
+          open={playOnEpisodeId !== null}
+          onOpenChange={(open) => !open && setPlayOnEpisodeId(null)}
+          target={{ episodeId: playOnEpisodeId }}
+        />
+      )}
     </div>
   );
 }

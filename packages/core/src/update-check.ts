@@ -18,10 +18,15 @@ export interface UpdateCheckResult {
   lastCheckedAt: string | null;
 }
 
-export function isUpdateCheckEnabled(): boolean {
-  const setting = getSetting("updateCheckEnabled");
-  // Default to true when no setting exists
-  return setting !== "false";
+export async function isUpdateCheckEnabled(): Promise<boolean> {
+  const setting = await getSetting("updateCheckEnabled");
+  // 08.10, Patoune TV: defaults to OFF (was "on" in upstream Sofa) — this
+  // calls out to public-api.sofa.watch, a third-party service run for
+  // Sofa's own public releases. Patoune TV is a private fork with no
+  // releases there, so the periodic check (every 6h, see cron.ts) would
+  // just be pinging someone else's service for nothing. Still toggleable
+  // in admin settings in case that ever changes.
+  return setting === "true";
 }
 
 /** @internal Returns true if `latest` is strictly newer than `current` using semver comparison. */
@@ -34,10 +39,12 @@ export function isNewerVersion(latest: string, current: string): boolean {
   return lPatch > cPatch;
 }
 
-export function getCachedUpdateCheck(): UpdateCheckResult {
-  const latestVersion = getSetting("updateCheckLatestVersion");
-  const releaseUrl = getSetting("updateCheckReleaseUrl");
-  const lastCheckedAt = getSetting("updateCheckLastCheckedAt");
+export async function getCachedUpdateCheck(): Promise<UpdateCheckResult> {
+  const [latestVersion, releaseUrl, lastCheckedAt] = await Promise.all([
+    getSetting("updateCheckLatestVersion"),
+    getSetting("updateCheckReleaseUrl"),
+    getSetting("updateCheckLastCheckedAt"),
+  ]);
 
   return {
     updateAvailable: latestVersion ? isNewerVersion(latestVersion, APP_VERSION) : false,
@@ -49,7 +56,7 @@ export function getCachedUpdateCheck(): UpdateCheckResult {
 }
 
 export async function performUpdateCheck(): Promise<UpdateCheckResult> {
-  if (!isUpdateCheckEnabled()) {
+  if (!(await isUpdateCheckEnabled())) {
     return {
       updateAvailable: false,
       currentVersion: APP_VERSION,
@@ -60,7 +67,7 @@ export async function performUpdateCheck(): Promise<UpdateCheckResult> {
   }
 
   // Respect cache interval
-  const lastChecked = getSetting("updateCheckLastCheckedAt");
+  const lastChecked = await getSetting("updateCheckLastCheckedAt");
   if (lastChecked) {
     const elapsed = Date.now() - new Date(lastChecked).getTime();
     if (elapsed < CHECK_INTERVAL_MS) {
@@ -78,9 +85,11 @@ export async function performUpdateCheck(): Promise<UpdateCheckResult> {
     const data = (await res.json()) as { version: string; release_url: string };
     const version = data.version;
 
-    setSetting("updateCheckLatestVersion", version);
-    setSetting("updateCheckReleaseUrl", data.release_url);
-    setSetting("updateCheckLastCheckedAt", new Date().toISOString());
+    await Promise.all([
+      setSetting("updateCheckLatestVersion", version),
+      setSetting("updateCheckReleaseUrl", data.release_url),
+      setSetting("updateCheckLastCheckedAt", new Date().toISOString()),
+    ]);
 
     log.info(`Update check complete: current=${APP_VERSION}, latest=${version}`);
 

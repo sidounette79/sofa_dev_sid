@@ -20,24 +20,23 @@ vi.mock("@sofa/tmdb/client", () => ({
 
 import { refreshAvailability } from "../src/availability";
 
-beforeEach(() => {
-  clearAllTables();
+beforeEach(async () => {
+  await clearAllTables();
   getWatchProviders.mockImplementation(async () => ({ results: {} }));
 });
 
 describe("refreshAvailability", () => {
   test("clears stale US offers when TMDB returns no US availability", async () => {
-    insertTitle({ id: "movie-1", tmdbId: 101, type: "movie", title: "Movie" });
-    const platformId = insertPlatform({ id: "p-1", tmdbProviderId: 8 });
-    insertTitleAvailability("movie-1", platformId);
+    await insertTitle({ id: "movie-1", tmdbId: 101, type: "movie", title: "Movie" });
+    const platformId = await insertPlatform({ id: "p-1", tmdbProviderId: 8 });
+    await insertTitleAvailability("movie-1", platformId);
 
     await refreshAvailability("movie-1");
 
-    const offers = testDb
+    const offers = await testDb
       .select()
       .from(titleAvailability)
-      .where(eq(titleAvailability.titleId, "movie-1"))
-      .all();
+      .where(eq(titleAvailability.titleId, "movie-1"));
 
     expect(offers).toHaveLength(0);
   });

@@ -15,6 +15,8 @@ import type { ComponentType, ReactNode } from "react";
 import { useState } from "react";
 import { toast } from "sonner";
 
+import { EmbyLibrarySelector } from "./emby-library-selector";
+import { PlaybackDeviceSelector } from "./playback-device-selector";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardTitle } from "@/components/ui/card";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -37,6 +39,7 @@ export interface IntegrationConnection {
   provider: string;
   type: "webhook" | "list";
   token: string;
+  embyUsername: string | null;
   enabled: boolean;
   lastEventAt: string | null;
   recentEvents: {
@@ -80,7 +83,7 @@ export function IntegrationCard({
 }) {
   const { t } = useLingui();
   const { provider, label } = config;
-  const providerInput = provider as "plex" | "jellyfin" | "emby" | "sonarr" | "radarr";
+  const providerInput = provider as "jellyfin" | "emby" | "sonarr" | "radarr";
 
   const connectMutation = useMutation(
     orpc.account.integrations.create.mutationOptions({
@@ -124,6 +127,21 @@ export function IntegrationCard({
   const [copied, setCopied] = useState(false);
   const [cardOpen, setCardOpen] = useState(false);
   const [setupOpen, setSetupOpen] = useState(false);
+  const [embyUsername, setEmbyUsername] = useState(connection?.embyUsername ?? "");
+
+  const updateEmbyUsernameMutation = useMutation(
+    orpc.account.integrations.updateEmbyUsername.mutationOptions({
+      onSuccess: (result) => {
+        setConnections((prev) =>
+          prev.map((c) =>
+            c.provider === provider ? { ...c, embyUsername: result.embyUsername } : c,
+          ),
+        );
+        toast.success(t`Emby username saved`);
+      },
+      onError: () => toast.error(t`Failed to save Emby username`),
+    }),
+  );
 
   const Icon = config.icon;
   const connecting = connectMutation.isPending;
@@ -211,6 +229,42 @@ export function IntegrationCard({
                         </InputGroupAddon>
                       </InputGroup>
                     </div>
+
+                    {provider === "emby" && (
+                      <div>
+                        <Label
+                          htmlFor="emby-username"
+                          className="text-muted-foreground mb-1"
+                        >
+                          <Trans>Emby username (for Now Playing)</Trans>
+                        </Label>
+                        <InputGroup>
+                          <InputGroupInput
+                            id="emby-username"
+                            placeholder={t`e.g. sidounette`}
+                            value={embyUsername}
+                            onChange={(e) => setEmbyUsername(e.target.value)}
+                          />
+                          <InputGroupAddon align="inline-end">
+                            <InputGroupButton
+                              size="icon-xs"
+                              disabled={updateEmbyUsernameMutation.isPending}
+                              onClick={() =>
+                                updateEmbyUsernameMutation.mutate({
+                                  provider: "emby",
+                                  embyUsername: embyUsername.trim() || null,
+                                })
+                              }
+                            >
+                              <IconCheck />
+                            </InputGroupButton>
+                          </InputGroupAddon>
+                        </InputGroup>
+                      </div>
+                    )}
+
+                    {provider === "emby" && <EmbyLibrarySelector />}
+                    {provider === "emby" && <PlaybackDeviceSelector />}
 
                     <div className="flex items-center gap-2">
                       <Button

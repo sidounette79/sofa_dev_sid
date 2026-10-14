@@ -11,7 +11,6 @@ import {
 import {
   parseEmbyPayload,
   parseJellyfinPayload,
-  parsePlexPayload,
   processWebhook,
   toOptionalInt,
   type WebhookEvent,
@@ -45,20 +44,14 @@ vi.mock("@sofa/tmdb/client", () => ({
   getTvDetails: mockGetTvDetails,
 }));
 
-beforeEach(() => {
-  clearAllTables();
+beforeEach(async () => {
+  await clearAllTables();
   mockResolveMovieTmdbId.mockReset().mockResolvedValue(null);
   mockResolveShowTmdbId.mockReset().mockResolvedValue(null);
   mockGetOrFetchTitleByTmdbId.mockReset().mockResolvedValue(null);
   mockRefreshTvChildren.mockReset();
   mockGetTvDetails.mockReset().mockResolvedValue({ number_of_seasons: 1 });
 });
-
-function makePlexForm(payload: Record<string, unknown>): FormData {
-  const form = new FormData();
-  form.set("payload", JSON.stringify(payload));
-  return form;
-}
 
 // ─── toOptionalInt ──────────────────────────────────────────────────
 
@@ -86,130 +79,6 @@ describe("toOptionalInt", () => {
   test("returns undefined for null/undefined", () => {
     expect(toOptionalInt(null)).toBeUndefined();
     expect(toOptionalInt(undefined)).toBeUndefined();
-  });
-});
-
-// ─── parsePlexPayload ───────────────────────────────────────────────
-
-describe("parsePlexPayload", () => {
-  test("parses a movie scrobble event", () => {
-    const result = parsePlexPayload(
-      makePlexForm({
-        event: "media.scrobble",
-        Metadata: {
-          type: "movie",
-          title: "Inception",
-          Guid: [{ id: "tmdb://27205" }, { id: "imdb://tt1375666" }],
-        },
-      }),
-    );
-    expect(result).toEqual({
-      provider: "plex",
-      mediaType: "movie",
-      title: "Inception",
-      tmdbId: 27205,
-      imdbId: "tt1375666",
-      tvdbId: undefined,
-      seasonNumber: undefined,
-      episodeNumber: undefined,
-      showTitle: undefined,
-    });
-  });
-
-  test("parses an episode scrobble event", () => {
-    const result = parsePlexPayload(
-      makePlexForm({
-        event: "media.scrobble",
-        Metadata: {
-          type: "episode",
-          title: "Pilot",
-          grandparentTitle: "Breaking Bad",
-          parentIndex: 1,
-          index: 1,
-          Guid: [{ id: "tvdb://349232" }],
-        },
-      }),
-    );
-    expect(result).toEqual({
-      provider: "plex",
-      mediaType: "episode",
-      title: "Pilot",
-      tmdbId: undefined,
-      imdbId: undefined,
-      tvdbId: "349232",
-      seasonNumber: 1,
-      episodeNumber: 1,
-      showTitle: "Breaking Bad",
-    });
-  });
-
-  test("ignores episode-level Plex TMDB GUIDs", () => {
-    const result = parsePlexPayload(
-      makePlexForm({
-        event: "media.scrobble",
-        Metadata: {
-          type: "episode",
-          title: "Episode Title",
-          grandparentTitle: "The Pitt",
-          parentIndex: 1,
-          index: 14,
-          Guid: [{ id: "imdb://tt35740476" }, { id: "tmdb://6951292" }, { id: "tvdb://11560129" }],
-        },
-      }),
-    );
-    expect(result).toEqual({
-      provider: "plex",
-      mediaType: "episode",
-      title: "Episode Title",
-      tmdbId: undefined,
-      imdbId: "tt35740476",
-      tvdbId: "11560129",
-      seasonNumber: 1,
-      episodeNumber: 14,
-      showTitle: "The Pitt",
-    });
-  });
-
-  test("returns null for non-scrobble events", () => {
-    expect(parsePlexPayload(makePlexForm({ event: "media.play" }))).toBeNull();
-  });
-
-  test("returns null for missing payload", () => {
-    expect(parsePlexPayload(new FormData())).toBeNull();
-  });
-
-  test("returns null for invalid JSON", () => {
-    const form = new FormData();
-    form.set("payload", "not json");
-    expect(parsePlexPayload(form)).toBeNull();
-  });
-
-  test("returns null for unsupported media type", () => {
-    const result = parsePlexPayload(
-      makePlexForm({
-        event: "media.scrobble",
-        Metadata: { type: "track", title: "Some Song" },
-      }),
-    );
-    expect(result).toBeNull();
-  });
-
-  test("returns null when Metadata is missing", () => {
-    expect(parsePlexPayload(makePlexForm({ event: "media.scrobble" }))).toBeNull();
-  });
-
-  test("handles lowercase guid key", () => {
-    const result = parsePlexPayload(
-      makePlexForm({
-        event: "media.scrobble",
-        Metadata: {
-          type: "movie",
-          title: "Test",
-          guid: [{ id: "tmdb://999" }],
-        },
-      }),
-    );
-    expect(result?.tmdbId).toBe(999);
   });
 });
 
@@ -385,26 +254,26 @@ describe("processWebhook", () => {
   const userId = "user-1";
   let connectionId: string;
 
-  beforeEach(() => {
-    insertUser(userId);
-    const integration = insertIntegration(userId, "plex", "plex-token");
+  beforeEach(async () => {
+    await insertUser(userId);
+    const integration = await insertIntegration(userId, "jellyfin", "jellyfin-token");
     connectionId = integration.id;
   });
 
   test("logs a movie watch on successful resolution", async () => {
     const { insertTitle } = await import("@sofa/test/db");
-    insertTitle({ id: "title-1", tmdbId: 27205, type: "movie", title: "Inception" });
+    await insertTitle({ id: "title-1", tmdbId: 27205, type: "movie", title: "Inception" });
     mockResolveMovieTmdbId.mockResolvedValue(27205);
     mockGetOrFetchTitleByTmdbId.mockResolvedValue({ id: "title-1" });
 
     const event: WebhookEvent = {
-      provider: "plex",
+      provider: "jellyfin",
       mediaType: "movie",
       title: "Inception",
       tmdbId: 27205,
     };
 
-    const result = await processWebhook(connectionId, userId, "plex", event);
+    const result = await processWebhook(connectionId, userId, "jellyfin", event);
     expect(result.status).toBe("success");
   });
 
@@ -412,12 +281,12 @@ describe("processWebhook", () => {
     mockResolveMovieTmdbId.mockResolvedValue(null);
 
     const event: WebhookEvent = {
-      provider: "plex",
+      provider: "jellyfin",
       mediaType: "movie",
       title: "Unknown Movie",
     };
 
-    const result = await processWebhook(connectionId, userId, "plex", event);
+    const result = await processWebhook(connectionId, userId, "jellyfin", event);
     expect(result.status).toBe("error");
     expect(result.message).toContain("Could not resolve TMDB ID");
   });
@@ -444,24 +313,24 @@ describe("processWebhook", () => {
 
     // Seed a recent watch
     const { insertTitle } = await import("@sofa/test/db");
-    insertTitle({ id: "title-1", tmdbId: 27205, type: "movie", title: "Inception" });
-    insertMovieWatch(userId, "title-1");
+    await insertTitle({ id: "title-1", tmdbId: 27205, type: "movie", title: "Inception" });
+    await insertMovieWatch(userId, "title-1");
 
     const event: WebhookEvent = {
-      provider: "plex",
+      provider: "jellyfin",
       mediaType: "movie",
       title: "Inception",
       tmdbId: 27205,
     };
 
-    const result = await processWebhook(connectionId, userId, "plex", event);
+    const result = await processWebhook(connectionId, userId, "jellyfin", event);
     expect(result.status).toBe("ignored");
     expect(result.message).toContain("Duplicate");
   });
 
   test("logs an episode watch on successful resolution", async () => {
     mockResolveShowTmdbId.mockResolvedValue(1396);
-    const { titleId } = insertTvShow("tv-1", 1396, 1, 1, { title: "Breaking Bad" });
+    const { titleId } = await insertTvShow("tv-1", 1396, 1, 1, { title: "Breaking Bad" });
     mockGetOrFetchTitleByTmdbId.mockResolvedValue({ id: titleId });
 
     const event: WebhookEvent = {
@@ -476,38 +345,6 @@ describe("processWebhook", () => {
 
     const result = await processWebhook(connectionId, userId, "jellyfin", event);
     expect(result.status).toBe("success");
-  });
-
-  test("resolves parsed Plex episodes without passing the episode TMDB ID", async () => {
-    mockResolveShowTmdbId.mockResolvedValue(1396);
-    const { titleId } = insertTvShow("tv-1", 1396, 1, 14, { title: "The Pitt" });
-    mockGetOrFetchTitleByTmdbId.mockResolvedValue({ id: titleId });
-
-    const event = parsePlexPayload(
-      makePlexForm({
-        event: "media.scrobble",
-        Metadata: {
-          type: "episode",
-          title: "Episode Title",
-          grandparentTitle: "The Pitt",
-          parentIndex: 1,
-          index: 14,
-          Guid: [{ id: "imdb://tt35740476" }, { id: "tmdb://6951292" }, { id: "tvdb://11560129" }],
-        },
-      }),
-    );
-    expect(event).not.toBeNull();
-    if (!event) throw new Error("Expected Plex episode event");
-
-    const result = await processWebhook(connectionId, userId, "plex", event);
-
-    expect(result.status).toBe("success");
-    expect(mockResolveShowTmdbId).toHaveBeenCalledWith({
-      tmdbId: undefined,
-      imdbId: "tt35740476",
-      tvdbId: "11560129",
-      title: "The Pitt",
-    });
   });
 
   test("returns error when episode cannot be resolved", async () => {
@@ -528,12 +365,12 @@ describe("processWebhook", () => {
 
   test("returns error when season is not found", async () => {
     mockResolveShowTmdbId.mockResolvedValue(1396);
-    insertTvShow("tv-1", 1396, 1, 3, { title: "Breaking Bad" });
+    await insertTvShow("tv-1", 1396, 1, 3, { title: "Breaking Bad" });
     mockGetOrFetchTitleByTmdbId.mockResolvedValue({ id: "tv-1" });
     mockGetTvDetails.mockResolvedValue({ number_of_seasons: 1 });
 
     const event: WebhookEvent = {
-      provider: "plex",
+      provider: "jellyfin",
       mediaType: "episode",
       title: "Episode",
       showTitle: "Breaking Bad",
@@ -542,18 +379,18 @@ describe("processWebhook", () => {
       episodeNumber: 1,
     };
 
-    const result = await processWebhook(connectionId, userId, "plex", event);
+    const result = await processWebhook(connectionId, userId, "jellyfin", event);
     expect(result.status).toBe("error");
     expect(result.message).toContain("Season 99 not found");
   });
 
   test("returns error when episode number is not found in season", async () => {
     mockResolveShowTmdbId.mockResolvedValue(1396);
-    insertTvShow("tv-1", 1396, 1, 3, { title: "Breaking Bad" });
+    await insertTvShow("tv-1", 1396, 1, 3, { title: "Breaking Bad" });
     mockGetOrFetchTitleByTmdbId.mockResolvedValue({ id: "tv-1" });
 
     const event: WebhookEvent = {
-      provider: "plex",
+      provider: "jellyfin",
       mediaType: "episode",
       title: "Episode",
       showTitle: "Breaking Bad",
@@ -562,19 +399,19 @@ describe("processWebhook", () => {
       episodeNumber: 99,
     };
 
-    const result = await processWebhook(connectionId, userId, "plex", event);
+    const result = await processWebhook(connectionId, userId, "jellyfin", event);
     expect(result.status).toBe("error");
     expect(result.message).toContain("S1E99 not found");
   });
 
   test("returns error when episode is missing season/episode numbers", async () => {
     const event: WebhookEvent = {
-      provider: "plex",
+      provider: "jellyfin",
       mediaType: "episode",
       title: "Mystery Episode",
     };
 
-    const result = await processWebhook(connectionId, userId, "plex", event);
+    const result = await processWebhook(connectionId, userId, "jellyfin", event);
     expect(result.status).toBe("error");
   });
 });

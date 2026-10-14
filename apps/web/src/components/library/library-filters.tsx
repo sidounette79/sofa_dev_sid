@@ -13,7 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
+import { translateGenreName } from "@/lib/genre-names";
 import { orpc } from "@/lib/orpc/client";
 
 export interface LibraryFiltersProps {
@@ -26,7 +26,6 @@ export interface LibraryFiltersProps {
     yearMin?: number;
     yearMax?: number;
     contentRating?: string;
-    onMyServices?: boolean;
   };
   onFilterChange: (key: string, value: unknown) => void;
   onClearAll: () => void;
@@ -74,6 +73,7 @@ export function LibraryFilters({
       { value: "watching", label: t`Watching` },
       { value: "caught_up", label: t`Caught Up` },
       { value: "completed", label: t`Completed` },
+      { value: "dropped", label: t`Dropped` },
     ],
     [t],
   );
@@ -210,7 +210,7 @@ export function LibraryFilters({
           <SelectItem value="">{t`All genres`}</SelectItem>
           {genreData?.genres.map((genre) => (
             <SelectItem key={genre.id} value={String(genre.id)}>
-              {genre.name}
+              {translateGenreName(genre.name)}
             </SelectItem>
           ))}
         </SelectContent>
@@ -296,18 +296,7 @@ export function LibraryFilters({
         </SelectContent>
       </Select>
 
-      <Divider />
 
-      {/* On my services */}
-      <label className="flex cursor-pointer items-center gap-1.5">
-        <Switch
-          size="sm"
-          checked={filters.onMyServices ?? false}
-          onCheckedChange={(checked) => onFilterChange("onMyServices", checked || undefined)}
-          aria-label={t`On my services`}
-        />
-        <span className="text-muted-foreground text-[11px]">{t`On my services`}</span>
-      </label>
 
       {/* Clear */}
       {activeFilterCount > 0 && (
