@@ -18,6 +18,7 @@ import { openApiHandler } from "./orpc/openapi-handler";
 import authRoutes from "./routes/auth";
 import avatarsRoutes from "./routes/avatars";
 import backupsRoutes from "./routes/backups";
+import clientErrorRoutes from "./routes/client-error";
 import embyImagesRoutes from "./routes/emby-images";
 import exportRoutes from "./routes/export";
 import frenchOverviewRoutes from "./routes/french-overview";
@@ -107,6 +108,7 @@ app.use("*", async (c, next) => {
 
 // Non-RPC routes
 app.route("/api/health", healthRoutes);
+app.route("/api/client-error", clientErrorRoutes);
 app.route("/api/auth", authRoutes);
 app.route("/api/avatars", avatarsRoutes);
 app.route("/api/backup", backupsRoutes);

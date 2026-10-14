@@ -1,5 +1,7 @@
 import { Trans } from "@lingui/react/macro";
+import type { ErrorComponentProps } from "@tanstack/react-router";
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
+import { useEffect } from "react";
 
 import { TitleActions } from "@/components/titles/title-actions";
 import { TitleEmbyAvailability } from "@/components/titles/title-emby-availability";
@@ -14,6 +16,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { getAppErrorCode } from "@/lib/error-messages";
 import { withLoaderRetry } from "@/lib/loader-retry";
 import { orpc } from "@/lib/orpc/client";
+import { reportClientError } from "@/lib/report-client-error";
 import { getThemeCssProperties } from "@/lib/theme";
 
 export const Route = createFileRoute("/_app/titles/$id")({
@@ -121,7 +124,13 @@ function TitleDetailLoading() {
   );
 }
 
-function TitleErrorComponent() {
+function TitleErrorComponent({ error, info }: ErrorComponentProps) {
+  // 14.10, Sid: see apps/server/src/routes/client-error.ts - only trace a
+  // mobile/TV repro leaves now.
+  useEffect(() => {
+    reportClientError(error, info?.componentStack);
+  }, [error, info]);
+
   return (
     <div className="flex flex-col items-center gap-6 py-24 text-center">
       <h1 className="font-display text-2xl tracking-tight sm:text-3xl">

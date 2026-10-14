@@ -2,8 +2,17 @@ import { Trans } from "@lingui/react/macro";
 import { IconAlertTriangle } from "@tabler/icons-react";
 import type { ErrorComponentProps } from "@tanstack/react-router";
 import { Link } from "@tanstack/react-router";
+import { useEffect } from "react";
 
-export function RouteError({ reset }: ErrorComponentProps) {
+import { reportClientError } from "@/lib/report-client-error";
+
+export function RouteError({ error, info, reset }: ErrorComponentProps) {
+  // 14.10, Sid: see apps/server/src/routes/client-error.ts - this is the
+  // only trace a mobile/TV repro leaves now, so it has to fire here.
+  useEffect(() => {
+    reportClientError(error, info?.componentStack);
+  }, [error, info]);
+
   return (
     <div className="flex flex-col items-center gap-6 py-24 text-center">
       <div className="border-destructive/20 bg-destructive/5 text-destructive flex size-14 items-center justify-center rounded-full border">
