@@ -2,7 +2,14 @@ name: Docker
 
 on:
   push:
-    branches: [main]
+    # 14.10, Sid ("rien n'a jamais été fait pour sofa nulle part ailleurs
+    # que sur mes NAS" / "il faut surtout pas que ça parte sur
+    # jakejarvis"): the image was always built locally on FUNMEDIA until
+    # now - this workflow (forked from upstream, never actually used)
+    # still targeted upstream's own main branch and registry namespace.
+    # postgres-migration is this fork's real deploy branch; main is left
+    # alone in case it's ever used to track upstream again.
+    branches: [postgres-migration]
     paths:
       - "apps/server/**"
       - "apps/web/**"
@@ -16,14 +23,17 @@ on:
       - "tsconfig.json"
       - ".github/workflows/docker.yml"
     tags: ["v*"]
+  workflow_dispatch: {}
 
 permissions:
   contents: read
   packages: write
 
 env:
-  GHCR_IMAGE: ghcr.io/jakejarvis/sofa
-  DOCKERHUB_IMAGE: docker.io/jakejarvis/sofa
+  # 14.10, Sid: never jakejarvis's own namespace - this is her private
+  # fork/rebrand, not something to publish under the upstream author's
+  # account (and she has no write access there regardless).
+  GHCR_IMAGE: ghcr.io/sidounette79/patoune-tv
 
 jobs:
   build:
@@ -31,9 +41,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -45,12 +52,6 @@ jobs:
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Login to Docker Hub
-        uses: docker/login-action@v3
-        with:
-          username: ${{ vars.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
-
       - name: Get app version
         id: version
         run: echo "version=$(jq -r .version apps/web/package.json)" >> "$GITHUB_OUTPUT"
@@ -61,9 +62,9 @@ jobs:
         with:
           images: |
             ${{ env.GHCR_IMAGE }}
-            ${{ env.DOCKERHUB_IMAGE }}
           tags: |
-            type=edge,branch=main
+            type=raw,value=latest
+            type=edge,branch=postgres-migration
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
             type=semver,pattern={{major}},enable=${{ !startsWith(github.ref, 'refs/tags/v0.') }}
@@ -73,7 +74,11 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: .
-          platforms: linux/amd64,linux/arm64
+          # 14.10, Sid: FUNMEDIA is the only real target (x86 NAS) - arm64
+          # was only ever useful for jakejarvis's own broader userbase.
+          # Dropping it (and the QEMU emulation step it needed) cuts real
+          # build time on GitHub's shared runners.
+          platforms: linux/amd64
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
