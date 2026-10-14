@@ -1,7 +1,7 @@
 import { count, desc, eq, inArray, sql } from "drizzle-orm";
 
 import { db } from "../client";
-import { cronRuns, episodes, titles, user } from "../schema";
+import { cronRuns, user } from "../schema";
 
 /** 08.10, Postgres migration: replaces Bun.file(DATABASE_URL).size, which
  * only worked because SQLite is a plain file - DATABASE_URL is now a
@@ -17,15 +17,27 @@ export async function getDatabaseSizeBytes(): Promise<number> {
   return Number(result.rows[0]?.size ?? 0);
 }
 
+/** 14.10, Sid ("Paramètres met toujours plus d'une dizaine de secondes
+ * à s'ouvrir"): titles/episodes exact COUNT(*) was a real contributor -
+ * Postgres has no index-only shortcut for an exact count (unlike a
+ * SQLite rowid table), so this was a full sequential scan over both
+ * tables (89k/164k rows) on every single Paramètres page load. reltuples
+ * (pg_class, refreshed by autovacuum/ANALYZE) is a catalog lookup, not a
+ * scan - an admin dashboard's row-count display doesn't need to be
+ * exact to the row, just roughly right. user stays an exact count (tiny
+ * table, and an admin page's own user count is worth getting precisely
+ * right). */
 export async function getTableCounts() {
-  const [[titleCount], [episodeCount], [userCount]] = await Promise.all([
-    db.select({ count: count() }).from(titles),
-    db.select({ count: count() }).from(episodes),
+  const [approx, [userCount]] = await Promise.all([
+    db.execute<{ relname: string; estimate: string }>(
+      sql`SELECT relname, reltuples::bigint AS estimate FROM pg_class WHERE relname IN ('titles', 'episodes')`,
+    ),
     db.select({ count: count() }).from(user),
   ]);
+  const byName = new Map(approx.rows.map((r) => [r.relname, Number(r.estimate)]));
   return {
-    titleCount: titleCount?.count ?? 0,
-    episodeCount: episodeCount?.count ?? 0,
+    titleCount: Math.max(0, byName.get("titles") ?? 0),
+    episodeCount: Math.max(0, byName.get("episodes") ?? 0),
     userCount: userCount?.count ?? 0,
   };
 }
