@@ -79,3 +79,4 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=15s --retries=3 \
   CMD ["bun", "-e", "fetch('http://localhost:3000/api/health').then(r=>process.exit(+!r.ok)).catch(()=>process.exit(1))"]
 
 CMD ["bun", "apps/server/src/index.ts"]
+
