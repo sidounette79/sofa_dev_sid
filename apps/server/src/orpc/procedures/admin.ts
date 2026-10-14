@@ -76,7 +76,7 @@ export const backupsRestore = os.admin.backups.restore
   .use(admin)
   .handler(async ({ input: file }) => {
     await ensureBackupDir();
-    const tmpPath = path.join(BACKUP_DIR, `.upload-${Date.now()}-${crypto.randomUUID()}.db`);
+    const tmpPath = path.join(BACKUP_DIR, `.upload-${Date.now()}-${crypto.randomUUID()}.dump`);
     pauseJobs();
     try {
       await writeFile(tmpPath, Buffer.from(await file.arrayBuffer()));

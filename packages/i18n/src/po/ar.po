@@ -62,13 +62,11 @@ msgstr ""
 #~ msgid "{0} backups · last <0/>"
 #~ msgstr ""
 
-#. placeholder {0}: author.bookCount
-#. placeholder {0}: items.length
 #: apps/web/src/routes/_app/authors.$id.tsx
 #: apps/web/src/routes/_app/books.index.tsx
 #: apps/web/src/routes/_app/books.index.tsx
-msgid "{0} books"
-msgstr ""
+#~ msgid "{0} books"
+#~ msgstr ""
 
 #: apps/web/src/components/settings/system-health-section.tsx
 #~ msgid "{0} cached images"
@@ -251,8 +249,8 @@ msgstr "{watchlistCount} عناصر"
 #: apps/web/src/routes/_app/authors.$id.tsx
 #: apps/web/src/routes/_app/books.index.tsx
 #: apps/web/src/routes/_app/books.index.tsx
-msgid "1 book"
-msgstr ""
+#~ msgid "1 book"
+#~ msgstr ""
 
 #: apps/native/src/app/(tabs)/(library)/index.tsx
 msgid "1★+"
@@ -421,19 +419,18 @@ msgstr "العمر {age}"
 #: apps/web/src/components/library/library-filters.tsx
 #: apps/web/src/components/library/library-filters.tsx
 #: apps/web/src/components/people/filmography-grid.tsx
-#: apps/web/src/routes/_app/books.index.tsx
 #: apps/web/src/routes/_app/upcoming.tsx
 #: apps/web/src/routes/_app/upcoming.tsx
 msgid "All"
 msgstr "الكل"
 
 #: apps/web/src/routes/_app/books.index.tsx
-msgid "All Authors"
-msgstr ""
+#~ msgid "All Authors"
+#~ msgstr ""
 
 #: apps/web/src/routes/_app/books.index.tsx
-msgid "All Books"
-msgstr ""
+#~ msgid "All Books"
+#~ msgstr ""
 
 #: apps/native/src/app/(tabs)/(library)/index.tsx
 #: apps/native/src/components/library/filter-sheet.tsx
@@ -469,7 +466,6 @@ msgstr "هل لديك حساب بالفعل؟ تسجيل الدخول"
 #~ msgstr "حدث خطأ غير متوقع أثناء تحميل هذه الصفحة. يمكنك المحاولة مرة أخرى أو العودة إلى لوحة التحكم."
 
 #: apps/web/src/components/route-error.tsx
-#: apps/web/src/routes/__root.tsx
 msgid "An unexpected error occurred while loading this page. You can try again or head back to the library."
 msgstr ""
 
@@ -524,14 +520,13 @@ msgstr "هل أنت متأكد من رغبتك في تسجيل الخروج؟"
 
 #: apps/web/src/components/dashboard/to-watch-section.tsx
 #: apps/web/src/components/library/library-toolbar.tsx
-#: apps/web/src/routes/_app/books.index.tsx
 msgid "Ascending"
 msgstr ""
 
 #: apps/web/src/routes/_app/authors.$id.tsx
 #: apps/web/src/routes/_app/books.index.tsx
-msgid "Author"
-msgstr ""
+#~ msgid "Author"
+#~ msgstr ""
 
 #: apps/web/src/components/settings/imports-section.tsx
 #~ msgid "Authorization succeeded but failed to fetch your library. Please try again."
@@ -550,16 +545,16 @@ msgstr ""
 #~ msgstr "فوّض Sofa لقراءة مكتبة {sourceLabel} الخاصة بك. لن تتم مشاركة كلمة المرور."
 
 #: apps/web/src/routes/_app/books.index.tsx
-msgid "Authors"
-msgstr ""
+#~ msgid "Authors"
+#~ msgstr ""
 
 #: apps/web/src/routes/_app/authors.$id.tsx
-msgid "Auto-grab off"
-msgstr ""
+#~ msgid "Auto-grab off"
+#~ msgstr ""
 
 #: apps/web/src/routes/_app/authors.$id.tsx
-msgid "Auto-grab on"
-msgstr ""
+#~ msgid "Auto-grab on"
+#~ msgstr ""
 
 #: apps/web/src/components/settings/update-check-section.tsx
 msgid "Automatic update checks"
@@ -607,8 +602,8 @@ msgstr ""
 
 #: apps/web/src/routes/_app/authors.$id.tsx
 #: apps/web/src/routes/_app/books.$id.tsx
-msgid "Back to Books"
-msgstr ""
+#~ msgid "Back to Books"
+#~ msgstr ""
 
 #: apps/native/src/app/(auth)/register.tsx
 msgid "Back to Login"
@@ -644,12 +639,12 @@ msgid "backups."
 msgstr "نسخ احتياطية."
 
 #: apps/web/src/routes/_app/authors.$id.tsx
-msgid "Book title..."
-msgstr ""
+#~ msgid "Book title..."
+#~ msgstr ""
 
 #: apps/web/src/routes/_app/books.index.tsx
-msgid "Books"
-msgstr ""
+#~ msgid "Books"
+#~ msgstr ""
 
 #: apps/web/src/components/titles/title-availability.tsx
 #~ msgid "Buy"
@@ -814,6 +809,7 @@ msgid "Clear"
 msgstr "مسح"
 
 #: apps/web/src/components/command-palette.tsx
+#: apps/web/src/components/explore/discover-search-bar.tsx
 msgid "Clear all"
 msgstr "مسح الكل"
 
@@ -836,8 +832,8 @@ msgid "Click \"+\" and select \"Custom Lists\""
 msgstr "انقر على \"+\" وحدد \"Custom Lists\""
 
 #: apps/native/src/components/settings/integration-configs.ts
-msgid "Click \"Add Webhook\" and paste the URL above"
-msgstr "انقر على \"Add Webhook\" والصق الرابط أعلاه"
+#~ msgid "Click \"Add Webhook\" and paste the URL above"
+#~ msgstr "انقر على \"Add Webhook\" والصق الرابط أعلاه"
 
 #: apps/web/src/components/settings/integration-configs.tsx
 #: apps/web/src/components/settings/integration-configs.tsx
@@ -1080,7 +1076,6 @@ msgstr "تم استعادة قاعدة البيانات. جارٍ إعادة ا�
 
 #: apps/native/src/components/library/sort-menu.tsx
 #: apps/web/src/components/library/library-toolbar.tsx
-#: apps/web/src/routes/_app/books.index.tsx
 msgid "Date Added"
 msgstr "تاريخ الإضافة"
 
@@ -1121,7 +1116,6 @@ msgstr "تم حذف {0, plural, zero {# ملفات} one {# ملف} two {# ملف
 
 #: apps/web/src/components/dashboard/to-watch-section.tsx
 #: apps/web/src/components/library/library-toolbar.tsx
-#: apps/web/src/routes/_app/books.index.tsx
 msgid "Descending"
 msgstr ""
 
@@ -1136,8 +1130,8 @@ msgid "died at {age}"
 msgstr "توفي عن عمر {age}"
 
 #: apps/web/src/routes/_app/authors.$id.tsx
-msgid "Direct Prowlarr search"
-msgstr ""
+#~ msgid "Direct Prowlarr search"
+#~ msgstr ""
 
 #: apps/native/src/app/person/[id].tsx
 #: apps/native/src/components/search/recently-viewed-row-content.tsx
@@ -1163,16 +1157,17 @@ msgstr "قطع الاتصال بـ {label}"
 #: apps/web/src/components/explore/discover-section.tsx
 #: apps/web/src/components/nav-bar.tsx
 #: apps/web/src/components/nav-bar.tsx
+#: apps/web/src/components/settings/appearance-section.tsx
 msgid "Discover"
 msgstr "استكشاف"
 
 #: apps/web/src/routes/_app/authors.$id.tsx
-msgid "Dismiss (e.g. foreign-language edition)"
-msgstr ""
+#~ msgid "Dismiss (e.g. foreign-language edition)"
+#~ msgstr ""
 
 #: apps/web/src/routes/_app/authors.$id.tsx
-msgid "Dismissed"
-msgstr ""
+#~ msgid "Dismissed"
+#~ msgstr ""
 
 #: apps/native/src/app/(tabs)/(settings)/index.tsx
 msgid "Display name"
@@ -1223,6 +1218,7 @@ msgstr "تنزيل النسخة الاحتياطية"
 msgid "Download your library, watch history, and ratings as JSON"
 msgstr "تنزيل مكتبتك وسجل المشاهدة والتقييمات بتنسيق JSON"
 
+#: apps/native/src/components/titles/status-action-button.tsx
 #: apps/web/src/components/dashboard/dropped-series-section.tsx
 #: apps/web/src/components/dashboard/upcoming-item.tsx
 #: apps/web/src/components/library/library-filters.tsx
@@ -1305,16 +1301,24 @@ msgstr "أدخل عنوان بريد إلكتروني صحيح"
 #~ msgstr "أدخل الرمز أدناه على موقع {source} لتفويض Sofa."
 
 #: apps/native/src/app/(auth)/server-url.tsx
-msgid "Enter the full URL for your Sofa server"
-msgstr "أدخل عنوان URL الكامل لخادم Sofa الخاص بك"
+msgid "Enter the full URL for your Patoune TV server"
+msgstr ""
+
+#: apps/native/src/app/(auth)/server-url.tsx
+#~ msgid "Enter the full URL for your Sofa server"
+#~ msgstr "أدخل عنوان URL الكامل لخادم Sofa الخاص بك"
 
 #: apps/web/src/components/settings/account-section.tsx
 msgid "Enter your current password and choose a new one."
 msgstr "أدخل كلمة مرورك الحالية واختر كلمة مرور جديدة."
 
 #: apps/native/src/app/(auth)/server-url.tsx
-msgid "Enter your Sofa server URL to get started"
-msgstr "أدخل رابط خادم Sofa الخاص بك للبدء"
+msgid "Enter your Patoune TV server URL to get started"
+msgstr ""
+
+#: apps/native/src/app/(auth)/server-url.tsx
+#~ msgid "Enter your Sofa server URL to get started"
+#~ msgstr "أدخل رابط خادم Sofa الخاص بك للبدء"
 
 #: apps/web/src/components/settings/system-health-section.tsx
 msgid "Environment"
@@ -1437,8 +1441,8 @@ msgid "Failed to change password"
 msgstr "فشل تغيير كلمة المرور"
 
 #: apps/web/src/routes/_app/authors.$id.tsx
-msgid "Failed to confirm match"
-msgstr ""
+#~ msgid "Failed to confirm match"
+#~ msgstr ""
 
 #: apps/web/src/components/settings/imports-section.tsx
 #~ msgid "Failed to connect"
@@ -1594,8 +1598,8 @@ msgid "Failed to start SSO login"
 msgstr "فشل بدء تسجيل الدخول عبر SSO"
 
 #: apps/web/src/routes/_app/authors.$id.tsx
-msgid "Failed to stop watching"
-msgstr ""
+#~ msgid "Failed to stop watching"
+#~ msgstr ""
 
 #: apps/web/src/components/settings/system-health-section.tsx
 msgid "Failed to trigger job"
@@ -1612,12 +1616,12 @@ msgid "Failed to unmark some episodes"
 msgstr "فشل إلغاء تحديد بعض الحلقات"
 
 #: apps/web/src/routes/_app/authors.$id.tsx
-msgid "Failed to update"
-msgstr ""
+#~ msgid "Failed to update"
+#~ msgstr ""
 
 #: apps/web/src/routes/_app/authors.$id.tsx
-msgid "Failed to update auto-grab setting"
-msgstr ""
+#~ msgid "Failed to update auto-grab setting"
+#~ msgstr ""
 
 #: apps/native/src/app/(tabs)/(settings)/index.tsx
 msgid "Failed to update name"
@@ -1665,8 +1669,8 @@ msgstr "فشل رفع الصورة الرمزية"
 
 #: apps/web/src/routes/_app/books.index.tsx
 #: apps/web/src/routes/_app/books.index.tsx
-msgid "Failed to watch author"
-msgstr ""
+#~ msgid "Failed to watch author"
+#~ msgstr ""
 
 #: apps/web/src/components/settings/imports-section.tsx
 #~ msgid "Fetching your library data from {source}..."
@@ -1683,8 +1687,8 @@ msgid "Filters"
 msgstr "الفلاتر"
 
 #: apps/web/src/routes/_app/authors.$id.tsx
-msgid "Find this book manually in Grimmory"
-msgstr ""
+#~ msgid "Find this book manually in Grimmory"
+#~ msgstr ""
 
 #: apps/web/src/components/settings/imports-section.tsx
 #~ msgid "Finished importing from {source}."
@@ -1715,8 +1719,8 @@ msgid "French"
 msgstr "الفرنسية"
 
 #: apps/web/src/routes/_app/authors.$id.tsx
-msgid "French editions only"
-msgstr ""
+#~ msgid "French editions only"
+#~ msgstr ""
 
 #: apps/web/src/components/settings/backup-schedule-section.tsx
 msgid "Frequency"
@@ -1764,8 +1768,8 @@ msgid "Global"
 msgstr "عالمي"
 
 #: apps/web/src/routes/_app/authors.$id.tsx
-msgid "Go"
-msgstr ""
+#~ msgid "Go"
+#~ msgstr ""
 
 #: apps/native/src/app/person/[id].tsx
 #: apps/native/src/app/person/[id].tsx
@@ -1831,12 +1835,10 @@ msgstr "الانتقال إلى الإعدادات"
 msgid "Go to upcoming"
 msgstr "الانتقال إلى القادمة"
 
-#. placeholder {0}: result.matchedTitle ?? ""
 #: apps/web/src/routes/_app/authors.$id.tsx
-msgid "Grabbed: {0}"
-msgstr ""
+#~ msgid "Grabbed: {0}"
+#~ msgstr ""
 
-#: apps/web/src/routes/_app/books.index.tsx
 #: apps/web/src/routes/_app/library.tsx
 msgid "Grid view"
 msgstr ""
@@ -1874,6 +1876,10 @@ msgstr "الهندية"
 #: apps/native/src/components/navigation/native-tab-bar.tsx
 msgid "Home"
 msgstr "الرئيسية"
+
+#: apps/web/src/components/settings/appearance-section.tsx
+msgid "Home page"
+msgstr ""
 
 #: apps/native/src/app/(tabs)/(settings)/index.tsx
 #: apps/web/src/components/settings/system-health-section.tsx
@@ -1966,8 +1972,8 @@ msgstr "في المكتبة"
 
 #: apps/web/src/routes/_app/books.index.tsx
 #: apps/web/src/routes/_app/books.index.tsx
-msgid "In Progress"
-msgstr ""
+#~ msgid "In Progress"
+#~ msgstr ""
 
 #: apps/web/src/components/dashboard/to-watch-section.tsx
 msgid "In Progress / To Start"
@@ -2111,7 +2117,6 @@ msgstr ""
 #: apps/native/src/components/navigation/native-tab-bar.tsx
 #: apps/web/src/components/route-error.tsx
 #: apps/web/src/components/settings/account-section.tsx
-#: apps/web/src/routes/__root.tsx
 #: apps/web/src/routes/_app/library.tsx
 #: apps/web/src/routes/_app/people.$id.tsx
 #: apps/web/src/routes/_app/titles.$id.tsx
@@ -2127,7 +2132,6 @@ msgstr "تحديث المكتبة"
 msgid "Library statuses"
 msgstr "حالات المكتبة"
 
-#: apps/web/src/routes/_app/books.index.tsx
 #: apps/web/src/routes/_app/library.tsx
 msgid "List view"
 msgstr ""
@@ -2311,12 +2315,12 @@ msgstr "8 أحرف على الأقل…"
 #~ msgstr "Minimum rating"
 
 #: apps/web/src/routes/_app/authors.$id.tsx
-msgid "Missing"
-msgstr ""
+#~ msgid "Missing"
+#~ msgstr ""
 
 #: apps/web/src/routes/_app/authors.$id.tsx
-msgid "Missing first"
-msgstr ""
+#~ msgid "Missing first"
+#~ msgstr ""
 
 #: apps/web/src/components/settings/backup-schedule-section.tsx
 msgid "Monday"
@@ -2347,6 +2351,7 @@ msgid "Most popular"
 msgstr "الأكثر شيوعاً"
 
 #: apps/web/src/components/command-palette.tsx
+#: apps/web/src/components/explore/discover-search-bar.tsx
 msgid "movie"
 msgstr "فيلم"
 
@@ -2368,6 +2373,7 @@ msgstr "فيلم"
 #: apps/web/src/components/nav-bar.tsx
 #: apps/web/src/components/people/filmography-grid.tsx
 #: apps/web/src/components/settings/account-section.tsx
+#: apps/web/src/components/settings/appearance-section.tsx
 #: apps/web/src/routes/_app/statistics.tsx
 #: apps/web/src/routes/_app/statistics.tsx
 #: apps/web/src/routes/_app/upcoming.tsx
@@ -2499,8 +2505,8 @@ msgid "Next: S{seasonNum} E{epNum}"
 msgstr "التالي: م{seasonNum} ح{epNum}"
 
 #: apps/web/src/routes/_app/books.index.tsx
-msgid "No authors found"
-msgstr ""
+#~ msgid "No authors found"
+#~ msgstr ""
 
 #: apps/web/src/routes/_app/watched-authors.tsx
 #~ msgid "No authors watched yet. New releases from watched authors are checked daily and downloaded automatically once found."
@@ -2513,16 +2519,16 @@ msgstr "لا توجد نسخ احتياطية بعد"
 
 #: apps/web/src/routes/_app/authors.$id.tsx
 #: apps/web/src/routes/_app/books.index.tsx
-msgid "No books found"
-msgstr ""
+#~ msgid "No books found"
+#~ msgstr ""
 
 #: apps/web/src/routes/_app/authors.$id.tsx
-msgid "No catalog data found on Hardcover."
-msgstr ""
+#~ msgid "No catalog data found on Hardcover."
+#~ msgstr ""
 
 #: apps/web/src/routes/_app/authors.$id.tsx
-msgid "No catalog data found on Open Library."
-msgstr ""
+#~ msgid "No catalog data found on Open Library."
+#~ msgstr ""
 
 #: apps/web/src/components/titles/play-on-dialog.tsx
 msgid "No devices saved yet — pick some in Settings, under your Emby integration."
@@ -2549,20 +2555,20 @@ msgstr ""
 
 #: apps/web/src/routes/_app/authors.$id.tsx
 #: apps/web/src/routes/_app/books.index.tsx
-msgid "No matches found"
-msgstr ""
+#~ msgid "No matches found"
+#~ msgstr ""
 
 #: apps/web/src/routes/_app/books.index.tsx
-msgid "No matches found on Hardcover"
-msgstr ""
+#~ msgid "No matches found on Hardcover"
+#~ msgstr ""
 
 #: apps/web/src/routes/_app/books.index.tsx
-msgid "No matches found on Open Library"
-msgstr ""
+#~ msgid "No matches found on Open Library"
+#~ msgstr ""
 
 #: apps/web/src/routes/_app/authors.$id.tsx
-msgid "No matching release found"
-msgstr ""
+#~ msgid "No matching release found"
+#~ msgstr ""
 
 #: apps/native/src/app/(tabs)/(library)/index.tsx
 msgid "No matching titles"
@@ -2588,6 +2594,7 @@ msgstr "لا توجد نتائج لـ \"{debouncedQuery}\""
 #~ msgid "No results for \"{debouncedSearch}\""
 #~ msgstr "No results for \"{debouncedSearch}\""
 
+#: apps/web/src/components/explore/discover-search-bar.tsx
 #: apps/web/src/routes/_app/search.tsx
 msgid "No results found"
 msgstr ""
@@ -2597,8 +2604,8 @@ msgid "No results found."
 msgstr "لم يتم العثور على نتائج."
 
 #: apps/web/src/routes/_app/books.$id.tsx
-msgid "No summary available"
-msgstr ""
+#~ msgid "No summary available"
+#~ msgstr ""
 
 #: apps/native/src/components/explore/filterable-title-row.tsx
 #: apps/web/src/components/explore/filterable-title-row.tsx
@@ -2614,8 +2621,8 @@ msgid "No titles match your filters"
 msgstr "لا توجد عناوين تطابق فلاترك"
 
 #: apps/web/src/routes/_app/authors.$id.tsx
-msgid "No titles match your search."
-msgstr ""
+#~ msgid "No titles match your search."
+#~ msgstr ""
 
 #: apps/native/src/app/(tabs)/(home)/upcoming.tsx
 #: apps/web/src/routes/_app/upcoming.tsx
@@ -2649,8 +2656,8 @@ msgid "Not Found"
 msgstr "غير موجود"
 
 #: apps/web/src/routes/_app/books.index.tsx
-msgid "Not in your library — search by provider"
-msgstr ""
+#~ msgid "Not in your library — search by provider"
+#~ msgstr ""
 
 #: apps/web/src/routes/_app/books.index.tsx
 #~ msgid "Not in your library — search Hardcover"
@@ -2665,8 +2672,8 @@ msgid "Not supported in this browser"
 msgstr ""
 
 #: apps/web/src/routes/_app/books.index.tsx
-msgid "Not Watched"
-msgstr ""
+#~ msgid "Not Watched"
+#~ msgstr ""
 
 #: apps/web/src/components/settings/notifications-section.tsx
 msgid "Notification permission denied"
@@ -2709,8 +2716,8 @@ msgid "Oldest"
 msgstr "الأقدم"
 
 #: apps/web/src/routes/_app/authors.$id.tsx
-msgid "on Hardcover"
-msgstr ""
+#~ msgid "on Hardcover"
+#~ msgstr ""
 
 #: apps/native/src/components/library/filter-sheet.tsx
 #: apps/native/src/components/library/filter-sheet.tsx
@@ -2718,8 +2725,8 @@ msgid "On my services"
 msgstr "على خدماتي"
 
 #: apps/web/src/routes/_app/authors.$id.tsx
-msgid "on Open Library"
-msgstr ""
+#~ msgid "on Open Library"
+#~ msgstr ""
 
 #: apps/native/src/components/titles/status-action-button.tsx
 #: apps/web/src/components/dashboard/upcoming-item.tsx
@@ -2728,6 +2735,7 @@ msgid "On Watchlist"
 msgstr "في قائمة المشاهدة"
 
 #: apps/web/src/components/command-palette.tsx
+#: apps/web/src/components/explore/discover-search-bar.tsx
 msgid "On your server"
 msgstr ""
 
@@ -2764,24 +2772,24 @@ msgstr "فتح في المتصفح…"
 #~ msgstr ""
 
 #: apps/web/src/routes/_app/books.$id.tsx
-msgid "Open in Readest"
-msgstr ""
+#~ msgid "Open in Readest"
+#~ msgstr ""
 
 #: apps/web/src/routes/_app/authors.$id.tsx
-msgid "Open Library (manual only)"
-msgstr ""
+#~ msgid "Open Library (manual only)"
+#~ msgstr ""
 
 #: apps/web/src/routes/_app/authors.$id.tsx
-msgid "Open Library has no new-release detection — grab new titles manually as they show up in the catalog below"
-msgstr ""
+#~ msgid "Open Library has no new-release detection — grab new titles manually as they show up in the catalog below"
+#~ msgstr ""
 
 #: apps/web/src/components/settings/integration-configs.tsx
 #~ msgid "Open Plex, go to <0>Settings > Webhooks<1/></0>"
 #~ msgstr "افتح Plex، وانتقل إلى <0>الإعدادات > Webhooks<1/></0>"
 
 #: apps/native/src/components/settings/integration-configs.ts
-msgid "Open Plex, go to Settings > Webhooks"
-msgstr "افتح Plex، وانتقل إلى الإعدادات > Webhooks"
+#~ msgid "Open Plex, go to Settings > Webhooks"
+#~ msgstr "افتح Plex، وانتقل إلى الإعدادات > Webhooks"
 
 #: apps/web/src/components/settings/integration-configs.tsx
 msgid "Open Radarr, go to <0>Settings > Import Lists</0>"
@@ -2827,8 +2835,8 @@ msgstr "أو"
 #~ msgstr ""
 
 #: apps/web/src/routes/_app/authors.$id.tsx
-msgid "Owned"
-msgstr ""
+#~ msgid "Owned"
+#~ msgstr ""
 
 #: apps/native/src/app/+not-found.tsx
 msgid "Page Not Found"
@@ -2879,15 +2887,39 @@ msgstr "الصق رابط Radarr أعلاه في حقل List URL"
 msgid "Paste the Sonarr URL above into the List URL field"
 msgstr "الصق رابط Sonarr أعلاه في حقل List URL"
 
+#: apps/native/src/app/(tabs)/(settings)/index.tsx
+msgid "Patoune TV needs to restart to apply the new layout direction."
+msgstr ""
+
+#: apps/web/src/routes/setup.tsx
+msgid "Patoune TV uses <0>The Movie Database{linkIcon}</0> for movie & TV metadata, posters, and streaming availability. You'll need a free API key to get started."
+msgstr ""
+
+#: apps/web/src/components/update-toast.tsx
+msgid "Patoune TV v{latestVersion} is available"
+msgstr ""
+
+#: apps/native/src/components/settings/integration-configs.ts
+#: apps/native/src/components/settings/integration-configs.ts
+#: apps/web/src/components/settings/integration-configs.tsx
+#: apps/web/src/components/settings/integration-configs.tsx
+msgid "Patoune TV will automatically log movies and episodes when you finish watching them"
+msgstr ""
+
 #: apps/web/src/routes/_app/upcoming.tsx
 msgid "Pending TMDB"
 msgstr ""
 
 #: apps/web/src/components/settings/update-check-section.tsx
-msgid "Periodically check GitHub for new Sofa releases"
-msgstr "التحقق الدوري من GitHub بحثاً عن إصدارات Sofa الجديدة"
+msgid "Periodically check GitHub for new Patoune TV releases"
+msgstr ""
+
+#: apps/web/src/components/settings/update-check-section.tsx
+#~ msgid "Periodically check GitHub for new Sofa releases"
+#~ msgstr "التحقق الدوري من GitHub بحثاً عن إصدارات Sofa الجديدة"
 
 #: apps/web/src/components/command-palette.tsx
+#: apps/web/src/components/explore/discover-search-bar.tsx
 msgid "person"
 msgstr "شخص"
 
@@ -3166,8 +3198,8 @@ msgstr "التقييمات"
 
 #: apps/web/src/routes/_app/books.index.tsx
 #: apps/web/src/routes/_app/books.index.tsx
-msgid "Read"
-msgstr ""
+#~ msgid "Read"
+#~ msgstr ""
 
 #: apps/web/src/components/expandable-text.tsx
 msgid "Read more"
@@ -3192,6 +3224,7 @@ msgid "Ready to Watch"
 msgstr ""
 
 #: apps/web/src/components/command-palette.tsx
+#: apps/web/src/components/explore/discover-search-bar.tsx
 msgid "Recent Searches"
 msgstr "عمليات البحث الأخيرة"
 
@@ -3299,6 +3332,7 @@ msgid "Remove from library?"
 msgstr "إزالة من المكتبة؟"
 
 #: apps/web/src/components/command-palette.tsx
+#: apps/web/src/components/explore/discover-search-bar.tsx
 msgid "Remove from recent searches"
 msgstr "إزالة من عمليات البحث الأخيرة"
 
@@ -3368,8 +3402,8 @@ msgstr "يتطلب <0>Emby Server 4.7.9+</0> وترخيصاً نشطاً لـ <1
 #~ msgstr "يتطلب اشتراكاً نشطاً في <0>Plex Pass<1/></0>."
 
 #: apps/native/src/components/settings/integration-configs.ts
-msgid "Requires an active Plex Pass subscription."
-msgstr "يتطلب اشتراكاً نشطاً في Plex Pass."
+#~ msgid "Requires an active Plex Pass subscription."
+#~ msgstr "يتطلب اشتراكاً نشطاً في Plex Pass."
 
 #: apps/native/src/components/settings/integration-configs.ts
 msgid "Requires Emby Server 4.7.9+ and an active Emby Premiere license."
@@ -3401,8 +3435,8 @@ msgid "Restore from a Sofa export file"
 msgstr "الاستعادة من ملف تصدير Sofa"
 
 #: apps/web/src/routes/_app/authors.$id.tsx
-msgid "Restore to missing list"
-msgstr ""
+#~ msgid "Restore to missing list"
+#~ msgstr ""
 
 #: apps/web/src/components/settings/backup-restore-section.tsx
 msgid "Restoring…"
@@ -3506,26 +3540,26 @@ msgid "Search"
 msgstr "بحث"
 
 #: apps/web/src/routes/_app/authors.$id.tsx
-msgid "Search and download"
-msgstr ""
+#~ msgid "Search and download"
+#~ msgstr ""
 
 #: apps/web/src/routes/_app/books.index.tsx
-msgid "Search authors..."
-msgstr ""
+#~ msgid "Search authors..."
+#~ msgstr ""
 
 #: apps/web/src/routes/_app/books.index.tsx
-msgid "Search books or authors..."
-msgstr ""
-
-#: apps/web/src/routes/_app/authors.$id.tsx
-msgid "Search failed"
-msgstr ""
+#~ msgid "Search books or authors..."
+#~ msgstr ""
 
 #: apps/web/src/routes/_app/authors.$id.tsx
+#~ msgid "Search failed"
+#~ msgstr ""
+
+#: apps/web/src/routes/_app/authors.$id.tsx
 #: apps/web/src/routes/_app/books.index.tsx
 #: apps/web/src/routes/_app/books.index.tsx
-msgid "Search failed. Try again."
-msgstr ""
+#~ msgid "Search failed. Try again."
+#~ msgstr ""
 
 #: apps/web/src/components/dashboard/stats-section.tsx
 #~ msgid "Search for movies and TV shows to start tracking"
@@ -3545,8 +3579,8 @@ msgstr "ابحث عن أفلام أو مسلسلات أو نفّذ أوامر"
 #~ msgstr ""
 
 #: apps/web/src/routes/_app/books.index.tsx
-msgid "Search Hardcover..."
-msgstr ""
+#~ msgid "Search Hardcover..."
+#~ msgstr ""
 
 #: apps/web/src/components/library/library-toolbar.tsx
 msgid "Search library"
@@ -3556,7 +3590,12 @@ msgstr "بحث في المكتبة"
 msgid "Search library..."
 msgstr "بحث في المكتبة..."
 
+#: apps/web/src/components/explore/discover-search-bar.tsx
+msgid "Search movies & TV shows"
+msgstr ""
+
 #: apps/web/src/components/command-palette.tsx
+#: apps/web/src/components/explore/discover-search-bar.tsx
 msgid "Search movies & TV shows…"
 msgstr "ابحث عن أفلام ومسلسلات…"
 
@@ -3565,20 +3604,20 @@ msgid "Search movies, shows, people..."
 msgstr "ابحث عن أفلام أو مسلسلات أو أشخاص..."
 
 #: apps/web/src/routes/_app/books.index.tsx
-msgid "Search Open Library..."
-msgstr ""
+#~ msgid "Search Open Library..."
+#~ msgstr ""
 
 #: apps/web/src/routes/_app/authors.$id.tsx
-msgid "Search Prowlarr directly by title, bypassing the provider catalog."
-msgstr ""
+#~ msgid "Search Prowlarr directly by title, bypassing the provider catalog."
+#~ msgstr ""
 
 #: apps/web/src/routes/_app/authors.$id.tsx
-msgid "Search titles..."
-msgstr ""
+#~ msgid "Search titles..."
+#~ msgstr ""
 
 #: apps/web/src/routes/_app/authors.$id.tsx
-msgid "Search your Grimmory books..."
-msgstr ""
+#~ msgid "Search your Grimmory books..."
+#~ msgstr ""
 
 #: apps/native/src/app/(tabs)/(library)/index.tsx
 #~ msgid "Search your library..."
@@ -3594,8 +3633,8 @@ msgstr "بحث…"
 #: apps/web/src/routes/_app/authors.$id.tsx
 #: apps/web/src/routes/_app/books.index.tsx
 #: apps/web/src/routes/_app/books.index.tsx
-msgid "Searching..."
-msgstr ""
+#~ msgid "Searching..."
+#~ msgstr ""
 
 #. placeholder {0}: season.seasonNumber
 #: apps/web/src/components/titles/request-dialog.tsx
@@ -3637,6 +3676,7 @@ msgstr "عرض الكل"
 
 #. placeholder {0}: searchData?.totalResults
 #: apps/web/src/components/command-palette.tsx
+#: apps/web/src/components/explore/discover-search-bar.tsx
 msgid "See all {0} results"
 msgstr ""
 
@@ -3675,8 +3715,12 @@ msgid "Set password"
 msgstr "تعيين كلمة المرور"
 
 #: apps/web/src/routes/setup.tsx
-msgid "Set the TMDB_API_READ_ACCESS_TOKEN environment variable and restart Sofa."
-msgstr "قم بتعيين متغير البيئة TMDB_API_READ_ACCESS_TOKEN وأعد تشغيل Sofa."
+msgid "Set the TMDB_API_READ_ACCESS_TOKEN environment variable and restart Patoune TV."
+msgstr ""
+
+#: apps/web/src/routes/setup.tsx
+#~ msgid "Set the TMDB_API_READ_ACCESS_TOKEN environment variable and restart Sofa."
+#~ msgstr "قم بتعيين متغير البيئة TMDB_API_READ_ACCESS_TOKEN وأعد تشغيل Sofa."
 
 #: apps/native/src/components/settings/integration-configs.ts
 #: apps/native/src/components/settings/integration-configs.ts
@@ -3705,8 +3749,8 @@ msgid "Setup required"
 msgstr "الإعداد مطلوب"
 
 #: apps/web/src/routes/_app/authors.$id.tsx
-msgid "Show dismissed"
-msgstr ""
+#~ msgid "Show dismissed"
+#~ msgstr ""
 
 #: apps/native/src/components/ui/expandable-text.tsx
 #: apps/native/src/components/ui/expandable-text.tsx
@@ -3794,28 +3838,28 @@ msgid "Skipped"
 msgstr "تم التخطي"
 
 #: apps/native/src/app/(tabs)/(settings)/index.tsx
-msgid "Sofa needs to restart to apply the new layout direction."
-msgstr "يحتاج Sofa إلى إعادة التشغيل لتطبيق اتجاه التخطيط الجديد."
+#~ msgid "Sofa needs to restart to apply the new layout direction."
+#~ msgstr "يحتاج Sofa إلى إعادة التشغيل لتطبيق اتجاه التخطيط الجديد."
 
 #: apps/web/src/routes/setup.tsx
-msgid "Sofa uses <0>The Movie Database{linkIcon}</0> for movie & TV metadata, posters, and streaming availability. You'll need a free API key to get started."
-msgstr "يستخدم Sofa <0>The Movie Database{linkIcon}</0> للحصول على بيانات الأفلام والمسلسلات والملصقات وتوفر البث. ستحتاج إلى مفتاح API مجاني للبدء."
+#~ msgid "Sofa uses <0>The Movie Database{linkIcon}</0> for movie & TV metadata, posters, and streaming availability. You'll need a free API key to get started."
+#~ msgstr "يستخدم Sofa <0>The Movie Database{linkIcon}</0> للحصول على بيانات الأفلام والمسلسلات والملصقات وتوفر البث. ستحتاج إلى مفتاح API مجاني للبدء."
 
 #: apps/web/src/components/update-toast.tsx
 #~ msgid "Sofa v{0} is available"
 #~ msgstr ""
 
 #: apps/web/src/components/update-toast.tsx
-msgid "Sofa v{latestVersion} is available"
-msgstr "Sofa v{latestVersion} متاح"
+#~ msgid "Sofa v{latestVersion} is available"
+#~ msgstr "Sofa v{latestVersion} متاح"
 
 #: apps/native/src/components/settings/integration-configs.ts
 #: apps/native/src/components/settings/integration-configs.ts
 #: apps/native/src/components/settings/integration-configs.ts
 #: apps/web/src/components/settings/integration-configs.tsx
 #: apps/web/src/components/settings/integration-configs.tsx
-msgid "Sofa will automatically log movies and episodes when you finish watching them"
-msgstr "سيقوم Sofa تلقائياً بتسجيل الأفلام والحلقات عند الانتهاء من مشاهدتها"
+#~ msgid "Sofa will automatically log movies and episodes when you finish watching them"
+#~ msgstr "سيقوم Sofa تلقائياً بتسجيل الأفلام والحلقات عند الانتهاء من مشاهدتها"
 
 #: apps/native/src/app/(tabs)/(library)/index.tsx
 #: apps/native/src/app/change-password.tsx
@@ -3824,7 +3868,6 @@ msgstr "سيقوم Sofa تلقائياً بتسجيل الأفلام والحل�
 #: apps/web/src/components/auth-form.tsx
 #: apps/web/src/components/route-error.tsx
 #: apps/web/src/components/settings/account-section.tsx
-#: apps/web/src/routes/__root.tsx
 msgid "Something went wrong"
 msgstr "حدث خطأ ما"
 
@@ -3901,6 +3944,7 @@ msgstr ""
 
 #: apps/web/src/components/nav-bar.tsx
 #: apps/web/src/components/nav-bar.tsx
+#: apps/web/src/components/settings/appearance-section.tsx
 msgid "Stats"
 msgstr ""
 
@@ -3910,7 +3954,6 @@ msgstr ""
 #: apps/native/src/components/library/filter-sheet.tsx
 #: apps/web/src/components/library/library-filters.tsx
 #: apps/web/src/components/library/library-filters.tsx
-#: apps/web/src/routes/_app/books.index.tsx
 msgid "Status"
 msgstr "الحالة"
 
@@ -3932,8 +3975,8 @@ msgstr "تم تحديث الحالة"
 
 #: apps/web/src/routes/_app/authors.$id.tsx
 #: apps/web/src/routes/_app/books.index.tsx
-msgid "Stop watching"
-msgstr ""
+#~ msgid "Stop watching"
+#~ msgstr ""
 
 #: apps/web/src/components/settings/system-health-section.tsx
 msgid "Storage"
@@ -4093,7 +4136,6 @@ msgstr "الوقت:"
 
 #: apps/web/src/components/command-palette.tsx
 #: apps/web/src/components/library/library-toolbar.tsx
-#: apps/web/src/routes/_app/books.index.tsx
 msgid "Title"
 msgstr "العنوان"
 
@@ -4116,13 +4158,23 @@ msgstr ""
 
 #: apps/native/src/components/settings/integration-configs.ts
 #: apps/web/src/components/settings/integration-configs.tsx
-msgid "Titles on your Sofa watchlist will be automatically added for download when Radarr polls this list (every 12 hours by default)"
-msgstr "ستتم إضافة العناوين الموجودة في قائمة مشاهدتك على Sofa تلقائياً للتنزيل عندما يستطلع Radarr هذه القائمة (كل 12 ساعة افتراضياً)"
+msgid "Titles on your Patoune TV watchlist will be automatically added for download when Radarr polls this list (every 12 hours by default)"
+msgstr ""
 
 #: apps/native/src/components/settings/integration-configs.ts
 #: apps/web/src/components/settings/integration-configs.tsx
-msgid "Titles on your Sofa watchlist will be automatically added for download when Sonarr polls this list (every 6 hours by default)"
-msgstr "ستتم إضافة العناوين الموجودة في قائمة مشاهدتك على Sofa تلقائياً للتنزيل عندما يستطلع Sonarr هذه القائمة (كل 6 ساعات افتراضياً)"
+msgid "Titles on your Patoune TV watchlist will be automatically added for download when Sonarr polls this list (every 6 hours by default)"
+msgstr ""
+
+#: apps/native/src/components/settings/integration-configs.ts
+#: apps/web/src/components/settings/integration-configs.tsx
+#~ msgid "Titles on your Sofa watchlist will be automatically added for download when Radarr polls this list (every 12 hours by default)"
+#~ msgstr "ستتم إضافة العناوين الموجودة في قائمة مشاهدتك على Sofa تلقائياً للتنزيل عندما يستطلع Radarr هذه القائمة (كل 12 ساعة افتراضياً)"
+
+#: apps/native/src/components/settings/integration-configs.ts
+#: apps/web/src/components/settings/integration-configs.tsx
+#~ msgid "Titles on your Sofa watchlist will be automatically added for download when Sonarr polls this list (every 6 hours by default)"
+#~ msgstr "ستتم إضافة العناوين الموجودة في قائمة مشاهدتك على Sofa تلقائياً للتنزيل عندما يستطلع Sonarr هذه القائمة (كل 6 ساعات افتراضياً)"
 
 #: apps/native/src/components/library/sort-menu.tsx
 #: apps/web/src/components/library/library-toolbar.tsx
@@ -4210,7 +4262,6 @@ msgstr "حاول تعديل الفلاتر"
 
 #: apps/native/src/app/title/[id].tsx
 #: apps/web/src/components/route-error.tsx
-#: apps/web/src/routes/__root.tsx
 msgid "Try again"
 msgstr "حاول مرة أخرى"
 
@@ -4219,6 +4270,7 @@ msgid "Tuesday"
 msgstr "الثلاثاء"
 
 #: apps/web/src/components/command-palette.tsx
+#: apps/web/src/components/explore/discover-search-bar.tsx
 msgid "tv"
 msgstr ""
 
@@ -4246,6 +4298,7 @@ msgstr "مسلسل تلفزيوني"
 
 #: apps/web/src/components/nav-bar.tsx
 #: apps/web/src/components/nav-bar.tsx
+#: apps/web/src/components/settings/appearance-section.tsx
 #: apps/web/src/routes/_app/statistics.tsx
 #: apps/web/src/routes/_app/statistics.tsx
 #: apps/web/src/routes/_app/upcoming.tsx
@@ -4278,8 +4331,8 @@ msgid "Unreachable"
 msgstr "غير قابل للوصول"
 
 #: apps/web/src/routes/_app/books.index.tsx
-msgid "Unread"
-msgstr ""
+#~ msgid "Unread"
+#~ msgstr ""
 
 #: apps/web/src/components/titles/title-seasons.tsx
 msgid "Untitled"
@@ -4323,6 +4376,7 @@ msgstr "التالي"
 #: apps/native/src/components/dashboard/upcoming-section.tsx
 #: apps/web/src/components/nav-bar.tsx
 #: apps/web/src/components/nav-bar.tsx
+#: apps/web/src/components/settings/appearance-section.tsx
 #: apps/web/src/routes/_app/upcoming.tsx
 msgid "Upcoming"
 msgstr "القادم"
@@ -4379,8 +4433,12 @@ msgid "Upload"
 msgstr "رفع"
 
 #: apps/web/src/components/settings/backup-restore-section.tsx
-msgid "Upload a .db file to replace the current database. A safety backup is created first."
-msgstr "ارفع ملف .db لاستبدال قاعدة البيانات الحالية. سيتم إنشاء نسخة احتياطية احترازية أولاً."
+#~ msgid "Upload a .db file to replace the current database. A safety backup is created first."
+#~ msgstr "ارفع ملف .db لاستبدال قاعدة البيانات الحالية. سيتم إنشاء نسخة احتياطية احترازية أولاً."
+
+#: apps/web/src/components/settings/backup-restore-section.tsx
+msgid "Upload a .dump file to replace the current database. A safety backup is created first."
+msgstr ""
 
 #: apps/web/src/components/settings/imports-section.tsx
 #~ msgid "Upload a {0} export from your {1} account settings."
@@ -4489,13 +4547,13 @@ msgstr ""
 #~ msgstr ""
 
 #: apps/web/src/routes/_app/books.index.tsx
-msgid "Watch this author"
-msgstr ""
+#~ msgid "Watch this author"
+#~ msgstr ""
 
 #: apps/web/src/routes/_app/authors.$id.tsx
 #: apps/web/src/routes/_app/books.index.tsx
-msgid "Watched"
-msgstr ""
+#~ msgid "Watched"
+#~ msgstr ""
 
 #: apps/web/src/components/dashboard/watched-movies-section.tsx
 #~ msgid "Watched — No Longer Available"
@@ -4578,7 +4636,6 @@ msgstr "قائمة المشاهدة"
 #~ msgid "Watchlisted"
 #~ msgstr ""
 
-#: apps/native/src/components/settings/integration-configs.ts
 #: apps/native/src/components/settings/integration-configs.ts
 #: apps/native/src/components/settings/integration-configs.ts
 msgid "Webhook URL"

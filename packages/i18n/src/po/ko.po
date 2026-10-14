@@ -62,13 +62,11 @@ msgstr ""
 #~ msgid "{0} backups · last <0/>"
 #~ msgstr ""
 
-#. placeholder {0}: author.bookCount
-#. placeholder {0}: items.length
 #: apps/web/src/routes/_app/authors.$id.tsx
 #: apps/web/src/routes/_app/books.index.tsx
 #: apps/web/src/routes/_app/books.index.tsx
-msgid "{0} books"
-msgstr ""
+#~ msgid "{0} books"
+#~ msgstr ""
 
 #: apps/web/src/components/settings/system-health-section.tsx
 #~ msgid "{0} cached images"
@@ -251,8 +249,8 @@ msgstr "{watchlistCount}개 항목"
 #: apps/web/src/routes/_app/authors.$id.tsx
 #: apps/web/src/routes/_app/books.index.tsx
 #: apps/web/src/routes/_app/books.index.tsx
-msgid "1 book"
-msgstr ""
+#~ msgid "1 book"
+#~ msgstr ""
 
 #: apps/native/src/app/(tabs)/(library)/index.tsx
 msgid "1★+"
@@ -421,19 +419,18 @@ msgstr "나이 {age}"
 #: apps/web/src/components/library/library-filters.tsx
 #: apps/web/src/components/library/library-filters.tsx
 #: apps/web/src/components/people/filmography-grid.tsx
-#: apps/web/src/routes/_app/books.index.tsx
 #: apps/web/src/routes/_app/upcoming.tsx
 #: apps/web/src/routes/_app/upcoming.tsx
 msgid "All"
 msgstr "전체"
 
 #: apps/web/src/routes/_app/books.index.tsx
-msgid "All Authors"
-msgstr ""
+#~ msgid "All Authors"
+#~ msgstr ""
 
 #: apps/web/src/routes/_app/books.index.tsx
-msgid "All Books"
-msgstr ""
+#~ msgid "All Books"
+#~ msgstr ""
 
 #: apps/native/src/app/(tabs)/(library)/index.tsx
 #: apps/native/src/components/library/filter-sheet.tsx
@@ -469,7 +466,6 @@ msgstr "이미 계정이 있으신가요? 로그인"
 #~ msgstr "페이지를 불러오는 중 예기치 못한 오류가 발생했습니다. 다시 시도하거나 대시보드로 돌아가세요."
 
 #: apps/web/src/components/route-error.tsx
-#: apps/web/src/routes/__root.tsx
 msgid "An unexpected error occurred while loading this page. You can try again or head back to the library."
 msgstr ""
 
@@ -524,14 +520,13 @@ msgstr "정말 로그아웃하시겠습니까?"
 
 #: apps/web/src/components/dashboard/to-watch-section.tsx
 #: apps/web/src/components/library/library-toolbar.tsx
-#: apps/web/src/routes/_app/books.index.tsx
 msgid "Ascending"
 msgstr ""
 
 #: apps/web/src/routes/_app/authors.$id.tsx
 #: apps/web/src/routes/_app/books.index.tsx
-msgid "Author"
-msgstr ""
+#~ msgid "Author"
+#~ msgstr ""
 
 #: apps/web/src/components/settings/imports-section.tsx
 #~ msgid "Authorization succeeded but failed to fetch your library. Please try again."
@@ -550,16 +545,16 @@ msgstr ""
 #~ msgstr "Sofa가 {sourceLabel} 라이브러리를 읽을 수 있도록 인증하세요. 비밀번호는 공유되지 않습니다."
 
 #: apps/web/src/routes/_app/books.index.tsx
-msgid "Authors"
-msgstr ""
+#~ msgid "Authors"
+#~ msgstr ""
 
 #: apps/web/src/routes/_app/authors.$id.tsx
-msgid "Auto-grab off"
-msgstr ""
+#~ msgid "Auto-grab off"
+#~ msgstr ""
 
 #: apps/web/src/routes/_app/authors.$id.tsx
-msgid "Auto-grab on"
-msgstr ""
+#~ msgid "Auto-grab on"
+#~ msgstr ""
 
 #: apps/web/src/components/settings/update-check-section.tsx
 msgid "Automatic update checks"
@@ -607,8 +602,8 @@ msgstr ""
 
 #: apps/web/src/routes/_app/authors.$id.tsx
 #: apps/web/src/routes/_app/books.$id.tsx
-msgid "Back to Books"
-msgstr ""
+#~ msgid "Back to Books"
+#~ msgstr ""
 
 #: apps/native/src/app/(auth)/register.tsx
 msgid "Back to Login"
@@ -644,12 +639,12 @@ msgid "backups."
 msgstr "백업."
 
 #: apps/web/src/routes/_app/authors.$id.tsx
-msgid "Book title..."
-msgstr ""
+#~ msgid "Book title..."
+#~ msgstr ""
 
 #: apps/web/src/routes/_app/books.index.tsx
-msgid "Books"
-msgstr ""
+#~ msgid "Books"
+#~ msgstr ""
 
 #: apps/web/src/components/titles/title-availability.tsx
 #~ msgid "Buy"
@@ -814,6 +809,7 @@ msgid "Clear"
 msgstr "지우기"
 
 #: apps/web/src/components/command-palette.tsx
+#: apps/web/src/components/explore/discover-search-bar.tsx
 msgid "Clear all"
 msgstr "모두 지우기"
 
@@ -836,8 +832,8 @@ msgid "Click \"+\" and select \"Custom Lists\""
 msgstr "\"+\"를 클릭하고 \"Custom Lists\"를 선택하세요"
 
 #: apps/native/src/components/settings/integration-configs.ts
-msgid "Click \"Add Webhook\" and paste the URL above"
-msgstr "\"Add Webhook\"을 클릭하고 위의 URL을 붙여넣으세요"
+#~ msgid "Click \"Add Webhook\" and paste the URL above"
+#~ msgstr "\"Add Webhook\"을 클릭하고 위의 URL을 붙여넣으세요"
 
 #: apps/web/src/components/settings/integration-configs.tsx
 #: apps/web/src/components/settings/integration-configs.tsx
@@ -1080,7 +1076,6 @@ msgstr "데이터베이스가 복원되었습니다. 다시 로드 중..."
 
 #: apps/native/src/components/library/sort-menu.tsx
 #: apps/web/src/components/library/library-toolbar.tsx
-#: apps/web/src/routes/_app/books.index.tsx
 msgid "Date Added"
 msgstr "추가된 날짜"
 
@@ -1121,7 +1116,6 @@ msgstr "{0, plural, other {파일 #개}} 삭제됨, {freed} 공간 확보"
 
 #: apps/web/src/components/dashboard/to-watch-section.tsx
 #: apps/web/src/components/library/library-toolbar.tsx
-#: apps/web/src/routes/_app/books.index.tsx
 msgid "Descending"
 msgstr ""
 
@@ -1136,8 +1130,8 @@ msgid "died at {age}"
 msgstr "{age}세에 사망"
 
 #: apps/web/src/routes/_app/authors.$id.tsx
-msgid "Direct Prowlarr search"
-msgstr ""
+#~ msgid "Direct Prowlarr search"
+#~ msgstr ""
 
 #: apps/native/src/app/person/[id].tsx
 #: apps/native/src/components/search/recently-viewed-row-content.tsx
@@ -1163,16 +1157,17 @@ msgstr "{label} 연결 해제"
 #: apps/web/src/components/explore/discover-section.tsx
 #: apps/web/src/components/nav-bar.tsx
 #: apps/web/src/components/nav-bar.tsx
+#: apps/web/src/components/settings/appearance-section.tsx
 msgid "Discover"
 msgstr "둘러보기"
 
 #: apps/web/src/routes/_app/authors.$id.tsx
-msgid "Dismiss (e.g. foreign-language edition)"
-msgstr ""
+#~ msgid "Dismiss (e.g. foreign-language edition)"
+#~ msgstr ""
 
 #: apps/web/src/routes/_app/authors.$id.tsx
-msgid "Dismissed"
-msgstr ""
+#~ msgid "Dismissed"
+#~ msgstr ""
 
 #: apps/native/src/app/(tabs)/(settings)/index.tsx
 msgid "Display name"
@@ -1223,6 +1218,7 @@ msgstr "백업 다운로드"
 msgid "Download your library, watch history, and ratings as JSON"
 msgstr "라이브러리, 시청 기록, 평점을 JSON으로 다운로드"
 
+#: apps/native/src/components/titles/status-action-button.tsx
 #: apps/web/src/components/dashboard/dropped-series-section.tsx
 #: apps/web/src/components/dashboard/upcoming-item.tsx
 #: apps/web/src/components/library/library-filters.tsx
@@ -1305,16 +1301,24 @@ msgstr "유효한 이메일 주소를 입력하세요"
 #~ msgstr "{source} 웹사이트에서 아래 코드를 입력하여 Sofa를 인증하세요."
 
 #: apps/native/src/app/(auth)/server-url.tsx
-msgid "Enter the full URL for your Sofa server"
-msgstr "Sofa 서버의 전체 URL을 입력하세요"
+msgid "Enter the full URL for your Patoune TV server"
+msgstr ""
+
+#: apps/native/src/app/(auth)/server-url.tsx
+#~ msgid "Enter the full URL for your Sofa server"
+#~ msgstr "Sofa 서버의 전체 URL을 입력하세요"
 
 #: apps/web/src/components/settings/account-section.tsx
 msgid "Enter your current password and choose a new one."
 msgstr "현재 비밀번호를 입력하고 새 비밀번호를 설정하세요."
 
 #: apps/native/src/app/(auth)/server-url.tsx
-msgid "Enter your Sofa server URL to get started"
-msgstr "시작하려면 Sofa 서버 URL을 입력하세요"
+msgid "Enter your Patoune TV server URL to get started"
+msgstr ""
+
+#: apps/native/src/app/(auth)/server-url.tsx
+#~ msgid "Enter your Sofa server URL to get started"
+#~ msgstr "시작하려면 Sofa 서버 URL을 입력하세요"
 
 #: apps/web/src/components/settings/system-health-section.tsx
 msgid "Environment"
@@ -1437,8 +1441,8 @@ msgid "Failed to change password"
 msgstr "비밀번호 변경 실패"
 
 #: apps/web/src/routes/_app/authors.$id.tsx
-msgid "Failed to confirm match"
-msgstr ""
+#~ msgid "Failed to confirm match"
+#~ msgstr ""
 
 #: apps/web/src/components/settings/imports-section.tsx
 #~ msgid "Failed to connect"
@@ -1594,8 +1598,8 @@ msgid "Failed to start SSO login"
 msgstr "SSO 로그인을 시작하지 못했습니다"
 
 #: apps/web/src/routes/_app/authors.$id.tsx
-msgid "Failed to stop watching"
-msgstr ""
+#~ msgid "Failed to stop watching"
+#~ msgstr ""
 
 #: apps/web/src/components/settings/system-health-section.tsx
 msgid "Failed to trigger job"
@@ -1612,12 +1616,12 @@ msgid "Failed to unmark some episodes"
 msgstr "일부 에피소드 시청 취소 실패"
 
 #: apps/web/src/routes/_app/authors.$id.tsx
-msgid "Failed to update"
-msgstr ""
+#~ msgid "Failed to update"
+#~ msgstr ""
 
 #: apps/web/src/routes/_app/authors.$id.tsx
-msgid "Failed to update auto-grab setting"
-msgstr ""
+#~ msgid "Failed to update auto-grab setting"
+#~ msgstr ""
 
 #: apps/native/src/app/(tabs)/(settings)/index.tsx
 msgid "Failed to update name"
@@ -1665,8 +1669,8 @@ msgstr "아바타 업로드 실패"
 
 #: apps/web/src/routes/_app/books.index.tsx
 #: apps/web/src/routes/_app/books.index.tsx
-msgid "Failed to watch author"
-msgstr ""
+#~ msgid "Failed to watch author"
+#~ msgstr ""
 
 #: apps/web/src/components/settings/imports-section.tsx
 #~ msgid "Fetching your library data from {source}..."
@@ -1683,8 +1687,8 @@ msgid "Filters"
 msgstr "필터"
 
 #: apps/web/src/routes/_app/authors.$id.tsx
-msgid "Find this book manually in Grimmory"
-msgstr ""
+#~ msgid "Find this book manually in Grimmory"
+#~ msgstr ""
 
 #: apps/web/src/components/settings/imports-section.tsx
 #~ msgid "Finished importing from {source}."
@@ -1715,8 +1719,8 @@ msgid "French"
 msgstr "프랑스어"
 
 #: apps/web/src/routes/_app/authors.$id.tsx
-msgid "French editions only"
-msgstr ""
+#~ msgid "French editions only"
+#~ msgstr ""
 
 #: apps/web/src/components/settings/backup-schedule-section.tsx
 msgid "Frequency"
@@ -1764,8 +1768,8 @@ msgid "Global"
 msgstr "전체"
 
 #: apps/web/src/routes/_app/authors.$id.tsx
-msgid "Go"
-msgstr ""
+#~ msgid "Go"
+#~ msgstr ""
 
 #: apps/native/src/app/person/[id].tsx
 #: apps/native/src/app/person/[id].tsx
@@ -1831,12 +1835,10 @@ msgstr "설정으로 이동"
 msgid "Go to upcoming"
 msgstr "예정으로 이동"
 
-#. placeholder {0}: result.matchedTitle ?? ""
 #: apps/web/src/routes/_app/authors.$id.tsx
-msgid "Grabbed: {0}"
-msgstr ""
+#~ msgid "Grabbed: {0}"
+#~ msgstr ""
 
-#: apps/web/src/routes/_app/books.index.tsx
 #: apps/web/src/routes/_app/library.tsx
 msgid "Grid view"
 msgstr ""
@@ -1874,6 +1876,10 @@ msgstr "힌디어"
 #: apps/native/src/components/navigation/native-tab-bar.tsx
 msgid "Home"
 msgstr "홈"
+
+#: apps/web/src/components/settings/appearance-section.tsx
+msgid "Home page"
+msgstr ""
 
 #: apps/native/src/app/(tabs)/(settings)/index.tsx
 #: apps/web/src/components/settings/system-health-section.tsx
@@ -1966,8 +1972,8 @@ msgstr "라이브러리에 있음"
 
 #: apps/web/src/routes/_app/books.index.tsx
 #: apps/web/src/routes/_app/books.index.tsx
-msgid "In Progress"
-msgstr ""
+#~ msgid "In Progress"
+#~ msgstr ""
 
 #: apps/web/src/components/dashboard/to-watch-section.tsx
 msgid "In Progress / To Start"
@@ -2111,7 +2117,6 @@ msgstr ""
 #: apps/native/src/components/navigation/native-tab-bar.tsx
 #: apps/web/src/components/route-error.tsx
 #: apps/web/src/components/settings/account-section.tsx
-#: apps/web/src/routes/__root.tsx
 #: apps/web/src/routes/_app/library.tsx
 #: apps/web/src/routes/_app/people.$id.tsx
 #: apps/web/src/routes/_app/titles.$id.tsx
@@ -2127,7 +2132,6 @@ msgstr "라이브러리 새로고침"
 msgid "Library statuses"
 msgstr "라이브러리 상태"
 
-#: apps/web/src/routes/_app/books.index.tsx
 #: apps/web/src/routes/_app/library.tsx
 msgid "List view"
 msgstr ""
@@ -2311,12 +2315,12 @@ msgstr "최소 8자…"
 #~ msgstr "Minimum rating"
 
 #: apps/web/src/routes/_app/authors.$id.tsx
-msgid "Missing"
-msgstr ""
+#~ msgid "Missing"
+#~ msgstr ""
 
 #: apps/web/src/routes/_app/authors.$id.tsx
-msgid "Missing first"
-msgstr ""
+#~ msgid "Missing first"
+#~ msgstr ""
 
 #: apps/web/src/components/settings/backup-schedule-section.tsx
 msgid "Monday"
@@ -2347,6 +2351,7 @@ msgid "Most popular"
 msgstr "인기 순"
 
 #: apps/web/src/components/command-palette.tsx
+#: apps/web/src/components/explore/discover-search-bar.tsx
 msgid "movie"
 msgstr "영화"
 
@@ -2368,6 +2373,7 @@ msgstr "영화"
 #: apps/web/src/components/nav-bar.tsx
 #: apps/web/src/components/people/filmography-grid.tsx
 #: apps/web/src/components/settings/account-section.tsx
+#: apps/web/src/components/settings/appearance-section.tsx
 #: apps/web/src/routes/_app/statistics.tsx
 #: apps/web/src/routes/_app/statistics.tsx
 #: apps/web/src/routes/_app/upcoming.tsx
@@ -2499,8 +2505,8 @@ msgid "Next: S{seasonNum} E{epNum}"
 msgstr "다음: S{seasonNum} E{epNum}"
 
 #: apps/web/src/routes/_app/books.index.tsx
-msgid "No authors found"
-msgstr ""
+#~ msgid "No authors found"
+#~ msgstr ""
 
 #: apps/web/src/routes/_app/watched-authors.tsx
 #~ msgid "No authors watched yet. New releases from watched authors are checked daily and downloaded automatically once found."
@@ -2513,16 +2519,16 @@ msgstr "아직 백업 없음"
 
 #: apps/web/src/routes/_app/authors.$id.tsx
 #: apps/web/src/routes/_app/books.index.tsx
-msgid "No books found"
-msgstr ""
+#~ msgid "No books found"
+#~ msgstr ""
 
 #: apps/web/src/routes/_app/authors.$id.tsx
-msgid "No catalog data found on Hardcover."
-msgstr ""
+#~ msgid "No catalog data found on Hardcover."
+#~ msgstr ""
 
 #: apps/web/src/routes/_app/authors.$id.tsx
-msgid "No catalog data found on Open Library."
-msgstr ""
+#~ msgid "No catalog data found on Open Library."
+#~ msgstr ""
 
 #: apps/web/src/components/titles/play-on-dialog.tsx
 msgid "No devices saved yet — pick some in Settings, under your Emby integration."
@@ -2549,20 +2555,20 @@ msgstr ""
 
 #: apps/web/src/routes/_app/authors.$id.tsx
 #: apps/web/src/routes/_app/books.index.tsx
-msgid "No matches found"
-msgstr ""
+#~ msgid "No matches found"
+#~ msgstr ""
 
 #: apps/web/src/routes/_app/books.index.tsx
-msgid "No matches found on Hardcover"
-msgstr ""
+#~ msgid "No matches found on Hardcover"
+#~ msgstr ""
 
 #: apps/web/src/routes/_app/books.index.tsx
-msgid "No matches found on Open Library"
-msgstr ""
+#~ msgid "No matches found on Open Library"
+#~ msgstr ""
 
 #: apps/web/src/routes/_app/authors.$id.tsx
-msgid "No matching release found"
-msgstr ""
+#~ msgid "No matching release found"
+#~ msgstr ""
 
 #: apps/native/src/app/(tabs)/(library)/index.tsx
 msgid "No matching titles"
@@ -2588,6 +2594,7 @@ msgstr "\"{debouncedQuery}\"에 대한 결과가 없습니다"
 #~ msgid "No results for \"{debouncedSearch}\""
 #~ msgstr "No results for \"{debouncedSearch}\""
 
+#: apps/web/src/components/explore/discover-search-bar.tsx
 #: apps/web/src/routes/_app/search.tsx
 msgid "No results found"
 msgstr ""
@@ -2597,8 +2604,8 @@ msgid "No results found."
 msgstr "결과를 찾을 수 없습니다."
 
 #: apps/web/src/routes/_app/books.$id.tsx
-msgid "No summary available"
-msgstr ""
+#~ msgid "No summary available"
+#~ msgstr ""
 
 #: apps/native/src/components/explore/filterable-title-row.tsx
 #: apps/web/src/components/explore/filterable-title-row.tsx
@@ -2614,8 +2621,8 @@ msgid "No titles match your filters"
 msgstr "필터에 맞는 제목이 없습니다"
 
 #: apps/web/src/routes/_app/authors.$id.tsx
-msgid "No titles match your search."
-msgstr ""
+#~ msgid "No titles match your search."
+#~ msgstr ""
 
 #: apps/native/src/app/(tabs)/(home)/upcoming.tsx
 #: apps/web/src/routes/_app/upcoming.tsx
@@ -2649,8 +2656,8 @@ msgid "Not Found"
 msgstr "찾을 수 없음"
 
 #: apps/web/src/routes/_app/books.index.tsx
-msgid "Not in your library — search by provider"
-msgstr ""
+#~ msgid "Not in your library — search by provider"
+#~ msgstr ""
 
 #: apps/web/src/routes/_app/books.index.tsx
 #~ msgid "Not in your library — search Hardcover"
@@ -2665,8 +2672,8 @@ msgid "Not supported in this browser"
 msgstr ""
 
 #: apps/web/src/routes/_app/books.index.tsx
-msgid "Not Watched"
-msgstr ""
+#~ msgid "Not Watched"
+#~ msgstr ""
 
 #: apps/web/src/components/settings/notifications-section.tsx
 msgid "Notification permission denied"
@@ -2709,8 +2716,8 @@ msgid "Oldest"
 msgstr "오래된 순"
 
 #: apps/web/src/routes/_app/authors.$id.tsx
-msgid "on Hardcover"
-msgstr ""
+#~ msgid "on Hardcover"
+#~ msgstr ""
 
 #: apps/native/src/components/library/filter-sheet.tsx
 #: apps/native/src/components/library/filter-sheet.tsx
@@ -2718,8 +2725,8 @@ msgid "On my services"
 msgstr "내 서비스에서"
 
 #: apps/web/src/routes/_app/authors.$id.tsx
-msgid "on Open Library"
-msgstr ""
+#~ msgid "on Open Library"
+#~ msgstr ""
 
 #: apps/native/src/components/titles/status-action-button.tsx
 #: apps/web/src/components/dashboard/upcoming-item.tsx
@@ -2728,6 +2735,7 @@ msgid "On Watchlist"
 msgstr "찜 목록에 있음"
 
 #: apps/web/src/components/command-palette.tsx
+#: apps/web/src/components/explore/discover-search-bar.tsx
 msgid "On your server"
 msgstr ""
 
@@ -2764,24 +2772,24 @@ msgstr "브라우저에서 열기…"
 #~ msgstr ""
 
 #: apps/web/src/routes/_app/books.$id.tsx
-msgid "Open in Readest"
-msgstr ""
+#~ msgid "Open in Readest"
+#~ msgstr ""
 
 #: apps/web/src/routes/_app/authors.$id.tsx
-msgid "Open Library (manual only)"
-msgstr ""
+#~ msgid "Open Library (manual only)"
+#~ msgstr ""
 
 #: apps/web/src/routes/_app/authors.$id.tsx
-msgid "Open Library has no new-release detection — grab new titles manually as they show up in the catalog below"
-msgstr ""
+#~ msgid "Open Library has no new-release detection — grab new titles manually as they show up in the catalog below"
+#~ msgstr ""
 
 #: apps/web/src/components/settings/integration-configs.tsx
 #~ msgid "Open Plex, go to <0>Settings > Webhooks<1/></0>"
 #~ msgstr "Plex를 열고, <0>Settings > Webhooks<1/></0>로 이동하세요"
 
 #: apps/native/src/components/settings/integration-configs.ts
-msgid "Open Plex, go to Settings > Webhooks"
-msgstr "Plex를 열고, Settings > Webhooks로 이동하세요"
+#~ msgid "Open Plex, go to Settings > Webhooks"
+#~ msgstr "Plex를 열고, Settings > Webhooks로 이동하세요"
 
 #: apps/web/src/components/settings/integration-configs.tsx
 msgid "Open Radarr, go to <0>Settings > Import Lists</0>"
@@ -2827,8 +2835,8 @@ msgstr "또는"
 #~ msgstr ""
 
 #: apps/web/src/routes/_app/authors.$id.tsx
-msgid "Owned"
-msgstr ""
+#~ msgid "Owned"
+#~ msgstr ""
 
 #: apps/native/src/app/+not-found.tsx
 msgid "Page Not Found"
@@ -2879,15 +2887,39 @@ msgstr "위의 Radarr URL을 List URL 필드에 붙여넣으세요"
 msgid "Paste the Sonarr URL above into the List URL field"
 msgstr "위의 Sonarr URL을 List URL 필드에 붙여넣으세요"
 
+#: apps/native/src/app/(tabs)/(settings)/index.tsx
+msgid "Patoune TV needs to restart to apply the new layout direction."
+msgstr ""
+
+#: apps/web/src/routes/setup.tsx
+msgid "Patoune TV uses <0>The Movie Database{linkIcon}</0> for movie & TV metadata, posters, and streaming availability. You'll need a free API key to get started."
+msgstr ""
+
+#: apps/web/src/components/update-toast.tsx
+msgid "Patoune TV v{latestVersion} is available"
+msgstr ""
+
+#: apps/native/src/components/settings/integration-configs.ts
+#: apps/native/src/components/settings/integration-configs.ts
+#: apps/web/src/components/settings/integration-configs.tsx
+#: apps/web/src/components/settings/integration-configs.tsx
+msgid "Patoune TV will automatically log movies and episodes when you finish watching them"
+msgstr ""
+
 #: apps/web/src/routes/_app/upcoming.tsx
 msgid "Pending TMDB"
 msgstr ""
 
 #: apps/web/src/components/settings/update-check-section.tsx
-msgid "Periodically check GitHub for new Sofa releases"
-msgstr "GitHub에서 새로운 Sofa 릴리스를 주기적으로 확인합니다"
+msgid "Periodically check GitHub for new Patoune TV releases"
+msgstr ""
+
+#: apps/web/src/components/settings/update-check-section.tsx
+#~ msgid "Periodically check GitHub for new Sofa releases"
+#~ msgstr "GitHub에서 새로운 Sofa 릴리스를 주기적으로 확인합니다"
 
 #: apps/web/src/components/command-palette.tsx
+#: apps/web/src/components/explore/discover-search-bar.tsx
 msgid "person"
 msgstr "인물"
 
@@ -3166,8 +3198,8 @@ msgstr "평점"
 
 #: apps/web/src/routes/_app/books.index.tsx
 #: apps/web/src/routes/_app/books.index.tsx
-msgid "Read"
-msgstr ""
+#~ msgid "Read"
+#~ msgstr ""
 
 #: apps/web/src/components/expandable-text.tsx
 msgid "Read more"
@@ -3192,6 +3224,7 @@ msgid "Ready to Watch"
 msgstr ""
 
 #: apps/web/src/components/command-palette.tsx
+#: apps/web/src/components/explore/discover-search-bar.tsx
 msgid "Recent Searches"
 msgstr "최근 검색"
 
@@ -3299,6 +3332,7 @@ msgid "Remove from library?"
 msgstr "라이브러리에서 제거하시겠습니까?"
 
 #: apps/web/src/components/command-palette.tsx
+#: apps/web/src/components/explore/discover-search-bar.tsx
 msgid "Remove from recent searches"
 msgstr "최근 검색에서 제거"
 
@@ -3368,8 +3402,8 @@ msgstr "<0>Emby Server 4.7.9+</0> 및 활성 <1>Emby Premiere<2/></1> 라이선�
 #~ msgstr "활성 <0>Plex Pass<1/></0> 구독이 필요합니다."
 
 #: apps/native/src/components/settings/integration-configs.ts
-msgid "Requires an active Plex Pass subscription."
-msgstr "활성 Plex Pass 구독이 필요합니다."
+#~ msgid "Requires an active Plex Pass subscription."
+#~ msgstr "활성 Plex Pass 구독이 필요합니다."
 
 #: apps/native/src/components/settings/integration-configs.ts
 msgid "Requires Emby Server 4.7.9+ and an active Emby Premiere license."
@@ -3401,8 +3435,8 @@ msgid "Restore from a Sofa export file"
 msgstr "Sofa 내보내기 파일에서 복원"
 
 #: apps/web/src/routes/_app/authors.$id.tsx
-msgid "Restore to missing list"
-msgstr ""
+#~ msgid "Restore to missing list"
+#~ msgstr ""
 
 #: apps/web/src/components/settings/backup-restore-section.tsx
 msgid "Restoring…"
@@ -3506,26 +3540,26 @@ msgid "Search"
 msgstr "검색"
 
 #: apps/web/src/routes/_app/authors.$id.tsx
-msgid "Search and download"
-msgstr ""
+#~ msgid "Search and download"
+#~ msgstr ""
 
 #: apps/web/src/routes/_app/books.index.tsx
-msgid "Search authors..."
-msgstr ""
+#~ msgid "Search authors..."
+#~ msgstr ""
 
 #: apps/web/src/routes/_app/books.index.tsx
-msgid "Search books or authors..."
-msgstr ""
-
-#: apps/web/src/routes/_app/authors.$id.tsx
-msgid "Search failed"
-msgstr ""
+#~ msgid "Search books or authors..."
+#~ msgstr ""
 
 #: apps/web/src/routes/_app/authors.$id.tsx
+#~ msgid "Search failed"
+#~ msgstr ""
+
+#: apps/web/src/routes/_app/authors.$id.tsx
 #: apps/web/src/routes/_app/books.index.tsx
 #: apps/web/src/routes/_app/books.index.tsx
-msgid "Search failed. Try again."
-msgstr ""
+#~ msgid "Search failed. Try again."
+#~ msgstr ""
 
 #: apps/web/src/components/dashboard/stats-section.tsx
 #~ msgid "Search for movies and TV shows to start tracking"
@@ -3545,8 +3579,8 @@ msgstr "영화, TV 프로그램 검색 또는 명령 실행"
 #~ msgstr ""
 
 #: apps/web/src/routes/_app/books.index.tsx
-msgid "Search Hardcover..."
-msgstr ""
+#~ msgid "Search Hardcover..."
+#~ msgstr ""
 
 #: apps/web/src/components/library/library-toolbar.tsx
 msgid "Search library"
@@ -3556,7 +3590,12 @@ msgstr "라이브러리 검색"
 msgid "Search library..."
 msgstr "라이브러리 검색..."
 
+#: apps/web/src/components/explore/discover-search-bar.tsx
+msgid "Search movies & TV shows"
+msgstr ""
+
 #: apps/web/src/components/command-palette.tsx
+#: apps/web/src/components/explore/discover-search-bar.tsx
 msgid "Search movies & TV shows…"
 msgstr "영화 및 TV 프로그램 검색…"
 
@@ -3565,20 +3604,20 @@ msgid "Search movies, shows, people..."
 msgstr "영화, 프로그램, 인물 검색..."
 
 #: apps/web/src/routes/_app/books.index.tsx
-msgid "Search Open Library..."
-msgstr ""
+#~ msgid "Search Open Library..."
+#~ msgstr ""
 
 #: apps/web/src/routes/_app/authors.$id.tsx
-msgid "Search Prowlarr directly by title, bypassing the provider catalog."
-msgstr ""
+#~ msgid "Search Prowlarr directly by title, bypassing the provider catalog."
+#~ msgstr ""
 
 #: apps/web/src/routes/_app/authors.$id.tsx
-msgid "Search titles..."
-msgstr ""
+#~ msgid "Search titles..."
+#~ msgstr ""
 
 #: apps/web/src/routes/_app/authors.$id.tsx
-msgid "Search your Grimmory books..."
-msgstr ""
+#~ msgid "Search your Grimmory books..."
+#~ msgstr ""
 
 #: apps/native/src/app/(tabs)/(library)/index.tsx
 #~ msgid "Search your library..."
@@ -3594,8 +3633,8 @@ msgstr "검색…"
 #: apps/web/src/routes/_app/authors.$id.tsx
 #: apps/web/src/routes/_app/books.index.tsx
 #: apps/web/src/routes/_app/books.index.tsx
-msgid "Searching..."
-msgstr ""
+#~ msgid "Searching..."
+#~ msgstr ""
 
 #. placeholder {0}: season.seasonNumber
 #: apps/web/src/components/titles/request-dialog.tsx
@@ -3637,6 +3676,7 @@ msgstr "모두 보기"
 
 #. placeholder {0}: searchData?.totalResults
 #: apps/web/src/components/command-palette.tsx
+#: apps/web/src/components/explore/discover-search-bar.tsx
 msgid "See all {0} results"
 msgstr ""
 
@@ -3675,8 +3715,12 @@ msgid "Set password"
 msgstr "비밀번호 설정"
 
 #: apps/web/src/routes/setup.tsx
-msgid "Set the TMDB_API_READ_ACCESS_TOKEN environment variable and restart Sofa."
-msgstr "TMDB_API_READ_ACCESS_TOKEN 환경 변수를 설정하고 Sofa를 다시 시작하세요."
+msgid "Set the TMDB_API_READ_ACCESS_TOKEN environment variable and restart Patoune TV."
+msgstr ""
+
+#: apps/web/src/routes/setup.tsx
+#~ msgid "Set the TMDB_API_READ_ACCESS_TOKEN environment variable and restart Sofa."
+#~ msgstr "TMDB_API_READ_ACCESS_TOKEN 환경 변수를 설정하고 Sofa를 다시 시작하세요."
 
 #: apps/native/src/components/settings/integration-configs.ts
 #: apps/native/src/components/settings/integration-configs.ts
@@ -3705,8 +3749,8 @@ msgid "Setup required"
 msgstr "초기 설정 필요"
 
 #: apps/web/src/routes/_app/authors.$id.tsx
-msgid "Show dismissed"
-msgstr ""
+#~ msgid "Show dismissed"
+#~ msgstr ""
 
 #: apps/native/src/components/ui/expandable-text.tsx
 #: apps/native/src/components/ui/expandable-text.tsx
@@ -3794,28 +3838,28 @@ msgid "Skipped"
 msgstr "건너뜀"
 
 #: apps/native/src/app/(tabs)/(settings)/index.tsx
-msgid "Sofa needs to restart to apply the new layout direction."
-msgstr "Sofa를 재시작해야 새 레이아웃 방향이 적용됩니다."
+#~ msgid "Sofa needs to restart to apply the new layout direction."
+#~ msgstr "Sofa를 재시작해야 새 레이아웃 방향이 적용됩니다."
 
 #: apps/web/src/routes/setup.tsx
-msgid "Sofa uses <0>The Movie Database{linkIcon}</0> for movie & TV metadata, posters, and streaming availability. You'll need a free API key to get started."
-msgstr "Sofa는 영화 및 TV 메타데이터, 포스터, 스트리밍 가용성을 위해 <0>The Movie Database{linkIcon}</0>를 사용합니다. 시작하려면 무료 API 키가 필요합니다."
+#~ msgid "Sofa uses <0>The Movie Database{linkIcon}</0> for movie & TV metadata, posters, and streaming availability. You'll need a free API key to get started."
+#~ msgstr "Sofa는 영화 및 TV 메타데이터, 포스터, 스트리밍 가용성을 위해 <0>The Movie Database{linkIcon}</0>를 사용합니다. 시작하려면 무료 API 키가 필요합니다."
 
 #: apps/web/src/components/update-toast.tsx
 #~ msgid "Sofa v{0} is available"
 #~ msgstr ""
 
 #: apps/web/src/components/update-toast.tsx
-msgid "Sofa v{latestVersion} is available"
-msgstr "Sofa v{latestVersion}을 사용할 수 있습니다"
+#~ msgid "Sofa v{latestVersion} is available"
+#~ msgstr "Sofa v{latestVersion}을 사용할 수 있습니다"
 
 #: apps/native/src/components/settings/integration-configs.ts
 #: apps/native/src/components/settings/integration-configs.ts
 #: apps/native/src/components/settings/integration-configs.ts
 #: apps/web/src/components/settings/integration-configs.tsx
 #: apps/web/src/components/settings/integration-configs.tsx
-msgid "Sofa will automatically log movies and episodes when you finish watching them"
-msgstr "시청을 완료하면 Sofa가 자동으로 영화와 에피소드를 기록합니다"
+#~ msgid "Sofa will automatically log movies and episodes when you finish watching them"
+#~ msgstr "시청을 완료하면 Sofa가 자동으로 영화와 에피소드를 기록합니다"
 
 #: apps/native/src/app/(tabs)/(library)/index.tsx
 #: apps/native/src/app/change-password.tsx
@@ -3824,7 +3868,6 @@ msgstr "시청을 완료하면 Sofa가 자동으로 영화와 에피소드를 �
 #: apps/web/src/components/auth-form.tsx
 #: apps/web/src/components/route-error.tsx
 #: apps/web/src/components/settings/account-section.tsx
-#: apps/web/src/routes/__root.tsx
 msgid "Something went wrong"
 msgstr "오류가 발생했습니다"
 
@@ -3901,6 +3944,7 @@ msgstr ""
 
 #: apps/web/src/components/nav-bar.tsx
 #: apps/web/src/components/nav-bar.tsx
+#: apps/web/src/components/settings/appearance-section.tsx
 msgid "Stats"
 msgstr ""
 
@@ -3910,7 +3954,6 @@ msgstr ""
 #: apps/native/src/components/library/filter-sheet.tsx
 #: apps/web/src/components/library/library-filters.tsx
 #: apps/web/src/components/library/library-filters.tsx
-#: apps/web/src/routes/_app/books.index.tsx
 msgid "Status"
 msgstr "상태"
 
@@ -3932,8 +3975,8 @@ msgstr "상태가 업데이트되었습니다"
 
 #: apps/web/src/routes/_app/authors.$id.tsx
 #: apps/web/src/routes/_app/books.index.tsx
-msgid "Stop watching"
-msgstr ""
+#~ msgid "Stop watching"
+#~ msgstr ""
 
 #: apps/web/src/components/settings/system-health-section.tsx
 msgid "Storage"
@@ -4093,7 +4136,6 @@ msgstr "시간:"
 
 #: apps/web/src/components/command-palette.tsx
 #: apps/web/src/components/library/library-toolbar.tsx
-#: apps/web/src/routes/_app/books.index.tsx
 msgid "Title"
 msgstr "제목"
 
@@ -4116,13 +4158,23 @@ msgstr ""
 
 #: apps/native/src/components/settings/integration-configs.ts
 #: apps/web/src/components/settings/integration-configs.tsx
-msgid "Titles on your Sofa watchlist will be automatically added for download when Radarr polls this list (every 12 hours by default)"
-msgstr "Sofa 관심 목록의 타이틀은 Radarr가 이 목록을 폴링할 때(기본값: 12시간마다) 자동으로 다운로드에 추가됩니다"
+msgid "Titles on your Patoune TV watchlist will be automatically added for download when Radarr polls this list (every 12 hours by default)"
+msgstr ""
 
 #: apps/native/src/components/settings/integration-configs.ts
 #: apps/web/src/components/settings/integration-configs.tsx
-msgid "Titles on your Sofa watchlist will be automatically added for download when Sonarr polls this list (every 6 hours by default)"
-msgstr "Sofa 관심 목록의 타이틀은 Sonarr가 이 목록을 폴링할 때(기본값: 6시간마다) 자동으로 다운로드에 추가됩니다"
+msgid "Titles on your Patoune TV watchlist will be automatically added for download when Sonarr polls this list (every 6 hours by default)"
+msgstr ""
+
+#: apps/native/src/components/settings/integration-configs.ts
+#: apps/web/src/components/settings/integration-configs.tsx
+#~ msgid "Titles on your Sofa watchlist will be automatically added for download when Radarr polls this list (every 12 hours by default)"
+#~ msgstr "Sofa 관심 목록의 타이틀은 Radarr가 이 목록을 폴링할 때(기본값: 12시간마다) 자동으로 다운로드에 추가됩니다"
+
+#: apps/native/src/components/settings/integration-configs.ts
+#: apps/web/src/components/settings/integration-configs.tsx
+#~ msgid "Titles on your Sofa watchlist will be automatically added for download when Sonarr polls this list (every 6 hours by default)"
+#~ msgstr "Sofa 관심 목록의 타이틀은 Sonarr가 이 목록을 폴링할 때(기본값: 6시간마다) 자동으로 다운로드에 추가됩니다"
 
 #: apps/native/src/components/library/sort-menu.tsx
 #: apps/web/src/components/library/library-toolbar.tsx
@@ -4210,7 +4262,6 @@ msgstr "필터를 조정해 보세요"
 
 #: apps/native/src/app/title/[id].tsx
 #: apps/web/src/components/route-error.tsx
-#: apps/web/src/routes/__root.tsx
 msgid "Try again"
 msgstr "다시 시도"
 
@@ -4219,6 +4270,7 @@ msgid "Tuesday"
 msgstr "화요일"
 
 #: apps/web/src/components/command-palette.tsx
+#: apps/web/src/components/explore/discover-search-bar.tsx
 msgid "tv"
 msgstr ""
 
@@ -4246,6 +4298,7 @@ msgstr "TV 프로그램"
 
 #: apps/web/src/components/nav-bar.tsx
 #: apps/web/src/components/nav-bar.tsx
+#: apps/web/src/components/settings/appearance-section.tsx
 #: apps/web/src/routes/_app/statistics.tsx
 #: apps/web/src/routes/_app/statistics.tsx
 #: apps/web/src/routes/_app/upcoming.tsx
@@ -4278,8 +4331,8 @@ msgid "Unreachable"
 msgstr "연결 불가"
 
 #: apps/web/src/routes/_app/books.index.tsx
-msgid "Unread"
-msgstr ""
+#~ msgid "Unread"
+#~ msgstr ""
 
 #: apps/web/src/components/titles/title-seasons.tsx
 msgid "Untitled"
@@ -4323,6 +4376,7 @@ msgstr "다음 에피소드"
 #: apps/native/src/components/dashboard/upcoming-section.tsx
 #: apps/web/src/components/nav-bar.tsx
 #: apps/web/src/components/nav-bar.tsx
+#: apps/web/src/components/settings/appearance-section.tsx
 #: apps/web/src/routes/_app/upcoming.tsx
 msgid "Upcoming"
 msgstr "예정"
@@ -4379,8 +4433,12 @@ msgid "Upload"
 msgstr "업로드"
 
 #: apps/web/src/components/settings/backup-restore-section.tsx
-msgid "Upload a .db file to replace the current database. A safety backup is created first."
-msgstr ".db 파일을 업로드하여 현재 데이터베이스를 교체합니다. 먼저 안전 백업이 생성됩니다."
+#~ msgid "Upload a .db file to replace the current database. A safety backup is created first."
+#~ msgstr ".db 파일을 업로드하여 현재 데이터베이스를 교체합니다. 먼저 안전 백업이 생성됩니다."
+
+#: apps/web/src/components/settings/backup-restore-section.tsx
+msgid "Upload a .dump file to replace the current database. A safety backup is created first."
+msgstr ""
 
 #: apps/web/src/components/settings/imports-section.tsx
 #~ msgid "Upload a {0} export from your {1} account settings."
@@ -4489,13 +4547,13 @@ msgstr ""
 #~ msgstr ""
 
 #: apps/web/src/routes/_app/books.index.tsx
-msgid "Watch this author"
-msgstr ""
+#~ msgid "Watch this author"
+#~ msgstr ""
 
 #: apps/web/src/routes/_app/authors.$id.tsx
 #: apps/web/src/routes/_app/books.index.tsx
-msgid "Watched"
-msgstr ""
+#~ msgid "Watched"
+#~ msgstr ""
 
 #: apps/web/src/components/dashboard/watched-movies-section.tsx
 #~ msgid "Watched — No Longer Available"
@@ -4578,7 +4636,6 @@ msgstr "관심 목록"
 #~ msgid "Watchlisted"
 #~ msgstr ""
 
-#: apps/native/src/components/settings/integration-configs.ts
 #: apps/native/src/components/settings/integration-configs.ts
 #: apps/native/src/components/settings/integration-configs.ts
 msgid "Webhook URL"
