@@ -4383,8 +4383,8 @@ msgid "Upload"
 msgstr "Télécharger"
 
 #: apps/web/src/components/settings/backup-restore-section.tsx
-msgid "Upload a .db file to replace the current database. A safety backup is created first."
-msgstr "Téléchargez un fichier .db pour remplacer la base de données actuelle. Une sauvegarde de sécurité est créée au préalable."
+msgid "Upload a .dump file to replace the current database. A safety backup is created first."
+msgstr "Téléchargez un fichier .dump pour remplacer la base de données actuelle. Une sauvegarde de sécurité est créée au préalable."
 
 #: apps/web/src/components/settings/imports-section.tsx
 #~ msgid "Upload a {0} export from your {1} account settings."

@@ -35,7 +35,10 @@ app.get("/:filename", async (c) => {
   return new Response(file.stream(), {
     status: 200,
     headers: {
-      "Content-Type": "application/x-sqlite3",
+      // 14.10, Sid: pg_dump --format=custom output, not a SQLite file -
+      // there's no registered media type for it, octet-stream is the
+      // honest generic choice (browser just downloads/saves it either way).
+      "Content-Type": "application/octet-stream",
       "Content-Disposition": `attachment; filename="${safe}"`,
       "Content-Length": String(file.size),
       "Cache-Control": "no-store",

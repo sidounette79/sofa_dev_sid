@@ -135,25 +135,80 @@ export async function closeDatabase() {
   globalForDb._db = undefined;
 }
 
-// ─── Backup validation ──────────────────────────────────────────────
+// ─── Backup / restore ───────────────────────────────────────────────
 //
-// 08.10: SQLite's file-based backup (VACUUM INTO + raw magic-byte/PRAGMA
-// checks) has no Postgres equivalent - a real pg_dump/pg_restore-based
-// backup mechanism needs to replace packages/core/src/backup.ts entirely,
-// not just this validation helper. Deferred: these two throw clearly
-// rather than silently doing nothing, so nothing calls them and believes
-// it worked.
+// 14.10, Sid ("backup system needs a pg_dump/pg_restore-based rewrite"):
+// SQLite's file-based backup (VACUUM INTO + raw magic-byte/PRAGMA checks)
+// had no Postgres equivalent - real subprocess calls to pg_dump/
+// pg_restore now, same Bun.spawn + pipe-stdio pattern already used for
+// embyFetchViaCurl (packages/core/src/emby.ts). --format=custom (not
+// plain SQL): compressed, and the one format pg_restore --list can
+// actually validate without applying it.
 
 const REQUIRED_TABLES = Object.values(schema)
   .filter((v) => v instanceof PgTable)
   .map((t) => getTableName(t as PgTable));
 
-export function vacuumDatabase(_into: string): void {
-  throw new Error(
-    `vacuumDatabase() is SQLite-only and not yet reimplemented for Postgres (pg_dump needed) - ${REQUIRED_TABLES.length} tables pending migration`,
-  );
+async function runPgTool(
+  bin: "pg_dump" | "pg_restore",
+  args: string[],
+): Promise<{ stdout: string; stderr: string }> {
+  const proc = Bun.spawn([bin, ...args], { stdout: "pipe", stderr: "pipe" });
+  const [stdout, stderr, exitCode] = await Promise.all([
+    new Response(proc.stdout).text(),
+    new Response(proc.stderr).text(),
+    proc.exited,
+  ]);
+  if (exitCode !== 0) {
+    throw new Error(`${bin} failed (exit ${exitCode}): ${stderr.trim() || "no output"}`);
+  }
+  return { stdout, stderr };
 }
 
-export function validateBackupDatabase(_filePath: string): void {
-  throw new Error("validateBackupDatabase() is SQLite-only and not yet reimplemented for Postgres");
+/** Dumps the live database to `into` in pg_dump's custom format. */
+export async function createPgDump(into: string): Promise<void> {
+  await runPgTool("pg_dump", [
+    "--format=custom",
+    "--no-owner",
+    "--no-privileges",
+    "--file",
+    into,
+    DATABASE_URL,
+  ]);
+}
+
+/** Sanity-checks a dump file without applying it: must be a well-formed
+ * custom-format archive (pg_restore --list fails outright on garbage)
+ * and must actually contain data for roughly this schema's tables, not
+ * e.g. an empty or unrelated database's dump. */
+export async function validatePgDump(filePath: string): Promise<void> {
+  const { stdout } = await runPgTool("pg_restore", ["--list", filePath]);
+  const tableDataCount = REQUIRED_TABLES.filter((t) =>
+    stdout.includes(`TABLE DATA public ${t} `),
+  ).length;
+  // Tolerant, not exact: a backup from a slightly older schema version is
+  // still a legitimate restore target (runMigrations() catches it up
+  // afterwards) and may be missing a table or two added since.
+  if (tableDataCount < REQUIRED_TABLES.length * 0.7) {
+    throw new Error(
+      `Backup file doesn't look like a ${REQUIRED_TABLES.length}-table Patoune TV dump (found ${tableDataCount} matching tables)`,
+    );
+  }
+}
+
+/** Replaces the live database's contents with what's in `filePath`.
+ * --clean --if-exists: drops existing objects first so the restore is a
+ * full replacement, not a merge - matches what "restore a backup" means
+ * to someone clicking the button, and avoids unique-constraint failures
+ * restoring over data that still exists. */
+export async function restorePgDump(filePath: string): Promise<void> {
+  await runPgTool("pg_restore", [
+    "--clean",
+    "--if-exists",
+    "--no-owner",
+    "--no-privileges",
+    "--dbname",
+    DATABASE_URL,
+    filePath,
+  ]);
 }

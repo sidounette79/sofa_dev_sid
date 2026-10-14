@@ -56,7 +56,7 @@ export function BackupRestoreSection() {
             </CardTitle>
             <CardDescription>
               <Trans>
-                Upload a .db file to replace the current database. A safety backup is created first.
+                Upload a .dump file to replace the current database. A safety backup is created first.
               </Trans>
             </CardDescription>
           </div>
@@ -64,7 +64,7 @@ export function BackupRestoreSection() {
         <input
           ref={fileInputRef}
           type="file"
-          accept=".db"
+          accept=".dump"
           className="hidden"
           onChange={(e) => {
             const file = e.target.files?.[0];

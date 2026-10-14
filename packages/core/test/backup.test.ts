@@ -4,49 +4,49 @@ import { getBackupSource, isKnownBackup, isValidBackupFilename } from "../src/ba
 
 describe("getBackupSource", () => {
   test("detects manual backup", () => {
-    expect(getBackupSource("sofa-manual-2024-01-15-120000.db")).toBe("manual");
+    expect(getBackupSource("sofa-manual-2024-01-15-120000.dump")).toBe("manual");
   });
 
   test("detects manual backup with milliseconds", () => {
-    expect(getBackupSource("sofa-manual-2024-01-15-120000123.db")).toBe("manual");
+    expect(getBackupSource("sofa-manual-2024-01-15-120000123.dump")).toBe("manual");
   });
 
   test("detects scheduled backup", () => {
-    expect(getBackupSource("sofa-scheduled-2024-06-01-030000.db")).toBe("scheduled");
+    expect(getBackupSource("sofa-scheduled-2024-06-01-030000.dump")).toBe("scheduled");
   });
 
   test("detects pre-restore backup", () => {
-    expect(getBackupSource("pre-restore-2024-06-01-030000.db")).toBe("pre-restore");
+    expect(getBackupSource("pre-restore-2024-06-01-030000.dump")).toBe("pre-restore");
   });
 
   test("defaults to manual for unknown patterns", () => {
-    expect(getBackupSource("random-file.db")).toBe("manual");
+    expect(getBackupSource("random-file.dump")).toBe("manual");
   });
 });
 
 describe("isKnownBackup", () => {
   test("recognizes manual backup", () => {
-    expect(isKnownBackup("sofa-manual-2024-01-15-120000.db")).toBe(true);
+    expect(isKnownBackup("sofa-manual-2024-01-15-120000.dump")).toBe(true);
   });
 
   test("recognizes scheduled backup", () => {
-    expect(isKnownBackup("sofa-scheduled-2024-06-01-030000.db")).toBe(true);
+    expect(isKnownBackup("sofa-scheduled-2024-06-01-030000.dump")).toBe(true);
   });
 
   test("recognizes pre-restore backup", () => {
-    expect(isKnownBackup("pre-restore-2024-06-01-030000.db")).toBe(true);
+    expect(isKnownBackup("pre-restore-2024-06-01-030000.dump")).toBe(true);
   });
 
   test("recognizes backup with milliseconds", () => {
-    expect(isKnownBackup("sofa-manual-2024-01-15-120000456.db")).toBe(true);
+    expect(isKnownBackup("sofa-manual-2024-01-15-120000456.dump")).toBe(true);
   });
 
   test("rejects random filename", () => {
-    expect(isKnownBackup("random-file.db")).toBe(false);
+    expect(isKnownBackup("random-file.dump")).toBe(false);
   });
 
   test("rejects similar but wrong prefix", () => {
-    expect(isKnownBackup("sofa-auto-2024-01-15-120000.db")).toBe(false);
+    expect(isKnownBackup("sofa-auto-2024-01-15-120000.dump")).toBe(false);
   });
 
   test("rejects wrong extension", () => {
@@ -56,26 +56,26 @@ describe("isKnownBackup", () => {
 
 describe("isValidBackupFilename", () => {
   test("accepts valid manual backup", () => {
-    expect(isValidBackupFilename("sofa-manual-2024-01-15-120000.db")).toBe(true);
+    expect(isValidBackupFilename("sofa-manual-2024-01-15-120000.dump")).toBe(true);
   });
 
   test("accepts valid scheduled backup", () => {
-    expect(isValidBackupFilename("sofa-scheduled-2024-06-01-030000.db")).toBe(true);
+    expect(isValidBackupFilename("sofa-scheduled-2024-06-01-030000.dump")).toBe(true);
   });
 
   test("rejects path traversal", () => {
-    expect(isValidBackupFilename("../sofa-manual-2024-01-15-120000.db")).toBe(false);
+    expect(isValidBackupFilename("../sofa-manual-2024-01-15-120000.dump")).toBe(false);
   });
 
   test("rejects directory separators", () => {
-    expect(isValidBackupFilename("subdir/sofa-manual-2024-01-15-120000.db")).toBe(false);
+    expect(isValidBackupFilename("subdir/sofa-manual-2024-01-15-120000.dump")).toBe(false);
   });
 
   test("rejects unknown filenames", () => {
-    expect(isValidBackupFilename("evil.db")).toBe(false);
+    expect(isValidBackupFilename("evil.dump")).toBe(false);
   });
 
   test("rejects filenames with double dots", () => {
-    expect(isValidBackupFilename("sofa-manual-2024..01-15-120000.db")).toBe(false);
+    expect(isValidBackupFilename("sofa-manual-2024..01-15-120000.dump")).toBe(false);
   });
 });

@@ -49,7 +49,12 @@ WORKDIR /app
 # confirmed Bun fetch() bug (hangs reading the response body even after
 # headers arrive, immune to AbortSignal.timeout()). Not present in the base
 # Alpine image by default.
-RUN apk add --no-cache curl
+# 14.10, Sid ("backup system needs a pg_dump/pg_restore-based rewrite"):
+# postgresql17-client matches the db service's own postgres:17-alpine -
+# pg_dump/pg_restore/psql aren't part of any base image here, and a
+# mismatched client major version against a newer server can silently
+# produce an incompatible dump format.
+RUN apk add --no-cache curl postgresql17-client
 
 ARG APP_VERSION
 ARG GIT_COMMIT_SHA

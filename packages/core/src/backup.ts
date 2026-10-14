@@ -1,15 +1,16 @@
-import { renameSync, unlinkSync } from "node:fs";
+import { renameSync } from "node:fs";
 import { mkdir, readdir } from "node:fs/promises";
 import path from "node:path";
 
 import { ORPCError } from "@orpc/server";
 
 import { AppErrorCode } from "@sofa/api/errors";
-import { BACKUP_DIR, DATABASE_URL } from "@sofa/config";
+import { BACKUP_DIR } from "@sofa/config";
 import {
   closeDatabase,
-  vacuumDatabase,
-  validateBackupDatabase,
+  createPgDump,
+  restorePgDump,
+  validatePgDump,
   withDatabaseAccessBlocked,
 } from "@sofa/db/client";
 import { runMigrations } from "@sofa/db/migrate";
@@ -22,9 +23,11 @@ function formatTimestamp(date: Date): string {
 
 const log = createLogger("backup");
 
-const MANUAL_PATTERN = /^sofa-manual-\d{4}-\d{2}-\d{2}-\d{6}(?:\d{3})?\.db$/;
-const SCHEDULED_PATTERN = /^sofa-scheduled-\d{4}-\d{2}-\d{2}-\d{6}(?:\d{3})?\.db$/;
-const PRE_RESTORE_PATTERN = /^pre-restore-\d{4}-\d{2}-\d{2}-\d{6}(?:\d{3})?\.db$/;
+// 14.10, Sid: .dump (pg_dump --format=custom output), not .db - these
+// haven't been SQLite files since the Postgres migration.
+const MANUAL_PATTERN = /^sofa-manual-\d{4}-\d{2}-\d{2}-\d{6}(?:\d{3})?\.dump$/;
+const SCHEDULED_PATTERN = /^sofa-scheduled-\d{4}-\d{2}-\d{2}-\d{6}(?:\d{3})?\.dump$/;
+const PRE_RESTORE_PATTERN = /^pre-restore-\d{4}-\d{2}-\d{2}-\d{6}(?:\d{3})?\.dump$/;
 
 export type BackupSource = "manual" | "scheduled" | "pre-restore";
 type BackupPrefix = "sofa-manual" | "sofa-scheduled" | "pre-restore";
@@ -73,16 +76,6 @@ async function withBackupLock<T>(fn: () => Promise<T>): Promise<T> {
   }
 }
 
-function unlinkIfExistsSync(filePath: string): void {
-  try {
-    unlinkSync(filePath);
-  } catch (err) {
-    if ((err as NodeJS.ErrnoException).code !== "ENOENT") {
-      throw err;
-    }
-  }
-}
-
 /** @internal */
 export function isValidBackupFilename(filename: string): boolean {
   const base = path.basename(filename);
@@ -93,10 +86,10 @@ async function createBackupInternal(prefix: BackupPrefix): Promise<BackupInfo> {
   await ensureBackupDir();
 
   const timestamp = formatTimestamp(new Date());
-  const filename = `${prefix}-${timestamp}.db`;
+  const filename = `${prefix}-${timestamp}.dump`;
   const dest = path.join(BACKUP_DIR, filename);
 
-  vacuumDatabase(dest);
+  await createPgDump(dest);
 
   const s = await Bun.file(dest).stat();
   log.info(`Created backup: ${filename} (${s.size} bytes)`);
@@ -173,11 +166,8 @@ export async function restoreFromBackup(source: Buffer | string): Promise<void> 
   await withBackupLock(async () => {
     await ensureBackupDir();
 
-    const dbDir = path.dirname(DATABASE_URL);
-    await mkdir(dbDir, { recursive: true });
-
     const timestamp = formatTimestamp(new Date());
-    const tempPath = path.join(dbDir, `.restore-temp-${timestamp}-${crypto.randomUUID()}.db`);
+    const tempPath = path.join(BACKUP_DIR, `.restore-temp-${timestamp}-${crypto.randomUUID()}.dump`);
 
     try {
       if (typeof source === "string") {
@@ -185,21 +175,28 @@ export async function restoreFromBackup(source: Buffer | string): Promise<void> 
       } else {
         await Bun.write(tempPath, source);
       }
-      validateBackupDatabase(tempPath);
+      await validatePgDump(tempPath);
 
       log.info("Creating pre-restore safety backup...");
       await createBackupInternal("pre-restore");
 
       await withDatabaseAccessBlocked(async () => {
-        // Keep the close+replace window synchronous to avoid event-loop interleaving.
-        log.info("Replacing database...");
-        closeDatabase();
-        renameSync(tempPath, DATABASE_URL);
-        unlinkIfExistsSync(`${DATABASE_URL}-wal`);
-        unlinkIfExistsSync(`${DATABASE_URL}-shm`);
+        // Close the app's own pool first so none of its cached
+        // connections/prepared statements survive the restore stale -
+        // pg_restore below talks to Postgres directly over its own
+        // connection, not through this pool.
+        log.info("Closing connection pool before restore...");
+        await closeDatabase();
+        log.info("Restoring database from dump (this replaces all current data)...");
+        await restorePgDump(tempPath);
 
-        // Ensure restored backups from older app versions are brought up-to-date.
-        runMigrations();
+        // Ensure restored backups from older app versions are brought
+        // up-to-date. Awaited (the original SQLite-era version of this
+        // line wasn't) - withDatabaseAccessBlocked's window needs to
+        // stay open until migrations genuinely finish, not just until
+        // this async call is kicked off, or a request could slip through
+        // mid-migration.
+        await runMigrations();
       });
       log.info("Database restored successfully");
     } finally {
