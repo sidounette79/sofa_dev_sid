@@ -106,8 +106,17 @@ export function RequestDialog({
         });
       }
       toast.success(t`Request sent`);
-      queryClient.invalidateQueries({ queryKey: orpc.tracking.userInfo.key() });
       onOpenChange(false);
+      // 14.10, Sid: real crash confirmed live (Android, request dialog) -
+      // "Failed to execute 'removeChild' on 'Node'". Invalidating in the
+      // same tick as closing the dialog re-renders the title page's
+      // Request button (-> "Requested") while Base UI's own animated
+      // portal unmount is still removing the dialog's DOM nodes; the two
+      // DOM mutations race. Deferring past the dialog's close animation
+      // (duration-100 in dialog.tsx) avoids the overlap.
+      setTimeout(() => {
+        queryClient.invalidateQueries({ queryKey: orpc.tracking.userInfo.key() });
+      }, 150);
     } catch (err) {
       // 06.09, Sid: TheTVDB not having indexed the show yet (usually because
       // it hasn't aired) is an expected, temporary state, not a real
