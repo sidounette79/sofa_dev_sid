@@ -213,6 +213,14 @@ if (process.env.NODE_ENV === "production") {
         if (path.endsWith("index.html")) {
           c.header("Cache-Control", "no-store");
         }
+        // 14.10, Sid: same class of bug as index.html above, for sw.js —
+        // an installed PWA that caches the service worker script itself
+        // can go a long time without ever re-fetching it to notice a new
+        // version exists, especially if the window is only ever
+        // suspended/resumed and never truly reloaded.
+        if (path.endsWith("sw.js")) {
+          c.header("Cache-Control", "no-store");
+        }
       },
     }),
   );

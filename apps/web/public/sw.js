@@ -1,6 +1,20 @@
 // Push notification service worker (20.08) — episode-release and
 // series-status-change pushes only. Deliberately minimal: no offline
 // caching/asset precaching here, just the two events Web Push needs.
+//
+// 14.10, Sid: an installed PWA window that's never fully closed keeps its
+// OLD service worker controlling the page indefinitely — without
+// skipWaiting/clients.claim, a new SW install just sits "waiting" forever
+// behind the still-open client, so a long-lived PWA can run a frontend
+// bundle from weeks ago against the current (Postgres-migrated) backend.
+// Forces every deploy to take over immediately instead.
+self.addEventListener("install", () => {
+  self.skipWaiting();
+});
+
+self.addEventListener("activate", (event) => {
+  event.waitUntil(self.clients.claim());
+});
 
 self.addEventListener("push", (event) => {
   if (!event.data) return;
