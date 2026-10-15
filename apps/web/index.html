@@ -1,7 +1,22 @@
 <!doctype html>
-<html lang="en" style="color-scheme: dark">
+<html lang="fr" translate="no" style="color-scheme: dark">
   <head>
     <meta charset="UTF-8" />
+    <!-- 15.10, Sid: real crash root-caused via Sentry - lang="en" here
+         (hardcoded, while apps/web/src/lib/i18n.ts only corrects it to the
+         real locale AFTER the JS bundle runs) let Chrome's translate
+         engine decide to "translate" an already-French page before that
+         correction landed, on the very first paint. Chrome's translator
+         rewrites DOM text nodes directly, outside React entirely - it was
+         colliding with React's own commit on whatever node it got to
+         first (confirmed via Sentry: hit both an icon-swap in a button
+         AND a loading-state text node, two unrelated components, which
+         only makes sense for something walking the whole page, not a
+         bug in one component). lang="fr" as the real default (still
+         overridden by i18n.ts for other locales) plus translate="no" +
+         the meta tag below - belt and suspenders, since Chrome's
+         decision to translate isn't based on the lang attribute alone. -->
+    <meta name="google" content="notranslate" />
     <link rel="icon" type="image/png" href="/favicon.png" />
   </head>
   <body style="touch-action: manipulation">
