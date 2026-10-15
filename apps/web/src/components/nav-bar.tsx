@@ -130,6 +130,12 @@ export function NavBar({
     { href: "/explore", label: t`Discover` },
     { href: "/upcoming", label: t`Upcoming` },
     { href: "/statistics", label: t`Stats` },
+    // 15.10, Sid: desktop-only — the mobile bottom tab bar is already full
+    // at 6 slots, reachable from Settings there instead (see settings.tsx).
+    // Labeled "Pending" per her exact ask ("l'onglet... s'appellerait 'En
+    // attente'") rather than "Requests" — reuses the same translated
+    // string as the page's own default-view toggle button.
+    { href: "/requests", label: t`Pending` },
   ] as const;
 
   const initial = userName?.charAt(0).toUpperCase() ?? "?";

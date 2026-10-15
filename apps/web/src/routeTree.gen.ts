@@ -19,6 +19,7 @@ import { Route as AppUpcomingRouteImport } from './routes/_app/upcoming'
 import { Route as AppStatisticsRouteImport } from './routes/_app/statistics'
 import { Route as AppSettingsRouteImport } from './routes/_app/settings'
 import { Route as AppSearchRouteImport } from './routes/_app/search'
+import { Route as AppRequestsRouteImport } from './routes/_app/requests'
 import { Route as AppOnboardingRouteImport } from './routes/_app/onboarding'
 import { Route as AppLibraryRouteImport } from './routes/_app/library'
 import { Route as AppExploreRouteImport } from './routes/_app/explore'
@@ -74,6 +75,11 @@ const AppSearchRoute = AppSearchRouteImport.update({
   path: '/search',
   getParentRoute: () => AppRoute,
 } as any)
+const AppRequestsRoute = AppRequestsRouteImport.update({
+  id: '/requests',
+  path: '/requests',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppOnboardingRoute = AppOnboardingRouteImport.update({
   id: '/onboarding',
   path: '/onboarding',
@@ -112,6 +118,7 @@ export interface FileRoutesByFullPath {
   '/explore': typeof AppExploreRoute
   '/library': typeof AppLibraryRoute
   '/onboarding': typeof AppOnboardingRoute
+  '/requests': typeof AppRequestsRoute
   '/search': typeof AppSearchRoute
   '/settings': typeof AppSettingsRoute
   '/statistics': typeof AppStatisticsRoute
@@ -128,6 +135,7 @@ export interface FileRoutesByTo {
   '/explore': typeof AppExploreRoute
   '/library': typeof AppLibraryRoute
   '/onboarding': typeof AppOnboardingRoute
+  '/requests': typeof AppRequestsRoute
   '/search': typeof AppSearchRoute
   '/settings': typeof AppSettingsRoute
   '/statistics': typeof AppStatisticsRoute
@@ -147,6 +155,7 @@ export interface FileRoutesById {
   '/_app/explore': typeof AppExploreRoute
   '/_app/library': typeof AppLibraryRoute
   '/_app/onboarding': typeof AppOnboardingRoute
+  '/_app/requests': typeof AppRequestsRoute
   '/_app/search': typeof AppSearchRoute
   '/_app/settings': typeof AppSettingsRoute
   '/_app/statistics': typeof AppStatisticsRoute
@@ -165,6 +174,7 @@ export interface FileRouteTypes {
     | '/explore'
     | '/library'
     | '/onboarding'
+    | '/requests'
     | '/search'
     | '/settings'
     | '/statistics'
@@ -181,6 +191,7 @@ export interface FileRouteTypes {
     | '/explore'
     | '/library'
     | '/onboarding'
+    | '/requests'
     | '/search'
     | '/settings'
     | '/statistics'
@@ -199,6 +210,7 @@ export interface FileRouteTypes {
     | '/_app/explore'
     | '/_app/library'
     | '/_app/onboarding'
+    | '/_app/requests'
     | '/_app/search'
     | '/_app/settings'
     | '/_app/statistics'
@@ -288,6 +300,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppSearchRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/requests': {
+      id: '/_app/requests'
+      path: '/requests'
+      fullPath: '/requests'
+      preLoaderRoute: typeof AppRequestsRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/onboarding': {
       id: '/_app/onboarding'
       path: '/onboarding'
@@ -338,6 +357,7 @@ interface AppRouteChildren {
   AppExploreRoute: typeof AppExploreRoute
   AppLibraryRoute: typeof AppLibraryRoute
   AppOnboardingRoute: typeof AppOnboardingRoute
+  AppRequestsRoute: typeof AppRequestsRoute
   AppSearchRoute: typeof AppSearchRoute
   AppSettingsRoute: typeof AppSettingsRoute
   AppStatisticsRoute: typeof AppStatisticsRoute
@@ -351,6 +371,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppExploreRoute: AppExploreRoute,
   AppLibraryRoute: AppLibraryRoute,
   AppOnboardingRoute: AppOnboardingRoute,
+  AppRequestsRoute: AppRequestsRoute,
   AppSearchRoute: AppSearchRoute,
   AppSettingsRoute: AppSettingsRoute,
   AppStatisticsRoute: AppStatisticsRoute,

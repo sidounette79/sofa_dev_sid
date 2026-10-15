@@ -5,6 +5,7 @@ import {
   getRequestOptions,
   getUserDefaults,
   listUserDefaults,
+  listRequestedTitles,
   listUnresolvedSeriesRequestTitles,
   MediaRequestError,
   NoTvdbIdError,
@@ -106,5 +107,22 @@ export const listUnresolvedSeriesRequests = os.mediaRequests.listUnresolvedSerie
         ...item,
         posterPath: tmdbImageUrl(item.posterPath, "posters"),
       })),
+    };
+  });
+
+export const listRequested = os.mediaRequests.listRequested
+  .use(authed)
+  .handler(async ({ input }) => {
+    const { items, total } = await listRequestedTitles({
+      pendingOnly: input.pendingOnly,
+      page: input.page,
+      limit: input.limit,
+    });
+    return {
+      items: items.map((item) => ({
+        ...item,
+        posterPath: tmdbImageUrl(item.posterPath, "posters"),
+      })),
+      total,
     };
   });

@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, gte, lte, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gte, isNotNull, lte, sql } from "drizzle-orm";
 
 import { db } from "../client";
 import {
@@ -7,12 +7,14 @@ import {
   titleEpisodeStats,
   titleGenres,
   titles,
+  user,
   userEpisodeWatches,
   userMovieWatches,
   userPlatforms,
   userRatings,
   userTitleStatus,
 } from "../schema";
+import { deriveEmbyStatus } from "./emby-library";
 
 // ─── Display status SQL ─────────────────────────────────────────────
 // Derives the user-facing display status inline for filtering/output.
@@ -396,4 +398,62 @@ export function getWatchedGenreStats(userId: string) {
     .groupBy(genres.id, genres.name)
     .orderBy(desc(sql`count(distinct ${titleGenres.titleId})`))
     ;
+}
+
+// ─── Requested titles ────────────────────────────────────────────────
+// 15.10, Sid: "la potentielle page qui recenserait toutes les demandes en
+// attente" - a dedicated requests screen was explicitly deferred 30.08 in
+// favor of tracking via Radarr/Sonarr tags directly, but requestedAt/
+// requestedByUserId already exist on titles (added the same day for the
+// request badges) - reopening this is cheap now, unlike back then when
+// nothing was persisted at all. Household-wide (titles.requestedAt isn't
+// scoped to a user), same as the request badge itself.
+
+export interface RequestedTitlesFilters {
+  pendingOnly: boolean;
+  limit: number;
+  offset: number;
+}
+
+export async function getRequestedTitles(filters: RequestedTitlesFilters) {
+  const { pendingOnly, limit, offset } = filters;
+  const where = pendingOnly
+    ? and(isNotNull(titles.requestedAt), eq(titles.inEmbyLibrary, false))
+    : isNotNull(titles.requestedAt);
+
+  const rows = await db
+    .select({
+      id: titles.id,
+      type: titles.type,
+      title: titles.title,
+      posterPath: titles.posterPath,
+      posterThumbHash: titles.posterThumbHash,
+      releaseDate: titles.releaseDate,
+      firstAirDate: titles.firstAirDate,
+      voteAverage: titles.voteAverage,
+      inEmbyLibrary: titles.inEmbyLibrary,
+      embyItemId: titles.embyItemId,
+      requestedAt: titles.requestedAt,
+      requestedByName: user.name,
+    })
+    .from(titles)
+    .leftJoin(user, eq(titles.requestedByUserId, user.id))
+    .where(where)
+    .orderBy(desc(titles.requestedAt))
+    .limit(limit)
+    .offset(offset);
+
+  return rows.map(({ inEmbyLibrary, embyItemId, ...r }) => ({
+    ...r,
+    embyStatus: deriveEmbyStatus(inEmbyLibrary, embyItemId),
+  }));
+}
+
+export async function countRequestedTitles(pendingOnly: boolean): Promise<number> {
+  const where = pendingOnly
+    ? and(isNotNull(titles.requestedAt), eq(titles.inEmbyLibrary, false))
+    : isNotNull(titles.requestedAt);
+
+  const [row] = await db.select({ count: sql<number>`count(*)::int` }).from(titles).where(where);
+  return row?.count ?? 0;
 }

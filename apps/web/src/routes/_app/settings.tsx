@@ -1,6 +1,8 @@
 import { Trans } from "@lingui/react/macro";
 import {
   IconAlertTriangle,
+  IconChevronRight,
+  IconClockHour4,
   IconDatabaseExport,
   IconFolder,
   IconServer2,
@@ -8,7 +10,7 @@ import {
   IconUser,
   IconWebhook,
 } from "@tabler/icons-react";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 
 import { RouteError } from "@/components/route-error";
 import { AccountSection } from "@/components/settings/account-section";
@@ -108,6 +110,19 @@ function SettingsPage() {
           <Card>
             <NotificationsSection />
           </Card>
+          {/* 15.10, Sid: "En attente" — a real nav tab on desktop
+              (nav-bar.tsx), but the mobile bottom bar is already full at 6
+              slots, so it's reachable from here instead on mobile only. */}
+          <Link
+            to="/requests"
+            className="ring-foreground/10 hover:bg-card/50 flex items-center justify-between gap-2 rounded-lg px-4 py-3 text-sm font-medium ring-1 transition-colors sm:hidden"
+          >
+            <span className="flex items-center gap-2">
+              <IconClockHour4 aria-hidden={true} className="text-muted-foreground size-4" />
+              <Trans>Pending</Trans>
+            </span>
+            <IconChevronRight aria-hidden={true} className="text-muted-foreground size-4" />
+          </Link>
         </div>
       </div>
 

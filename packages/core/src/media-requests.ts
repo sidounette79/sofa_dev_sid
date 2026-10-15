@@ -22,6 +22,7 @@ import {
   markTitlesRequested,
 } from "@sofa/db/queries/title";
 import { batchUpdateTvdbIds } from "@sofa/db/queries/lists";
+import { countRequestedTitles, getRequestedTitles } from "@sofa/db/queries/library";
 import {
   deleteUnresolvedSeriesRequest,
   getUnresolvedSeriesRequestTitlesForUser,
@@ -279,6 +280,25 @@ export async function listUnresolvedSeriesRequestTitles(userId: string) {
     firstAirDate: row.firstAirDate ?? row.releaseDate,
     voteAverage: row.voteAverage,
   }));
+}
+
+/**
+ * 15.10, Sid — "la page qui recenserait toutes les demandes en attente",
+ * deferred 30.08 in favor of tracking via Radarr/Sonarr tags, reopened at
+ * her explicit request now that requestedAt/requestedByUserId already
+ * exist on titles (added the same day for the request badges).
+ */
+export async function listRequestedTitles(options: {
+  pendingOnly: boolean;
+  page: number;
+  limit: number;
+}) {
+  const offset = (options.page - 1) * options.limit;
+  const [items, total] = await Promise.all([
+    getRequestedTitles({ pendingOnly: options.pendingOnly, limit: options.limit, offset }),
+    countRequestedTitles(options.pendingOnly),
+  ]);
+  return { items, total };
 }
 
 /**

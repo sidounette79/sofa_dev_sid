@@ -440,6 +440,10 @@ msgstr "Tout"
 msgid "All genres"
 msgstr "Tous les genres"
 
+#: apps/web/src/routes/_app/requests.tsx
+msgid "All history"
+msgstr "Tout l'historique"
+
 #: apps/web/src/components/explore/discover-section.tsx
 msgid "All providers"
 msgstr "Tous les fournisseurs"
@@ -2586,6 +2590,10 @@ msgstr "Plus d'épisodes à regarder"
 #~ msgid "No releases detected yet."
 #~ msgstr "Aucune sortie détectée pour le moment."
 
+#: apps/web/src/routes/_app/requests.tsx
+msgid "No requests yet."
+msgstr "Aucune demande pour l'instant."
+
 #: apps/native/src/app/(tabs)/(search)/index.tsx
 msgid "No results for \"{debouncedQuery}\""
 msgstr "Aucun résultat pour « {debouncedQuery} »"
@@ -2674,6 +2682,10 @@ msgstr "Non pris en charge par ce navigateur"
 #: apps/web/src/routes/_app/books.index.tsx
 #~ msgid "Not Watched"
 #~ msgstr "Non suivis"
+
+#: apps/web/src/routes/_app/requests.tsx
+msgid "Nothing pending — every request has been fulfilled."
+msgstr "Rien en attente — toutes les demandes ont été satisfaites."
 
 #: apps/web/src/components/settings/notifications-section.tsx
 msgid "Notification permission denied"
@@ -2905,6 +2917,12 @@ msgstr "Patoune TV v{latestVersion} est disponible"
 #: apps/web/src/components/settings/integration-configs.tsx
 msgid "Patoune TV will automatically log movies and episodes when you finish watching them"
 msgstr "Patoune TV enregistrera automatiquement les films et épisodes lorsque vous aurez fini de les regarder"
+
+#: apps/web/src/components/nav-bar.tsx
+#: apps/web/src/routes/_app/requests.tsx
+#: apps/web/src/routes/_app/settings.tsx
+msgid "Pending"
+msgstr "En attente"
 
 #: apps/web/src/routes/_app/upcoming.tsx
 msgid "Pending TMDB"
@@ -3392,6 +3410,10 @@ msgstr "Demandé — pas dispo"
 #: apps/web/src/routes/_app/upcoming.tsx
 msgid "Requested, but TheTVDB doesn't have this show yet — retry with the poster's + once it does."
 msgstr "Demandée, mais TheTVDB n'a pas encore cette série — réessaie avec le + de l'affiche une fois que ce sera le cas."
+
+#: apps/web/src/routes/_app/requests.tsx
+msgid "Requests"
+msgstr "Demandes"
 
 #: apps/web/src/components/settings/integration-configs.tsx
 msgid "Requires <0>Emby Server 4.7.9+</0> and an active <1>Emby Premiere<2/></1> license."

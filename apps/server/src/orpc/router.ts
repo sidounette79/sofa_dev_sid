@@ -47,6 +47,7 @@ export const implementedRouter = {
     requestMovie: mediaRequests.requestMovie,
     requestSeries: mediaRequests.requestSeries,
     listUnresolvedSeriesRequests: mediaRequests.listUnresolvedSeriesRequests,
+    listRequested: mediaRequests.listRequested,
   },
   playbackDevices: {
     listAvailable: playbackDevices.listAvailable,

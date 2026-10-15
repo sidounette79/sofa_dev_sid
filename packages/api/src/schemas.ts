@@ -1604,6 +1604,48 @@ export const UnresolvedSeriesRequestsOutput = z
   })
   .meta({ description: "Series requested but not yet on TheTVDB, awaiting retry" });
 
+// 15.10, Sid - "la potentielle page qui recenserait toutes les demandes en
+// attente": deferred 30.08 in favor of tracking via Radarr/Sonarr tags,
+// reopened at her explicit request now that requestedAt/requestedByUserId
+// already exist on titles.
+export const RequestedTitlesInput = z
+  .object({
+    pendingOnly: z
+      .boolean()
+      .default(true)
+      .describe("true: only titles not yet available in Emby. false: every request ever made"),
+    page: z.number().int().min(1).default(1),
+    limit: z.number().int().min(1).max(100).default(40),
+  })
+  .meta({ description: "List titles that have been requested, optionally pending-only" });
+
+export const RequestedTitlesOutput = z
+  .object({
+    items: z.array(
+      z.object({
+        id: z.string().describe("Title ID"),
+        type: z.enum(["movie", "tv"]),
+        title: z.string(),
+        posterPath: z.string().nullable(),
+        posterThumbHash: z.string().nullable(),
+        releaseDate: z.string().nullable(),
+        firstAirDate: z.string().nullable(),
+        voteAverage: z.number().nullable(),
+        requestedAt: z.coerce.date(),
+        requestedByName: z
+          .string()
+          .nullable()
+          .describe("Null for a reconciled, non-Sofa-originated request"),
+        embyStatus: z
+          .enum(["available", "removed"])
+          .nullable()
+          .describe("Emby availability: 'available', 'removed', or null (never seen - still pending)"),
+      }),
+    ),
+    total: z.number().int(),
+  })
+  .meta({ description: "Requested titles, newest first" });
+
 const PlaybackDeviceShape = {
   embyDeviceId: z.string().describe("Emby's stable device ID (Devices API ReportedDeviceId)"),
   embyDeviceName: z.string(),

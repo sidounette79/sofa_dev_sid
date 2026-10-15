@@ -440,6 +440,10 @@ msgstr "Tutti"
 msgid "All genres"
 msgstr "Tutti i generi"
 
+#: apps/web/src/routes/_app/requests.tsx
+msgid "All history"
+msgstr ""
+
 #: apps/web/src/components/explore/discover-section.tsx
 msgid "All providers"
 msgstr "Tutti i provider"
@@ -2586,6 +2590,10 @@ msgstr ""
 #~ msgid "No releases detected yet."
 #~ msgstr ""
 
+#: apps/web/src/routes/_app/requests.tsx
+msgid "No requests yet."
+msgstr ""
+
 #: apps/native/src/app/(tabs)/(search)/index.tsx
 msgid "No results for \"{debouncedQuery}\""
 msgstr "Nessun risultato per \"{debouncedQuery}\""
@@ -2674,6 +2682,10 @@ msgstr ""
 #: apps/web/src/routes/_app/books.index.tsx
 #~ msgid "Not Watched"
 #~ msgstr ""
+
+#: apps/web/src/routes/_app/requests.tsx
+msgid "Nothing pending — every request has been fulfilled."
+msgstr ""
 
 #: apps/web/src/components/settings/notifications-section.tsx
 msgid "Notification permission denied"
@@ -2904,6 +2916,12 @@ msgstr ""
 #: apps/web/src/components/settings/integration-configs.tsx
 #: apps/web/src/components/settings/integration-configs.tsx
 msgid "Patoune TV will automatically log movies and episodes when you finish watching them"
+msgstr ""
+
+#: apps/web/src/components/nav-bar.tsx
+#: apps/web/src/routes/_app/requests.tsx
+#: apps/web/src/routes/_app/settings.tsx
+msgid "Pending"
 msgstr ""
 
 #: apps/web/src/routes/_app/upcoming.tsx
@@ -3391,6 +3409,10 @@ msgstr ""
 
 #: apps/web/src/routes/_app/upcoming.tsx
 msgid "Requested, but TheTVDB doesn't have this show yet — retry with the poster's + once it does."
+msgstr ""
+
+#: apps/web/src/routes/_app/requests.tsx
+msgid "Requests"
 msgstr ""
 
 #: apps/web/src/components/settings/integration-configs.tsx

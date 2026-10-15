@@ -440,6 +440,10 @@ msgstr ""
 msgid "All genres"
 msgstr "All genres"
 
+#: apps/web/src/routes/_app/requests.tsx
+msgid "All history"
+msgstr "All history"
+
 #: apps/web/src/components/explore/discover-section.tsx
 msgid "All providers"
 msgstr "All providers"
@@ -2586,6 +2590,10 @@ msgstr "No more episodes to watch"
 #~ msgid "No releases detected yet."
 #~ msgstr "No releases detected yet."
 
+#: apps/web/src/routes/_app/requests.tsx
+msgid "No requests yet."
+msgstr "No requests yet."
+
 #: apps/native/src/app/(tabs)/(search)/index.tsx
 msgid "No results for \"{debouncedQuery}\""
 msgstr ""
@@ -2674,6 +2682,10 @@ msgstr "Not supported in this browser"
 #: apps/web/src/routes/_app/books.index.tsx
 #~ msgid "Not Watched"
 #~ msgstr "Not Watched"
+
+#: apps/web/src/routes/_app/requests.tsx
+msgid "Nothing pending — every request has been fulfilled."
+msgstr "Nothing pending — every request has been fulfilled."
 
 #: apps/web/src/components/settings/notifications-section.tsx
 msgid "Notification permission denied"
@@ -2905,6 +2917,12 @@ msgstr "Patoune TV v{latestVersion} is available"
 #: apps/web/src/components/settings/integration-configs.tsx
 msgid "Patoune TV will automatically log movies and episodes when you finish watching them"
 msgstr "Patoune TV will automatically log movies and episodes when you finish watching them"
+
+#: apps/web/src/components/nav-bar.tsx
+#: apps/web/src/routes/_app/requests.tsx
+#: apps/web/src/routes/_app/settings.tsx
+msgid "Pending"
+msgstr "Pending"
 
 #: apps/web/src/routes/_app/upcoming.tsx
 msgid "Pending TMDB"
@@ -3392,6 +3410,10 @@ msgstr "Requested — Not Available"
 #: apps/web/src/routes/_app/upcoming.tsx
 msgid "Requested, but TheTVDB doesn't have this show yet — retry with the poster's + once it does."
 msgstr "Requested, but TheTVDB doesn't have this show yet — retry with the poster's + once it does."
+
+#: apps/web/src/routes/_app/requests.tsx
+msgid "Requests"
+msgstr "Requests"
 
 #: apps/web/src/components/settings/integration-configs.tsx
 msgid "Requires <0>Emby Server 4.7.9+</0> and an active <1>Emby Premiere<2/></1> license."

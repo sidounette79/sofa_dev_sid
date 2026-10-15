@@ -41,6 +41,8 @@ import {
   RequestMovieInput,
   RequestSeriesInput,
   UnresolvedSeriesRequestsOutput,
+  RequestedTitlesInput,
+  RequestedTitlesOutput,
   AvailablePlaybackDevicesOutput,
   FavoritePlaybackDevicesOutput,
   SetFavoritePlaybackDevicesInput,
@@ -777,6 +779,18 @@ export const contract = {
         successDescription: "Titles awaiting a TVDB ID",
       })
       .output(UnresolvedSeriesRequestsOutput),
+    listRequested: oc
+      .route({
+        method: "GET",
+        path: "/media-requests/requested",
+        tags: ["MediaRequests"],
+        summary: "List requested titles",
+        description:
+          "Titles that have been requested, newest first — pending-only (not yet in Emby) or every request ever made.",
+        successDescription: "Requested titles",
+      })
+      .input(RequestedTitlesInput)
+      .output(RequestedTitlesOutput),
   },
   playbackDevices: {
     listAvailable: oc
