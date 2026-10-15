@@ -86,6 +86,12 @@ jobs:
             APP_VERSION=${{ steps.version.outputs.version }}
             GIT_COMMIT_SHA=${{ github.sha }}
             VITE_SENTRY_DSN=${{ vars.VITE_SENTRY_DSN }}
-            SENTRY_AUTH_TOKEN=${{ secrets.SENTRY_AUTH_TOKEN }}
+          # 15.10, Sid: SENTRY_AUTH_TOKEN goes through BuildKit's secret
+          # mount (Dockerfile's --mount=type=secret), not build-args - the
+          # repo is public, and build-args end up in image layer history
+          # even in a stage that's never pushed (flagged by Docker's own
+          # SecretsUsedInArgOrEnv check on the first attempt).
+          secrets: |
+            sentry_auth_token=${{ secrets.SENTRY_AUTH_TOKEN }}
           cache-from: type=gha
           cache-to: type=gha,mode=max

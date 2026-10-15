@@ -36,18 +36,20 @@ ARG APP_VERSION
 ARG GIT_COMMIT_SHA
 # 15.10, Sid: VITE_SENTRY_DSN is baked into the client bundle (not secret -
 # a DSN only lets a client SEND events, same as any other error-reporting
-# endpoint). SENTRY_AUTH_TOKEN is build-time only (sourcemap upload via
-# the Vite plugin, see apps/web/vite.config.ts) - never ends up in the
-# built bundle itself, just used by this RUN step.
+# endpoint), so ARG/ENV is fine for it. SENTRY_AUTH_TOKEN is NOT - the repo
+# is public, and ARG/ENV both persist in the image's layer history even in
+# a stage that's never pushed, visible to anyone who can read the build
+# cache. --mount=type=secret keeps it out of every layer entirely, only
+# available to this one RUN step's environment (docker/build-push-action's
+# `secrets:` input on the CI side, see .github/workflows/docker.yml).
 ARG VITE_SENTRY_DSN
-ARG SENTRY_AUTH_TOKEN
 ENV NODE_ENV=production
 ENV APP_VERSION=${APP_VERSION}
 ENV GIT_COMMIT_SHA=${GIT_COMMIT_SHA}
 ENV VITE_SENTRY_DSN=${VITE_SENTRY_DSN}
-ENV SENTRY_AUTH_TOKEN=${SENTRY_AUTH_TOKEN}
 
-RUN bunx turbo run build --filter=@sofa/web --filter=@sofa/server
+RUN --mount=type=secret,id=sentry_auth_token,env=SENTRY_AUTH_TOKEN \
+    bunx turbo run build --filter=@sofa/web --filter=@sofa/server
 
 # --- Production runner ---
 FROM base AS runner
