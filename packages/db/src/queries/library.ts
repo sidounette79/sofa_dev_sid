@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, gte, isNotNull, lte, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gte, isNotNull, isNull, lte, sql } from "drizzle-orm";
 
 import { db } from "../client";
 import {
@@ -417,8 +417,14 @@ export interface RequestedTitlesFilters {
 
 export async function getRequestedTitles(filters: RequestedTitlesFilters) {
   const { pendingOnly, limit, offset } = filters;
+  // 15.10, Sid ("portée disparue — que j'ai demandé, vu et supprimé —
+  // pourquoi ça apparaît quand même?"): inEmbyLibrary=false alone also
+  // matches a title that WAS available and got deleted (deriveEmbyStatus's
+  // "removed" case), not just one never downloaded at all. Pending has to
+  // mean "never seen in Emby" specifically - embyItemId IS NULL, the same
+  // condition deriveEmbyStatus itself checks to return null vs "removed".
   const where = pendingOnly
-    ? and(isNotNull(titles.requestedAt), eq(titles.inEmbyLibrary, false))
+    ? and(isNotNull(titles.requestedAt), eq(titles.inEmbyLibrary, false), isNull(titles.embyItemId))
     : isNotNull(titles.requestedAt);
 
   const rows = await db
@@ -451,7 +457,7 @@ export async function getRequestedTitles(filters: RequestedTitlesFilters) {
 
 export async function countRequestedTitles(pendingOnly: boolean): Promise<number> {
   const where = pendingOnly
-    ? and(isNotNull(titles.requestedAt), eq(titles.inEmbyLibrary, false))
+    ? and(isNotNull(titles.requestedAt), eq(titles.inEmbyLibrary, false), isNull(titles.embyItemId))
     : isNotNull(titles.requestedAt);
 
   const [row] = await db.select({ count: sql<number>`count(*)::int` }).from(titles).where(where);
