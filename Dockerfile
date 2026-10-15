@@ -34,9 +34,18 @@ COPY lingui.config.ts .
 
 ARG APP_VERSION
 ARG GIT_COMMIT_SHA
+# 15.10, Sid: VITE_SENTRY_DSN is baked into the client bundle (not secret -
+# a DSN only lets a client SEND events, same as any other error-reporting
+# endpoint). SENTRY_AUTH_TOKEN is build-time only (sourcemap upload via
+# the Vite plugin, see apps/web/vite.config.ts) - never ends up in the
+# built bundle itself, just used by this RUN step.
+ARG VITE_SENTRY_DSN
+ARG SENTRY_AUTH_TOKEN
 ENV NODE_ENV=production
 ENV APP_VERSION=${APP_VERSION}
 ENV GIT_COMMIT_SHA=${GIT_COMMIT_SHA}
+ENV VITE_SENTRY_DSN=${VITE_SENTRY_DSN}
+ENV SENTRY_AUTH_TOKEN=${SENTRY_AUTH_TOKEN}
 
 RUN bunx turbo run build --filter=@sofa/web --filter=@sofa/server
 

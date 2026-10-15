@@ -25,6 +25,7 @@
     "@orpc/tanstack-query": "catalog:",
     "@player.style/sutro": "0.2.1",
     "@rolldown/plugin-babel": "0.2.2",
+    "@sentry/react": "11.7.0",
     "@sofa/api": "workspace:*",
     "@sofa/i18n": "workspace:*",
     "@tabler/icons-react": "3.40.0",
@@ -51,6 +52,7 @@
   "devDependencies": {
     "@lingui/babel-plugin-lingui-macro": "catalog:",
     "@lingui/vite-plugin": "catalog:",
+    "@sentry/vite-plugin": "5.4.1",
     "@sofa/tsconfig": "workspace:*",
     "@tailwindcss/vite": "4.2.2",
     "@tanstack/devtools-vite": "0.6.0",

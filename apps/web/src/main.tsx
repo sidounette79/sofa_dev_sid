@@ -4,8 +4,12 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 
 import { orpc, queryClient } from "@/lib/orpc/client";
+import { initSentry, Sentry } from "@/lib/sentry";
 
 import { routeTree } from "./routeTree.gen";
+
+// Must run before anything else renders/throws so early errors are caught too.
+initSentry();
 
 // 15.10, Sid: real crash confirmed live on Android, repeatedly, even after
 // two targeted fixes (deferred query invalidation, keepMounted portals) -
@@ -45,12 +49,21 @@ function reportNeutralizedDomMutation(
   target: Node,
   reference: Node | null,
 ): void {
+  const message = `Neutralized mismatched ${op} (see main.tsx patch, 15.10). parent=${describeNode(parent)} ${op === "removeChild" ? "child" : "newNode"}=${describeNode(target)} actualParent=${describeNode(target.parentNode)}${op === "insertBefore" ? ` referenceNode=${describeNode(reference)}` : ""}`;
+  const stack = new Error("neutralized DOM mutation - synthetic stack for diagnostics").stack;
+
+  // captureException (not captureMessage) so Sentry runs its stack-trace
+  // symbolication machinery on `stack` - captureMessage skips that.
+  const syntheticError = new Error(message);
+  syntheticError.stack = stack;
+  Sentry.captureException(syntheticError, { tags: { source: "dom-patch" } });
+
   fetch("/api/client-error", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      message: `Neutralized mismatched ${op} (see main.tsx patch, 15.10). parent=${describeNode(parent)} ${op === "removeChild" ? "child" : "newNode"}=${describeNode(target)} actualParent=${describeNode(target.parentNode)}${op === "insertBefore" ? ` referenceNode=${describeNode(reference)}` : ""}`,
-      stack: new Error("neutralized DOM mutation - synthetic stack for diagnostics").stack,
+      message,
+      stack,
       url: window.location.href,
       userAgent: navigator.userAgent,
     }),

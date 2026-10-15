@@ -5,7 +5,7 @@
     "build": {
       "dependsOn": ["^build"],
       "outputs": ["dist/**"],
-      "env": ["APP_VERSION", "GIT_COMMIT_SHA"]
+      "env": ["APP_VERSION", "GIT_COMMIT_SHA", "VITE_SENTRY_DSN", "SENTRY_AUTH_TOKEN"]
     },
     "dev": {
       "dependsOn": ["^build"],

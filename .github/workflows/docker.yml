@@ -85,5 +85,7 @@ jobs:
           build-args: |
             APP_VERSION=${{ steps.version.outputs.version }}
             GIT_COMMIT_SHA=${{ github.sha }}
+            VITE_SENTRY_DSN=${{ vars.VITE_SENTRY_DSN }}
+            SENTRY_AUTH_TOKEN=${{ secrets.SENTRY_AUTH_TOKEN }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
