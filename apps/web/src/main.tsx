@@ -7,6 +7,40 @@ import { orpc, queryClient } from "@/lib/orpc/client";
 
 import { routeTree } from "./routeTree.gen";
 
+// 15.10, Sid: real crash confirmed live on Android, repeatedly, even after
+// two targeted fixes (deferred query invalidation, keepMounted portals) -
+// "Failed to execute 'removeChild'/'insertBefore' on 'Node': the node is
+// not a child of this node". This is React's own commit colliding with
+// something else (observed: a Base UI portal; likely not the only one)
+// that already detached the node by the time React tries to. On a slow
+// device the exact trigger keeps moving (before a dialog opens, while its
+// data is loading, after a mutation succeeds) - chasing each occurrence
+// individually hasn't converged. The operation React was about to perform
+// was already redundant (the node is gone either way), so making it a
+// no-op instead of throwing is safe - standard workaround for this
+// specific DOM/React race, used elsewhere in production for the same
+// reason. Keep the earlier fixes too; this is the backstop, not a
+// replacement.
+if (typeof Node === "function" && Node.prototype) {
+  const originalRemoveChild = Node.prototype.removeChild;
+  // @ts-expect-error - intentionally widening the signature to patch over the DOM race above
+  Node.prototype.removeChild = function patchedRemoveChild(child) {
+    if (child.parentNode !== this) {
+      return child;
+    }
+    return originalRemoveChild.call(this, child);
+  };
+
+  const originalInsertBefore = Node.prototype.insertBefore;
+  // @ts-expect-error - intentionally widening the signature to patch over the DOM race above
+  Node.prototype.insertBefore = function patchedInsertBefore(newNode, referenceNode) {
+    if (referenceNode && referenceNode.parentNode !== this) {
+      return newNode;
+    }
+    return originalInsertBefore.call(this, newNode, referenceNode);
+  };
+}
+
 // Registered unconditionally on boot (cheap, standard PWA practice) — actual
 // permission/subscription only happens when she opts in from Settings →
 // Notifications.
