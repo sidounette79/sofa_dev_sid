@@ -44,7 +44,16 @@ function DialogContent({
   showCloseButton?: boolean;
 }) {
   return (
-    <DialogPortal>
+    // 15.10, Sid: real crash confirmed live (Android) - React's own commit
+    // colliding with the portal container itself being added/removed from
+    // document.body on every open/close (FloatingPortal's imperative DOM
+    // insert/remove, outside React's reconciliation). keepMounted leaves
+    // the container permanently in the DOM (Popup already hides its
+    // content via the `hidden` attribute when closed, see DialogPopup.js),
+    // removing that mutation entirely instead of just timing around it -
+    // the earlier invalidateQueries defer in request-dialog.tsx wasn't
+    // enough on its own.
+    <DialogPortal keepMounted>
       <DialogOverlay />
       <DialogPrimitive.Popup
         data-slot="dialog-content"

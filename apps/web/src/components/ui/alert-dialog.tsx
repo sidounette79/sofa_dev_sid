@@ -37,7 +37,8 @@ function AlertDialogContent({
   size?: "default" | "sm";
 }) {
   return (
-    <AlertDialogPortal>
+    // 15.10, Sid: same fix as dialog.tsx - see its comment for why.
+    <AlertDialogPortal keepMounted>
       <AlertDialogOverlay />
       <AlertDialogPrimitive.Popup
         data-slot="alert-dialog-content"
