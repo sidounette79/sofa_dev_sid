@@ -21,11 +21,24 @@ import { routeTree } from "./routeTree.gen";
 // specific DOM/React race, used elsewhere in production for the same
 // reason. Keep the earlier fixes too; this is the backstop, not a
 // replacement.
+function reportNeutralizedDomMutation(op: "removeChild" | "insertBefore"): void {
+  fetch("/api/client-error", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      message: `Neutralized mismatched ${op} (see main.tsx patch, 15.10)`,
+      url: window.location.href,
+      userAgent: navigator.userAgent,
+    }),
+  }).catch(() => undefined);
+}
+
 if (typeof Node === "function" && Node.prototype) {
   const originalRemoveChild = Node.prototype.removeChild;
   // @ts-expect-error - intentionally widening the signature to patch over the DOM race above
   Node.prototype.removeChild = function patchedRemoveChild(child) {
     if (child.parentNode !== this) {
+      reportNeutralizedDomMutation("removeChild");
       return child;
     }
     return originalRemoveChild.call(this, child);
@@ -35,6 +48,7 @@ if (typeof Node === "function" && Node.prototype) {
   // @ts-expect-error - intentionally widening the signature to patch over the DOM race above
   Node.prototype.insertBefore = function patchedInsertBefore(newNode, referenceNode) {
     if (referenceNode && referenceNode.parentNode !== this) {
+      reportNeutralizedDomMutation("insertBefore");
       return newNode;
     }
     return originalInsertBefore.call(this, newNode, referenceNode);
