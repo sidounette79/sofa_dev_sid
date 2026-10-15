@@ -24,6 +24,7 @@ import {
   ContextMenuItem,
   ContextMenuTrigger,
 } from "@/components/ui/context-menu";
+import { IconPoop } from "@/components/icon-poop";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { RequestDialog } from "@/components/titles/request-dialog";
@@ -148,7 +149,11 @@ export function useStatusConfig() {
       badgeClass: "bg-status-completed/90 text-white",
     },
     dropped: {
-      icon: IconTrash,
+      // 15.10, Sid: "si on peut meme y mettre une icone de caca, ca me
+      // ferait marrer" — only her own judgment (handleToggleDropped's menu
+      // item right below keeps the plain IconTrash, this is the resulting
+      // status badge specifically).
+      icon: IconPoop,
       label: t`Dropped`,
       colorClass: "bg-destructive",
       badgeClass: "bg-destructive/90 text-white",

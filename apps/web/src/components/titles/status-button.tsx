@@ -1,14 +1,9 @@
 import { Trans, useLingui } from "@lingui/react/macro";
-import {
-  IconBookmarkFilled,
-  IconCheck,
-  IconPlayerPlayFilled,
-  IconPlus,
-  IconTrash,
-  IconX,
-} from "@tabler/icons-react";
+import { IconBookmarkFilled, IconCheck, IconPlayerPlayFilled, IconPlus, IconX } from "@tabler/icons-react";
 import { AnimatePresence, motion } from "motion/react";
 import { useState } from "react";
+
+import { IconPoop } from "@/components/icon-poop";
 
 import {
   AlertDialog,
@@ -63,7 +58,10 @@ export function StatusButton({ currentStatus, onChange }: StatusButtonProps) {
     },
     dropped: {
       label: t`Dropped`,
-      icon: IconTrash,
+      // 15.10, Sid: "si on peut meme y mettre une icone de caca, ca me
+      // ferait marrer" — only her own judgment, never implies anyone
+      // else's (her sister might still want to watch it).
+      icon: IconPoop,
       class: "text-destructive",
       bgClass: "bg-destructive/10 hover:bg-destructive/15",
       borderClass: "ring-destructive/20",
