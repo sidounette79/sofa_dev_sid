@@ -41,6 +41,34 @@ export async function markTitleRequested(
     .where(eq(titles.id, titleId));
 }
 
+// 15.10, Sid ("un lien faisable par radarr et sonarr?"): the reverse of
+// syncRequestedFromRadarrSonarr's backfill - a title she gives up on and
+// deletes straight in Radarr/Sonarr (too old, unfindable in French, a
+// duplicate of something already watched...) should stop showing as
+// pending here too, without a separate manual action. Same "pending"
+// definition as the Requests page itself (getRequestedTitles): requested,
+// never seen in Emby at all.
+export function getPendingRequestedTitleIds() {
+  return db
+    .select({ id: titles.id, type: titles.type, tmdbId: titles.tmdbId, tvdbId: titles.tvdbId })
+    .from(titles)
+    .where(
+      and(
+        sql`${titles.requestedAt} is not null`,
+        eq(titles.inEmbyLibrary, false),
+        sql`${titles.embyItemId} is null`,
+      ),
+    );
+}
+
+export async function clearTitlesRequested(titleIds: string[]): Promise<void> {
+  if (titleIds.length === 0) return;
+  await db
+    .update(titles)
+    .set({ requestedAt: null, requestedByUserId: null })
+    .where(inArray(titles.id, titleIds));
+}
+
 export function findSeasonByTitleAndNumber(titleId: string, seasonNumber: number) {
   return db
     .select()

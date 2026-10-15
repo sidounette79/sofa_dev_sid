@@ -15,8 +15,10 @@ import {
 } from "@sofa/sonarr/client";
 import { getTvDetails, getTvExternalIds } from "@sofa/tmdb/client";
 import {
+  clearTitlesRequested,
   getExistingTitlesByTmdbIds,
   getExistingTitlesByTvdbIds,
+  getPendingRequestedTitleIds,
   getTitleById,
   markTitleRequested,
   markTitlesRequested,
@@ -334,6 +336,7 @@ export interface RequestedSyncResult {
   moviesChecked: number;
   seriesChecked: number;
   backfilled: number;
+  cleared: number;
 }
 
 /**
@@ -352,6 +355,12 @@ export async function syncRequestedFromRadarrSonarr(): Promise<RequestedSyncResu
   let seriesChecked = 0;
   let backfilled = 0;
   let imported = 0;
+  // 15.10, Sid ("un lien faisable par radarr et sonarr?"): populated below
+  // only if that source's fetch actually succeeded - null means "couldn't
+  // verify", and the clearing pass at the end must skip that type entirely
+  // rather than treat every pending title of it as deleted.
+  let movieTmdbIds: Set<number> | null = null;
+  let seriesTvdbIds: Set<number> | null = null;
 
   // 17.09, Sid: "toujours hyper long" — real evidence pinned the hourly
   // heartbeat stalls to this exact job (cron "40 * * * *" lines up with
@@ -372,6 +381,7 @@ export async function syncRequestedFromRadarrSonarr(): Promise<RequestedSyncResu
     const movies = await getAllMovies();
     logStep("getAllMovies()");
     moviesChecked = movies.length;
+    movieTmdbIds = new Set(movies.map((m) => m.tmdbId));
     const existingMovieTitles = await getExistingTitlesByTmdbIds(movies.map((m) => m.tmdbId));
     const titlesByTmdbId = new Map<number, { id: string; requestedAt: Date | null }>(
       existingMovieTitles.filter((t) => t.type === "movie").map((t) => [t.tmdbId, t]),
@@ -421,6 +431,7 @@ export async function syncRequestedFromRadarrSonarr(): Promise<RequestedSyncResu
     const series = await getAllSeries();
     logStep("getAllSeries()");
     seriesChecked = series.length;
+    seriesTvdbIds = new Set(series.map((s) => s.tvdbId));
     const existingSeriesTitles = await getExistingTitlesByTvdbIds(series.map((s) => s.tvdbId));
     const titlesByTvdbId = new Map<number, { id: string; requestedAt: Date | null }>();
     for (const t of existingSeriesTitles) {
@@ -489,8 +500,33 @@ export async function syncRequestedFromRadarrSonarr(): Promise<RequestedSyncResu
     log.warn("Sonarr requested-sync failed:", err);
   }
 
+  // 15.10, Sid ("un lien faisable par radarr et sonarr?"): clear
+  // requestedAt for any still-pending title no longer present in
+  // Radarr/Sonarr at all — she deletes straight there when she gives up on
+  // one (too old, unfindable in French, a duplicate already watched...),
+  // and the Requests page shouldn't keep showing it after that. Only
+  // checked against a source whose fetch actually succeeded this run; a tv
+  // title with no tvdbId yet can't be verified against Sonarr, so it's
+  // left alone rather than guessed at.
+  let cleared = 0;
+  try {
+    const pending = await getPendingRequestedTitleIds();
+    const toClear = pending
+      .filter((t) => {
+        if (t.type === "movie") return movieTmdbIds !== null && !movieTmdbIds.has(t.tmdbId);
+        return seriesTvdbIds !== null && t.tvdbId !== null && !seriesTvdbIds.has(t.tvdbId);
+      })
+      .map((t) => t.id);
+    if (toClear.length > 0) {
+      await clearTitlesRequested(toClear);
+      cleared = toClear.length;
+    }
+  } catch (err) {
+    log.warn("Requested-sync clear pass failed:", err);
+  }
+
   log.info(
-    `Requested sync: ${moviesChecked} movies, ${seriesChecked} series checked, ${imported} imported, ${backfilled} backfilled`,
+    `Requested sync: ${moviesChecked} movies, ${seriesChecked} series checked, ${imported} imported, ${backfilled} backfilled, ${cleared} cleared`,
   );
-  return { moviesChecked, seriesChecked, backfilled };
+  return { moviesChecked, seriesChecked, backfilled, cleared };
 }
