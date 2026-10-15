@@ -238,9 +238,9 @@ export function RequestDialog({
             disabled={isPending || !effectiveRootFolder || !effectiveQualityProfileId}
           >
             {isPending ? (
-              <IconLoader className="size-4 animate-spin" />
+              <IconLoader key="loading" className="size-4 animate-spin" />
             ) : (
-              <IconDownload className="size-4" />
+              <IconDownload key="download" className="size-4" />
             )}
             <Trans>Request</Trans>
           </Button>

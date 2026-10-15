@@ -8,7 +8,7 @@ import {
   IconTrash,
   IconX,
 } from "@tabler/icons-react";
-import { useState } from "react";
+import { Fragment, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -65,20 +65,20 @@ export function TitleActions() {
         className={`h-9 rounded-lg px-4 text-sm hover:shadow-md active:scale-[0.97] disabled:opacity-70 ${!requestedAt && embyStatus !== "available" ? "bg-primary/10 text-primary ring-1 ring-primary/20 hover:bg-primary/15 hover:ring-primary/30 border-transparent" : ""}`}
       >
         {embyStatus === "available" ? (
-          <>
+          <Fragment key="available">
             <IconCheck aria-hidden={true} className="text-primary size-3.5" />
             <Trans>Available</Trans>
-          </>
+          </Fragment>
         ) : requestedAt ? (
-          <>
+          <Fragment key="requested">
             <IconClockCheck aria-hidden={true} className="text-primary size-3.5" />
             <Trans>Requested</Trans>
-          </>
+          </Fragment>
         ) : (
-          <>
+          <Fragment key="request">
             <IconDownload aria-hidden={true} className="size-3.5" />
             <Trans>Request</Trans>
-          </>
+          </Fragment>
         )}
       </Button>
       <RequestDialog
@@ -119,15 +119,15 @@ export function TitleActions() {
           className={`h-9 rounded-lg px-4 text-sm hover:shadow-md active:scale-[0.97] ${isMovieWatched ? "hover:shadow-destructive/20" : "bg-status-completed/10 text-status-completed ring-1 ring-status-completed/20 hover:bg-status-completed/15 hover:ring-status-completed/30 border-transparent"}`}
         >
           {isMovieWatched ? (
-            <>
+            <Fragment key="unwatched">
               <IconX aria-hidden={true} className="size-3.5" />
               <Trans>Mark Unwatched</Trans>
-            </>
+            </Fragment>
           ) : (
-            <>
+            <Fragment key="watched">
               <IconCheck aria-hidden={true} className="size-3.5" />
               <Trans>Mark Watched</Trans>
-            </>
+            </Fragment>
           )}
         </Button>
       )}
