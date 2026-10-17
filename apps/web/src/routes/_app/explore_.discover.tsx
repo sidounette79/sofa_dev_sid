@@ -34,7 +34,7 @@ const discoverSearchSchema = z.object({
   discoverPlatformId: z.string().optional().catch(undefined),
 });
 
-export const Route = createFileRoute("/_app/explore/discover")({
+export const Route = createFileRoute("/_app/explore_/discover")({
   staleTime: 60_000,
   validateSearch: zodValidator(discoverSearchSchema),
   head: () => ({ meta: [{ title: "Discover — Patoune TV" }] }),
