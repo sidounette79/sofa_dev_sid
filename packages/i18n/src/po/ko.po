@@ -395,6 +395,11 @@ msgstr "관리자"
 msgid "Admin only"
 msgstr "관리자 전용"
 
+#: apps/web/src/components/explore/discover-section.tsx
+#: apps/web/src/routes/_app/explore.tsx
+msgid "Advanced Search"
+msgstr ""
+
 #: apps/web/src/routes/setup.tsx
 msgid "After setting the key and restarting:"
 msgstr "키를 설정하고 재시작한 후:"
@@ -1158,7 +1163,6 @@ msgstr "연결 해제"
 msgid "Disconnect {label}"
 msgstr "{label} 연결 해제"
 
-#: apps/web/src/components/explore/discover-section.tsx
 #: apps/web/src/components/nav-bar.tsx
 #: apps/web/src/components/nav-bar.tsx
 #: apps/web/src/components/settings/appearance-section.tsx
@@ -4255,6 +4259,11 @@ msgstr "사이드바 토글"
 msgid "Tomorrow"
 msgstr ""
 
+#: apps/native/src/app/(tabs)/(explore)/index.tsx
+#: apps/web/src/routes/_app/explore.tsx
+msgid "Top Movies of {currentYear}"
+msgstr ""
+
 #: apps/web/src/components/landing-page.tsx
 msgid "Track what you watch. Know what's next.<0/>Your library, your data, your rules."
 msgstr "시청하는 것을 기록하세요. 다음이 무엇인지 알 수 있습니다.<0/>내 라이브러리, 내 데이터, 내 규칙."
@@ -4263,6 +4272,11 @@ msgstr "시청하는 것을 기록하세요. 다음이 무엇인지 알 수 있�
 #: apps/web/src/components/titles/trailer-dialog.tsx
 msgid "Trailer"
 msgstr "예고편"
+
+#: apps/native/src/app/(tabs)/(explore)/index.tsx
+#: apps/web/src/routes/_app/explore.tsx
+msgid "Trending This Week"
+msgstr ""
 
 #: apps/web/src/components/explore/hero-banner.tsx
 #~ msgid "Trending today"

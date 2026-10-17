@@ -229,14 +229,20 @@ function ExplorePage() {
           scrolling catalog, not a capped row; it used to sit embedded here,
           always fully expanded, blocking Populaires below it from ever
           being reachable. Own page now (/explore/discover), linked from
-          here instead. */}
+          here instead.
+          17.10, round 2, Sid ("le découvrir me renvoie sur la page
+          découvrir et pas sur la page globale avec filtre de genres"):
+          the nav bar's own top-level "Découvrir" tab (nav-bar.tsx) already
+          points at /explore - labeling this card "Discover" too meant two
+          different destinations shared the exact same French label.
+          Distinct label now ("Recherche avancée"), same destination. */}
       <Link
         to="/explore/discover"
         className="ring-foreground/10 hover:bg-card/50 flex items-center justify-between gap-2 rounded-lg px-4 py-3 text-sm font-medium ring-1 transition-colors"
       >
         <span className="flex items-center gap-2">
           <IconSearch aria-hidden={true} className="text-primary size-5" />
-          <Trans>Discover</Trans>
+          <Trans>Advanced Search</Trans>
         </span>
         <IconChevronRight aria-hidden={true} className="text-muted-foreground size-4" />
       </Link>

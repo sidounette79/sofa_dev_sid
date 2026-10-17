@@ -395,6 +395,11 @@ msgstr "Beheerder"
 msgid "Admin only"
 msgstr "Alleen beheerder"
 
+#: apps/web/src/components/explore/discover-section.tsx
+#: apps/web/src/routes/_app/explore.tsx
+msgid "Advanced Search"
+msgstr ""
+
 #: apps/web/src/routes/setup.tsx
 msgid "After setting the key and restarting:"
 msgstr "Na het instellen van de sleutel en opnieuw starten:"
@@ -1158,7 +1163,6 @@ msgstr "Loskoppelen"
 msgid "Disconnect {label}"
 msgstr "{label} loskoppelen"
 
-#: apps/web/src/components/explore/discover-section.tsx
 #: apps/web/src/components/nav-bar.tsx
 #: apps/web/src/components/nav-bar.tsx
 #: apps/web/src/components/settings/appearance-section.tsx
@@ -4255,6 +4259,11 @@ msgstr "Zijbalk in-/uitschakelen"
 msgid "Tomorrow"
 msgstr ""
 
+#: apps/native/src/app/(tabs)/(explore)/index.tsx
+#: apps/web/src/routes/_app/explore.tsx
+msgid "Top Movies of {currentYear}"
+msgstr ""
+
 #: apps/web/src/components/landing-page.tsx
 msgid "Track what you watch. Know what's next.<0/>Your library, your data, your rules."
 msgstr "Houd bij wat je kijkt. Weet wat er volgt.<0/>Jouw bibliotheek, jouw data, jouw regels."
@@ -4262,6 +4271,11 @@ msgstr "Houd bij wat je kijkt. Weet wat er volgt.<0/>Jouw bibliotheek, jouw data
 #: apps/web/src/components/titles/trailer-dialog.tsx
 #: apps/web/src/components/titles/trailer-dialog.tsx
 msgid "Trailer"
+msgstr ""
+
+#: apps/native/src/app/(tabs)/(explore)/index.tsx
+#: apps/web/src/routes/_app/explore.tsx
+msgid "Trending This Week"
 msgstr ""
 
 #: apps/web/src/components/explore/hero-banner.tsx

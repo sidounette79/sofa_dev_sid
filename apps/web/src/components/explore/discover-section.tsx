@@ -94,7 +94,11 @@ export function DiscoverSection({
   function setType(value: "movie" | "tv") {
     // Same reset as before: a genre/provider id from one media type is
     // meaningless (often outright invalid) for the other.
-    updateSearch({ discoverType: value, discoverGenreId: undefined, discoverPlatformId: undefined });
+    updateSearch({
+      discoverType: value,
+      discoverGenreId: undefined,
+      discoverPlatformId: undefined,
+    });
   }
   function setGenreId(value: number | undefined) {
     updateSearch({ discoverGenreId: value });
@@ -237,7 +241,11 @@ export function DiscoverSection({
   }
 
   return (
-    <FeedSection title={t`Discover`} icon={<IconSearch className="text-primary size-5" />}>
+    // 17.10, Sid: kept distinct from the nav bar's own "Découvrir" tab
+    // label (/explore itself) - this component now lives only on its own
+    // /explore/discover page (explore.discover.tsx), see that route's own
+    // comment for why.
+    <FeedSection title={t`Advanced Search`} icon={<IconSearch className="text-primary size-5" />}>
       <div className="flex flex-wrap items-center gap-2">
         {/* Type toggle: Movie | TV */}
         <ToggleGroup

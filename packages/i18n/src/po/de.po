@@ -395,6 +395,11 @@ msgstr ""
 msgid "Admin only"
 msgstr "Nur für Admins"
 
+#: apps/web/src/components/explore/discover-section.tsx
+#: apps/web/src/routes/_app/explore.tsx
+msgid "Advanced Search"
+msgstr ""
+
 #: apps/web/src/routes/setup.tsx
 msgid "After setting the key and restarting:"
 msgstr "Nach dem Festlegen des Schlüssels und dem Neustart:"
@@ -1158,7 +1163,6 @@ msgstr "Trennen"
 msgid "Disconnect {label}"
 msgstr "{label} trennen"
 
-#: apps/web/src/components/explore/discover-section.tsx
 #: apps/web/src/components/nav-bar.tsx
 #: apps/web/src/components/nav-bar.tsx
 #: apps/web/src/components/settings/appearance-section.tsx
@@ -4255,6 +4259,11 @@ msgstr "Seitenleiste umschalten"
 msgid "Tomorrow"
 msgstr ""
 
+#: apps/native/src/app/(tabs)/(explore)/index.tsx
+#: apps/web/src/routes/_app/explore.tsx
+msgid "Top Movies of {currentYear}"
+msgstr ""
+
 #: apps/web/src/components/landing-page.tsx
 msgid "Track what you watch. Know what's next.<0/>Your library, your data, your rules."
 msgstr "Verfolge, was du schaust. Wisse, was als Nächstes kommt.<0/>Deine Bibliothek, deine Daten, deine Regeln."
@@ -4262,6 +4271,11 @@ msgstr "Verfolge, was du schaust. Wisse, was als Nächstes kommt.<0/>Deine Bibli
 #: apps/web/src/components/titles/trailer-dialog.tsx
 #: apps/web/src/components/titles/trailer-dialog.tsx
 msgid "Trailer"
+msgstr ""
+
+#: apps/native/src/app/(tabs)/(explore)/index.tsx
+#: apps/web/src/routes/_app/explore.tsx
+msgid "Trending This Week"
 msgstr ""
 
 #: apps/web/src/components/explore/hero-banner.tsx
