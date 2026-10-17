@@ -6,10 +6,10 @@ import { getRecommendationsFeed, getUntrackedEmbyLibraryFeed } from "@sofa/core/
 import { ensureBrowseTitlesExist } from "@sofa/core/metadata";
 import { ensureBrowsePersonsExist } from "@sofa/core/person";
 import { getPlatformTmdbIdMap, getPlatformTmdbIds, listPlatforms } from "@sofa/core/platforms";
-import { getEmbyStatusByTitleIds, getRequestedAtByTitleIds } from "@sofa/db/queries/discovery";
-import { getRequestedNotAvailable } from "@sofa/db/queries/title";
-import { deriveEmbyStatus, getUntrackedEmbyLibraryCount } from "@sofa/db/queries/emby-library";
 import { getDisplayStatusesByTitleIds, getEpisodeProgressByTitleIds } from "@sofa/core/tracking";
+import { getEmbyStatusByTitleIds, getRequestedAtByTitleIds } from "@sofa/db/queries/discovery";
+import { deriveEmbyStatus, getUntrackedEmbyLibraryCount } from "@sofa/db/queries/emby-library";
+import { getRequestedNotAvailable } from "@sofa/db/queries/title";
 import {
   discover as discoverTmdb,
   getGenres,
@@ -66,18 +66,19 @@ function isDiscoveryNoise(r: Record<string, unknown>): boolean {
 }
 
 // 06.09, Sid: "masquer ce qui est déjà vu" — already-in-Emby was excluded
-// everywhere here, but something watched via another means (an old Trakt
+// everywhere below, but something watched via another means (an old Trakt
 // import, since removed from Emby) has embyStatus null/removed while its
 // userStatus is still completed/caught_up, so it kept surfacing.
-const ALREADY_SEEN_STATUSES = new Set(["completed", "caught_up", "dropped"]);
-function isDiscoverable(item: { embyStatus: string | null }, userStatus: string | undefined): boolean {
-  return item.embyStatus !== "available" && !ALREADY_SEEN_STATUSES.has(userStatus ?? "");
-}
+// 17.10, Sid: reversed — "ne plus masquer dans découvrir les films qu'on a
+// déjà en stock ou ceux qu'on a déjà vu, tout laisser apparaître dans toute
+// la page découvrir". The filter this function drove is gone from every
+// call site below (trending/popular/upcomingMovies/upcomingSeries/browse);
+// removed rather than left dead, since nothing calls it anymore.
 
 export const trending = os.discover.trending.use(authed).handler(async ({ input, context }) => {
   requireTmdb();
 
-  const data = await getTrending(input.type, "day", input.page);
+  const data = await getTrending(input.type, input.timeWindow, input.page);
   const rawResults = (data.results ?? []) as Record<string, unknown>[];
   const results = rawResults.filter((r) => !isDiscoveryNoise(r));
 
@@ -163,14 +164,16 @@ export const trending = os.discover.trending.use(authed).handler(async ({ input,
     };
   });
 
-  // "Filtrer ce qu'on a déjà" + "maximum 10 films et 10 séries" (24.08, Sid)
-  // — drop what's already on Emby, then cap each type separately so the row
-  // stops perpetually loading more pages to fill the screen.
+  // 17.10, Sid: "ne plus masquer dans découvrir les films qu'on a déjà en
+  // stock ou ceux qu'on a déjà vu" — reverses the 24.08 "filtrer ce qu'on a
+  // déjà" behaviour (see the removed isDiscoverable helper, used to sit
+  // just above). Cap each type separately so the row stops perpetually
+  // loading more pages to fill the screen.
   const TRENDING_CAP_PER_TYPE = 30;
-  const notOwned = itemsWithEmby.filter(
-    (item) => isDiscoverable(item, userStatuses[item.id]),
-  );
-  const cappedMovies = notOwned.filter((item) => item.type === "movie").slice(0, TRENDING_CAP_PER_TYPE);
+  const notOwned = itemsWithEmby;
+  const cappedMovies = notOwned
+    .filter((item) => item.type === "movie")
+    .slice(0, TRENDING_CAP_PER_TYPE);
   const cappedTv = notOwned.filter((item) => item.type === "tv").slice(0, TRENDING_CAP_PER_TYPE);
   const cappedItems = notOwned.filter(
     (item) => cappedMovies.includes(item) || cappedTv.includes(item),
@@ -242,14 +245,10 @@ export const popular = os.discover.popular.use(authed).handler(async ({ input, c
     };
   });
 
-  // Same "no anime, no already-owned, capped at 15" treatment as Trending
-  // (24.08, Sid: "si y a pas de limite... tu mets aussi 15 et 15 avec les
-  // mêmes filtres que tendance") — already type-specific per call here, so
-  // just one flat cap, no per-type split needed.
+  // Same cap as Trending; the "already-owned" filter was dropped 17.10
+  // (Sid: "ne plus masquer dans découvrir" — see trending's own comment).
   const POPULAR_CAP = 30;
-  const cappedItems = itemsWithEmby
-    .filter((item) => isDiscoverable(item, userStatuses[item.id]))
-    .slice(0, POPULAR_CAP);
+  const cappedItems = itemsWithEmby.slice(0, POPULAR_CAP);
 
   return {
     items: cappedItems,
@@ -260,6 +259,84 @@ export const popular = os.discover.popular.use(authed).handler(async ({ input, c
     totalResults: cappedItems.length,
   };
 });
+
+// ─── Top Movies of the Year ─────────────────────────────────────
+
+export const topMoviesOfYear = os.discover.topMoviesOfYear
+  .use(authed)
+  .handler(async ({ context }) => {
+    requireTmdb();
+
+    // 17.10, Sid: "les tops films de 2026 (qui changeront en 2027 etc)" —
+    // derived from the real calendar year, not stored/configured anywhere,
+    // so this row advances on its own every January with no deploy needed.
+    const year = new Date().getFullYear();
+    // Same vote_count.gte=50 quality floor as DiscoverSection's own default
+    // sort (see browse, below) — without it, a handful of barely-voted
+    // obscure titles with a lucky 10/10 average would crowd out anything
+    // TMDB users have actually rated at scale.
+    const data = await discoverTmdb(
+      "movie",
+      {
+        sort_by: "vote_average.desc",
+        primary_release_year: String(year),
+        "vote_count.gte": "50",
+      },
+      1,
+    );
+    const baseItems = ((data.results ?? []) as Record<string, unknown>[])
+      .filter((r) => r.poster_path && !isDiscoveryNoise(r))
+      .map((r) => ({
+        tmdbId: r.id as number,
+        type: "movie" as const,
+        title: (r.title as string) || "",
+        posterPath: (r.poster_path as string) ?? null,
+        releaseDate: (r.release_date as string | undefined) ?? null,
+        firstAirDate: null,
+        voteAverage: (r.vote_average as number | undefined) ?? null,
+      }));
+
+    const titleMap = await ensureBrowseTitlesExist(baseItems);
+    const items = baseItems.map((item) => {
+      const entry = titleMap.get(`${item.tmdbId}-${item.type}`);
+      return Object.assign(item, {
+        id: entry?.id ?? "",
+        posterPath: tmdbImageUrl(item.posterPath, "posters"),
+        posterThumbHash: entry?.posterThumbHash ?? null,
+      });
+    });
+
+    const titleIds = items.map((r) => r.id);
+    const [userStatuses, episodeProgress, embyStatusMap, requestedAtMap] =
+      titleIds.length > 0
+        ? await Promise.all([
+            getDisplayStatusesByTitleIds(context.user.id, titleIds),
+            getEpisodeProgressByTitleIds(context.user.id, titleIds),
+            getEmbyStatusByTitleIds(titleIds),
+            getRequestedAtByTitleIds(titleIds),
+          ])
+        : [{}, {}, {}, {}];
+
+    const itemsWithEmby = items.map((item) => {
+      const emby = embyStatusMap[item.id];
+      return Object.assign(item, {
+        embyStatus: emby ? deriveEmbyStatus(emby.inEmbyLibrary, emby.embyItemId) : null,
+        requestedAt: requestedAtMap[item.id] ?? null,
+      });
+    });
+
+    const TOP_MOVIES_CAP = 30;
+    const cappedItems = itemsWithEmby.slice(0, TOP_MOVIES_CAP);
+
+    return {
+      items: cappedItems,
+      userStatuses,
+      episodeProgress,
+      page: 1,
+      totalPages: 1,
+      totalResults: cappedItems.length,
+    };
+  });
 
 // ─── Upcoming Movies (discovery, not the tracked-library /upcoming) ────
 
@@ -313,10 +390,9 @@ export const upcomingMovies = os.discover.upcomingMovies
       };
     });
 
+    // 17.10: "already-owned" filter dropped, see trending's own comment.
     const UPCOMING_MOVIES_CAP = 30;
-    const cappedItems = itemsWithEmby
-      .filter((item) => isDiscoverable(item, userStatuses[item.id]))
-      .slice(0, UPCOMING_MOVIES_CAP);
+    const cappedItems = itemsWithEmby.slice(0, UPCOMING_MOVIES_CAP);
 
     return {
       items: cappedItems,
@@ -387,10 +463,9 @@ export const upcomingSeries = os.discover.upcomingSeries
       };
     });
 
+    // 17.10: "already-owned" filter dropped, see trending's own comment.
     const UPCOMING_SERIES_CAP = 30;
-    const cappedItems = itemsWithEmby
-      .filter((item) => isDiscoverable(item, userStatuses[item.id]))
-      .slice(0, UPCOMING_SERIES_CAP);
+    const cappedItems = itemsWithEmby.slice(0, UPCOMING_SERIES_CAP);
 
     return {
       items: cappedItems,
@@ -657,16 +732,9 @@ export const browse = os.discover.browse.use(authed).handler(async ({ input, con
     };
   });
 
-  // "Filtrer ceux qui ont le badge poubelle ou déjà dispo" (24.08, Sid) —
-  // same as Trending/Popular, plus dropped titles this time (don't
-  // re-suggest something she explicitly rejected). Page/totalPages stay
-  // TMDB's real values — this is the deep-search tool (DiscoverSection)
-  // too, unlike Trending/Popular it needs genuine multi-page depth, so a
-  // filtered page can come back with fewer than 20 items rather than
-  // faking a shorter total.
-  const cappedItems = itemsWithEmby.filter(
-    (item) => isDiscoverable(item, userStatuses[item.id]),
-  );
+  // 17.10: "already-owned/already-seen" filter dropped, see trending's own
+  // comment — was the 24.08 "badge poubelle ou déjà dispo" behaviour.
+  const cappedItems = itemsWithEmby;
 
   return {
     items: cappedItems,

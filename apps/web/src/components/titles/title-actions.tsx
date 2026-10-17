@@ -53,30 +53,32 @@ export function TitleActions() {
           "requested" again from here. Same fix as the grid-card "+". */}
       <Button
         onClick={() => setRequestDialogOpen(true)}
-        // 06.09, Sid: Request is her actual primary workflow (she doesn't
-        // use the passive watchlist), so it should carry some color — but a
-        // solid fill read as too "violent" next to Mark Watched. Soft tint
-        // instead (same treatment StatusButton already uses for its own "+"
-        // add action), dropped once it's done (Requested/Available) since a
-        // resolved action matters less than a pending one.
-        variant="outline"
+        // 17.10, Sid: "le bouton demander bien plus gros que marquer comme
+        // vu pour attirer direct l'oeil" — reverses the 06.09 "soft tint,
+        // too violent next to Mark Watched" compromise. That compromise no
+        // longer applies: Mark Watched moved down past the rating row (see
+        // below), so it's no longer sitting right next to Request fighting
+        // for attention. A solid, saturated fill genuinely is what "attirer
+        // l'oeil" needs — a tint can't do that job. Still drops its color
+        // once resolved (Requested/Available), same as before.
+        variant={!requestedAt && embyStatus !== "available" ? "default" : "outline"}
         size="lg"
         disabled={!!requestedAt || embyStatus === "available"}
-        className={`h-9 rounded-lg px-4 text-sm hover:shadow-md active:scale-[0.97] disabled:opacity-70 ${!requestedAt && embyStatus !== "available" ? "bg-primary/10 text-primary ring-1 ring-primary/20 hover:bg-primary/15 hover:ring-primary/30 border-transparent" : ""}`}
+        className="h-12 rounded-lg px-6 text-base font-semibold hover:shadow-lg active:scale-[0.97] disabled:opacity-70"
       >
         {embyStatus === "available" ? (
           <Fragment key="available">
-            <IconCheck aria-hidden={true} className="text-primary size-3.5" />
+            <IconCheck aria-hidden={true} className="text-primary size-4" />
             <Trans>Available</Trans>
           </Fragment>
         ) : requestedAt ? (
           <Fragment key="requested">
-            <IconClockCheck aria-hidden={true} className="text-primary size-3.5" />
+            <IconClockCheck aria-hidden={true} className="text-primary size-4" />
             <Trans>Requested</Trans>
           </Fragment>
         ) : (
           <Fragment key="request">
-            <IconDownload aria-hidden={true} className="size-3.5" />
+            <IconDownload aria-hidden={true} className="size-4" />
             <Trans>Request</Trans>
           </Fragment>
         )}
@@ -105,32 +107,6 @@ export function TitleActions() {
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
-      {titleType === "movie" && (
-        <Button
-          onClick={isMovieWatched ? handleUnwatchMovie : handleWatchMovie}
-          // 06.09, Sid: this auto-updates itself from Emby the moment she
-          // actually watches something — manually clicking it is a fallback
-          // for gaps, not her main workflow (unlike Request, right above),
-          // so it shouldn't visually outweigh it. Soft status-completed
-          // tint (same green family as StatusButton's own "completed"
-          // look) instead of a solid fill, in both directions.
-          variant={isMovieWatched ? "destructive" : "outline"}
-          size="lg"
-          className={`h-9 rounded-lg px-4 text-sm hover:shadow-md active:scale-[0.97] ${isMovieWatched ? "hover:shadow-destructive/20" : "bg-status-completed/10 text-status-completed ring-1 ring-status-completed/20 hover:bg-status-completed/15 hover:ring-status-completed/30 border-transparent"}`}
-        >
-          {isMovieWatched ? (
-            <Fragment key="unwatched">
-              <IconX aria-hidden={true} className="size-3.5" />
-              <Trans>Mark Unwatched</Trans>
-            </Fragment>
-          ) : (
-            <Fragment key="watched">
-              <IconCheck aria-hidden={true} className="size-3.5" />
-              <Trans>Mark Watched</Trans>
-            </Fragment>
-          )}
-        </Button>
-      )}
       {canRewatchSeries && (
         <Button
           onClick={handleRewatch}
@@ -144,6 +120,34 @@ export function TitleActions() {
       )}
       <Separator orientation="vertical" className="bg-border/50 mx-0.5 my-auto h-6" />
       <StarRating value={userRating ?? 0} onChange={handleRating} />
+      {titleType === "movie" && (
+        <Button
+          onClick={isMovieWatched ? handleUnwatchMovie : handleWatchMovie}
+          // 06.09, Sid: this auto-updates itself from Emby the moment she
+          // actually watches something — manually clicking it is a fallback
+          // for gaps, not her main workflow (unlike Request). Soft status-
+          // completed tint (same green family as StatusButton's own
+          // "completed" look) instead of a solid fill, in both directions.
+          // 17.10, Sid: moved after the rating row and shrunk — Request is
+          // now the one button that should "attirer l'oeil", this one
+          // shouldn't compete with it anymore.
+          variant={isMovieWatched ? "destructive" : "outline"}
+          size="sm"
+          className={`h-7 rounded-lg px-3 text-xs hover:shadow-md active:scale-[0.97] ${isMovieWatched ? "hover:shadow-destructive/20" : "bg-status-completed/10 text-status-completed ring-1 ring-status-completed/20 hover:bg-status-completed/15 hover:ring-status-completed/30 border-transparent"}`}
+        >
+          {isMovieWatched ? (
+            <Fragment key="unwatched">
+              <IconX aria-hidden={true} className="size-3" />
+              <Trans>Mark Unwatched</Trans>
+            </Fragment>
+          ) : (
+            <Fragment key="watched">
+              <IconCheck aria-hidden={true} className="size-3" />
+              <Trans>Mark Watched</Trans>
+            </Fragment>
+          )}
+        </Button>
+      )}
     </div>
   );
 }

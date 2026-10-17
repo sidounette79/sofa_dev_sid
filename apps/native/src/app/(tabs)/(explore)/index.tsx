@@ -1,5 +1,5 @@
 import { useLingui } from "@lingui/react/macro";
-import { IconDeviceTv, IconFlame, IconMovie } from "@tabler/icons-react-native";
+import { IconDeviceTv, IconFlame, IconMovie, IconTrophy } from "@tabler/icons-react-native";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { useCallback, useMemo } from "react";
 import { RefreshControl, ScrollView, View } from "react-native";
@@ -17,6 +17,7 @@ const exploreContentContainerStyle = {
 
 export default function ExploreScreen() {
   const { t } = useLingui();
+  const currentYear = new Date().getFullYear();
   const trending = useInfiniteQuery(
     orpc.discover.trending.infiniteOptions({
       input: (pageParam: number) => ({ type: "all" as const, page: pageParam }),
@@ -26,13 +27,34 @@ export default function ExploreScreen() {
       maxPages: 10,
     }),
   );
+  // 17.10, Sid: "après tendance du jour, la tendance de la semaine"
+  const weeklyTrending = useInfiniteQuery(
+    orpc.discover.trending.infiniteOptions({
+      input: (pageParam: number) => ({
+        type: "all" as const,
+        page: pageParam,
+        timeWindow: "week" as const,
+      }),
+      initialPageParam: 1,
+      getNextPageParam: (lastPage) =>
+        lastPage.page < lastPage.totalPages ? lastPage.page + 1 : undefined,
+      maxPages: 10,
+    }),
+  );
+  // 17.10, Sid: "nouvel onglet dans découvrir avec les tops films de
+  // l'année selon tmdb" — no input, the server derives "this year" itself.
+  const topMoviesOfYear = useQuery(orpc.discover.topMoviesOfYear.queryOptions());
   const popularMovies = useQuery(orpc.discover.popular.queryOptions({ input: { type: "movie" } }));
   const popularTv = useQuery(orpc.discover.popular.queryOptions({ input: { type: "tv" } }));
   const movieGenres = useQuery(orpc.discover.genres.queryOptions({ input: { type: "movie" } }));
   const tvGenres = useQuery(orpc.discover.genres.queryOptions({ input: { type: "tv" } }));
 
   const isRefreshing =
-    trending.isRefetching || popularMovies.isRefetching || popularTv.isRefetching;
+    trending.isRefetching ||
+    weeklyTrending.isRefetching ||
+    topMoviesOfYear.isRefetching ||
+    popularMovies.isRefetching ||
+    popularTv.isRefetching;
 
   const onRefresh = useCallback(() => {
     queryClient.invalidateQueries({ queryKey: orpc.discover.key() });
@@ -61,6 +83,27 @@ export default function ExploreScreen() {
     [trending.data?.pages],
   );
 
+  const weeklyTrendingItems = useMemo(
+    () => weeklyTrending.data?.pages.flatMap((p) => p.items) ?? [],
+    [weeklyTrending.data?.pages],
+  );
+  const weeklyTrendingStatuses = useMemo(
+    () =>
+      Object.assign({}, ...(weeklyTrending.data?.pages.map((p) => p.userStatuses) ?? [])) as Record<
+        string,
+        "in_watchlist" | "watching" | "caught_up" | "completed"
+      >,
+    [weeklyTrending.data?.pages],
+  );
+  const weeklyTrendingProgress = useMemo(
+    () =>
+      Object.assign(
+        {},
+        ...(weeklyTrending.data?.pages.map((p) => p.episodeProgress) ?? []),
+      ) as Record<string, { watched: number; total: number }>,
+    [weeklyTrending.data?.pages],
+  );
+
   return (
     <ScrollView
       className="bg-background"
@@ -81,6 +124,30 @@ export default function ExploreScreen() {
             defaultUserStatuses={trendingStatuses}
             defaultEpisodeProgress={trendingProgress}
             isLoading={trending.isPending}
+          />
+        </Animated.View>
+
+        <Animated.View entering={FadeInDown.duration(300).delay(150)}>
+          <FilterableTitleRow
+            title={t`Trending This Week`}
+            icon={IconFlame}
+            mediaType="movie"
+            defaultItems={weeklyTrendingItems}
+            defaultUserStatuses={weeklyTrendingStatuses}
+            defaultEpisodeProgress={weeklyTrendingProgress}
+            isLoading={weeklyTrending.isPending}
+          />
+        </Animated.View>
+
+        <Animated.View entering={FadeInDown.duration(300).delay(175)}>
+          <FilterableTitleRow
+            title={t`Top Movies of ${currentYear}`}
+            icon={IconTrophy}
+            mediaType="movie"
+            defaultItems={topMoviesOfYear.data?.items ?? []}
+            defaultUserStatuses={topMoviesOfYear.data?.userStatuses ?? {}}
+            defaultEpisodeProgress={topMoviesOfYear.data?.episodeProgress ?? {}}
+            isLoading={topMoviesOfYear.isPending}
           />
         </Animated.View>
 

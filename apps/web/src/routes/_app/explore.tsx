@@ -4,6 +4,7 @@ import {
   IconDeviceTv,
   IconFlame,
   IconMovie,
+  IconTrophy,
 } from "@tabler/icons-react";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
@@ -60,6 +61,12 @@ export const Route = createFileRoute("/_app/explore")({
         context.queryClient.ensureQueryData(
           orpc.discover.trending.queryOptions({ input: { type: "all", page: 1 } }),
         ),
+        context.queryClient.ensureQueryData(
+          orpc.discover.trending.queryOptions({
+            input: { type: "all", page: 1, timeWindow: "week" },
+          }),
+        ),
+        context.queryClient.ensureQueryData(orpc.discover.topMoviesOfYear.queryOptions()),
         context.queryClient.ensureQueryData(
           orpc.discover.upcomingSeries.queryOptions({ input: { page: 1 } }),
         ),
@@ -122,6 +129,14 @@ function ExplorePage() {
   const { data: trendingData, isPending: trendingPending } = useQuery(
     orpc.discover.trending.queryOptions({ input: { type: "all", page: 1 } }),
   );
+  const { data: weeklyTrendingData, isPending: weeklyTrendingPending } = useQuery(
+    orpc.discover.trending.queryOptions({
+      input: { type: "all", page: 1, timeWindow: "week" },
+    }),
+  );
+  const { data: topMoviesOfYearData, isPending: topMoviesOfYearPending } = useQuery(
+    orpc.discover.topMoviesOfYear.queryOptions(),
+  );
   const { data: upcomingSeriesData, isPending: upcomingSeriesPending } = useQuery(
     orpc.discover.upcomingSeries.queryOptions({ input: { page: 1 } }),
   );
@@ -142,9 +157,18 @@ function ExplorePage() {
   );
 
   const isPending =
-    trendingPending || upcomingSeriesPending || upcomingMoviesPending || tvPending || moviesPending;
+    trendingPending ||
+    weeklyTrendingPending ||
+    topMoviesOfYearPending ||
+    upcomingSeriesPending ||
+    upcomingMoviesPending ||
+    tvPending ||
+    moviesPending;
 
   const trendingItems = trendingData?.items ?? [];
+  const weeklyTrendingItems = weeklyTrendingData?.items ?? [];
+  const topMoviesOfYearItems = topMoviesOfYearData?.items ?? [];
+  const currentYear = new Date().getFullYear();
   const hero = trendingData?.hero ?? null;
 
   if (isPending) return <ExploreSkeletons />;
@@ -152,6 +176,8 @@ function ExplorePage() {
   // Merge user statuses and episode progress from all responses
   const userStatuses = mergeMaps(
     trendingData?.userStatuses,
+    weeklyTrendingData?.userStatuses,
+    topMoviesOfYearData?.userStatuses,
     upcomingSeriesData?.userStatuses,
     upcomingMoviesData?.userStatuses,
     popularTvData?.userStatuses,
@@ -159,6 +185,8 @@ function ExplorePage() {
   );
   const episodeProgress = mergeMaps(
     trendingData?.episodeProgress,
+    weeklyTrendingData?.episodeProgress,
+    topMoviesOfYearData?.episodeProgress,
     upcomingSeriesData?.episodeProgress,
     upcomingMoviesData?.episodeProgress,
     popularTvData?.episodeProgress,
@@ -185,6 +213,7 @@ function ExplorePage() {
 
       <div>
         <TitleRow
+          id="trending-today"
           heading={t`Trending Today`}
           icon={<IconFlame aria-hidden={true} className="text-primary size-5" />}
           items={trendingItems}
@@ -194,6 +223,16 @@ function ExplorePage() {
       </div>
 
       <TitleRow
+        id="trending-week"
+        heading={t`Trending This Week`}
+        icon={<IconFlame aria-hidden={true} className="text-primary size-5" />}
+        items={weeklyTrendingItems}
+        userStatuses={userStatuses}
+        episodeProgress={episodeProgress}
+      />
+
+      <TitleRow
+        id="upcoming-series"
         heading={t`Upcoming Series`}
         icon={<IconCalendarPlus aria-hidden={true} className="text-primary size-5" />}
         items={upcomingSeriesData?.items ?? []}
@@ -202,9 +241,19 @@ function ExplorePage() {
       />
 
       <TitleRow
+        id="upcoming-movies"
         heading={t`Upcoming Movies`}
         icon={<IconCalendarPlus aria-hidden={true} className="text-primary size-5" />}
         items={upcomingMoviesData?.items ?? []}
+        userStatuses={userStatuses}
+        episodeProgress={episodeProgress}
+      />
+
+      <TitleRow
+        id="top-movies-of-year"
+        heading={t`Top Movies of ${currentYear}`}
+        icon={<IconTrophy aria-hidden={true} className="text-primary size-5" />}
+        items={topMoviesOfYearItems}
         userStatuses={userStatuses}
         episodeProgress={episodeProgress}
       />

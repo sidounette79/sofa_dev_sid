@@ -14,9 +14,7 @@ export const IdParam = z.object({
   id: z.string().min(1).describe("Internal UUIDv7 identifier"),
 });
 export const ProviderParam = z.object({
-  provider: z
-    .enum(["jellyfin", "emby", "sonarr", "radarr"])
-    .describe("Media server provider type"),
+  provider: z.enum(["jellyfin", "emby", "sonarr", "radarr"]).describe("Media server provider type"),
 });
 export const FilenameParam = z.object({
   filename: z.string().min(1).describe("Backup filename"),
@@ -29,6 +27,11 @@ export const OptionalMediaTypeParam = z.object({
 });
 export const TrendingTypeParam = z.object({
   type: z.enum(["all", "movie", "tv"]).describe("Trending category: all, movie, or tv"),
+  // 17.10, Sid: "après tendance du jour, la tendance de la semaine" — same
+  // procedure, TMDB's own day/week split (getTrending already took this as
+  // a param, just never exposed past the server). Defaults to "day" so
+  // every existing caller (web, native) keeps its current behaviour.
+  timeWindow: z.enum(["day", "week"]).default("day").describe("TMDB trending window"),
 });
 // ─── Pagination ──────────────────────────────────────────────
 
@@ -162,18 +165,13 @@ export const CreateIntegrationInput = z
 export const UpdateEmbyUsernameInput = z
   .object({
     provider: z.literal("emby").describe("Provider type (always emby for this endpoint)"),
-    embyUsername: z
-      .string()
-      .nullable()
-      .describe("Emby username to link, or null to unlink"),
+    embyUsername: z.string().nullable().describe("Emby username to link, or null to unlink"),
   })
   .meta({ description: "Link an Emby username to filter Now Playing sessions" });
 
 export const UpdateEmbyLibrariesInput = z
   .object({
-    libraryNames: z
-      .array(z.string())
-      .describe("Emby library names to claim as this user's own"),
+    libraryNames: z.array(z.string()).describe("Emby library names to claim as this user's own"),
   })
   .meta({
     description:
@@ -182,7 +180,9 @@ export const UpdateEmbyLibrariesInput = z
 
 export const EmbyLibrariesListOutput = z
   .object({
-    libraries: z.array(z.string()).describe("Available Emby library names, excluding excluded ones"),
+    libraries: z
+      .array(z.string())
+      .describe("Available Emby library names, excluding excluded ones"),
     selected: z.array(z.string()).describe("Library names currently claimed by this user"),
   })
   .meta({ description: "Available Emby libraries and this user's current selection" });
@@ -551,13 +551,7 @@ export const RecommendationItemSchema = z
   })
   .meta({ description: "A recommended title" });
 
-const displayStatusEnum = z.enum([
-  "in_watchlist",
-  "watching",
-  "caught_up",
-  "completed",
-  "dropped",
-]);
+const displayStatusEnum = z.enum(["in_watchlist", "watching", "caught_up", "completed", "dropped"]);
 
 const userStatusMap = z
   .record(z.string(), displayStatusEnum)
@@ -931,7 +925,7 @@ export const RequestedNotAvailableOutput = z
       .number()
       .describe("Real total count of matching titles, independent of the feed's item cap"),
   })
-  .meta({ description: "Requested titles not yet on Emby, for the \"Demandé - pas dispo\" section" });
+  .meta({ description: 'Requested titles not yet on Emby, for the "Demandé - pas dispo" section' });
 
 export const UntrackedEmbyLibraryOutput = z
   .object({
@@ -1527,7 +1521,7 @@ export type SofaExport = z.infer<typeof SofaExportSchema>;
 const RootFolderSchema = z.object({ path: z.string().describe("Absolute path on the *arr host") });
 const QualityProfileSchema = z.object({
   id: z.number().describe("Quality profile ID"),
-  name: z.string().describe("Quality profile name (e.g. \"HD-1080p\")"),
+  name: z.string().describe('Quality profile name (e.g. "HD-1080p")'),
 });
 
 export const RequestOptionsOutput = z
@@ -1639,7 +1633,9 @@ export const RequestedTitlesOutput = z
         embyStatus: z
           .enum(["available", "removed"])
           .nullable()
-          .describe("Emby availability: 'available', 'removed', or null (never seen - still pending)"),
+          .describe(
+            "Emby availability: 'available', 'removed', or null (never seen - still pending)",
+          ),
       }),
     ),
     total: z.number().int(),

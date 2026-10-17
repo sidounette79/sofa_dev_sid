@@ -370,6 +370,22 @@ export const contract = {
       .input(MediaTypeParam.merge(PageParam))
       .output(PopularOutput)
       .errors(tmdbNotConfiguredError),
+    // 17.10, Sid: "nouvel onglet dans découvrir avec les tops films de 2026
+    // (qui changeront en 2027 etc) selon tmdb" — year isn't an input, the
+    // server derives "this year" itself (new Date().getFullYear()) so the
+    // row advances on its own every January, nothing to update client-side.
+    topMoviesOfYear: oc
+      .route({
+        method: "GET",
+        path: "/discover/top-movies-of-year",
+        tags: ["Discover"],
+        summary: "Get top-rated movies of the current year",
+        description:
+          "Fetch the highest-rated movies released in the current calendar year from TMDB, with the user's tracking statuses.",
+        successDescription: "Top movies of the year with user statuses",
+      })
+      .output(PopularOutput)
+      .errors(tmdbNotConfiguredError),
     upcomingMovies: oc
       .route({
         method: "GET",
@@ -700,7 +716,8 @@ export const contract = {
         path: "/media-requests/user-defaults",
         tags: ["MediaRequests"],
         summary: "List every user's default root folder + quality profile (admin only)",
-        description: "Admin-only: fetch stored request defaults for every Sofa user that has any set.",
+        description:
+          "Admin-only: fetch stored request defaults for every Sofa user that has any set.",
         successDescription: "Every user's defaults",
       })
       .output(AdminUserRequestDefaultsListOutput),
@@ -710,7 +727,8 @@ export const contract = {
         path: "/media-requests/my-defaults",
         tags: ["MediaRequests"],
         summary: "Get my default root folder + quality profile",
-        description: "Fetch the current user's stored default Radarr/Sonarr root folder + quality profile.",
+        description:
+          "Fetch the current user's stored default Radarr/Sonarr root folder + quality profile.",
         successDescription: "This user's defaults",
       })
       .output(UserRequestDefaultsOutput),
@@ -908,8 +926,7 @@ export const contract = {
           path: "/admin/settings",
           tags: ["Admin"],
           summary: "Get admin settings",
-          description:
-            "Fetch all admin-configurable settings: registration and update checks.",
+          description: "Fetch all admin-configurable settings: registration and update checks.",
           successDescription: "Current admin settings",
         })
         .output(AdminSettingsOutput),

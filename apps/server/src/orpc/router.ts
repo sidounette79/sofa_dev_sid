@@ -59,6 +59,7 @@ export const implementedRouter = {
   discover: {
     trending: discover.trending,
     popular: discover.popular,
+    topMoviesOfYear: discover.topMoviesOfYear,
     upcomingMovies: discover.upcomingMovies,
     upcomingSeries: discover.upcomingSeries,
     search: discover.search,
