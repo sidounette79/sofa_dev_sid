@@ -26,6 +26,7 @@ import { Route as AppExploreRouteImport } from './routes/_app/explore'
 import { Route as AppDashboardRouteImport } from './routes/_app/dashboard'
 import { Route as AppTitlesIdRouteImport } from './routes/_app/titles.$id'
 import { Route as AppPeopleIdRouteImport } from './routes/_app/people.$id'
+import { Route as AppExploreDiscoverRouteImport } from './routes/_app/explore.discover'
 
 const SetupRoute = SetupRouteImport.update({
   id: '/setup',
@@ -110,12 +111,17 @@ const AppPeopleIdRoute = AppPeopleIdRouteImport.update({
   path: '/people/$id',
   getParentRoute: () => AppRoute,
 } as any)
+const AppExploreDiscoverRoute = AppExploreDiscoverRouteImport.update({
+  id: '/discover',
+  path: '/discover',
+  getParentRoute: () => AppExploreRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/setup': typeof SetupRoute
   '/dashboard': typeof AppDashboardRoute
-  '/explore': typeof AppExploreRoute
+  '/explore': typeof AppExploreRouteWithChildren
   '/library': typeof AppLibraryRoute
   '/onboarding': typeof AppOnboardingRoute
   '/requests': typeof AppRequestsRoute
@@ -125,6 +131,7 @@ export interface FileRoutesByFullPath {
   '/upcoming': typeof AppUpcomingRoute
   '/login': typeof AuthLoginRoute
   '/register': typeof AuthRegisterRoute
+  '/explore/discover': typeof AppExploreDiscoverRoute
   '/people/$id': typeof AppPeopleIdRoute
   '/titles/$id': typeof AppTitlesIdRoute
 }
@@ -132,7 +139,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/setup': typeof SetupRoute
   '/dashboard': typeof AppDashboardRoute
-  '/explore': typeof AppExploreRoute
+  '/explore': typeof AppExploreRouteWithChildren
   '/library': typeof AppLibraryRoute
   '/onboarding': typeof AppOnboardingRoute
   '/requests': typeof AppRequestsRoute
@@ -142,6 +149,7 @@ export interface FileRoutesByTo {
   '/upcoming': typeof AppUpcomingRoute
   '/login': typeof AuthLoginRoute
   '/register': typeof AuthRegisterRoute
+  '/explore/discover': typeof AppExploreDiscoverRoute
   '/people/$id': typeof AppPeopleIdRoute
   '/titles/$id': typeof AppTitlesIdRoute
 }
@@ -152,7 +160,7 @@ export interface FileRoutesById {
   '/_auth': typeof AuthRouteWithChildren
   '/setup': typeof SetupRoute
   '/_app/dashboard': typeof AppDashboardRoute
-  '/_app/explore': typeof AppExploreRoute
+  '/_app/explore': typeof AppExploreRouteWithChildren
   '/_app/library': typeof AppLibraryRoute
   '/_app/onboarding': typeof AppOnboardingRoute
   '/_app/requests': typeof AppRequestsRoute
@@ -162,6 +170,7 @@ export interface FileRoutesById {
   '/_app/upcoming': typeof AppUpcomingRoute
   '/_auth/login': typeof AuthLoginRoute
   '/_auth/register': typeof AuthRegisterRoute
+  '/_app/explore/discover': typeof AppExploreDiscoverRoute
   '/_app/people/$id': typeof AppPeopleIdRoute
   '/_app/titles/$id': typeof AppTitlesIdRoute
 }
@@ -181,6 +190,7 @@ export interface FileRouteTypes {
     | '/upcoming'
     | '/login'
     | '/register'
+    | '/explore/discover'
     | '/people/$id'
     | '/titles/$id'
   fileRoutesByTo: FileRoutesByTo
@@ -198,6 +208,7 @@ export interface FileRouteTypes {
     | '/upcoming'
     | '/login'
     | '/register'
+    | '/explore/discover'
     | '/people/$id'
     | '/titles/$id'
   id:
@@ -217,6 +228,7 @@ export interface FileRouteTypes {
     | '/_app/upcoming'
     | '/_auth/login'
     | '/_auth/register'
+    | '/_app/explore/discover'
     | '/_app/people/$id'
     | '/_app/titles/$id'
   fileRoutesById: FileRoutesById
@@ -349,12 +361,31 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppPeopleIdRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/explore/discover': {
+      id: '/_app/explore/discover'
+      path: '/discover'
+      fullPath: '/explore/discover'
+      preLoaderRoute: typeof AppExploreDiscoverRouteImport
+      parentRoute: typeof AppExploreRoute
+    }
   }
 }
 
+interface AppExploreRouteChildren {
+  AppExploreDiscoverRoute: typeof AppExploreDiscoverRoute
+}
+
+const AppExploreRouteChildren: AppExploreRouteChildren = {
+  AppExploreDiscoverRoute: AppExploreDiscoverRoute,
+}
+
+const AppExploreRouteWithChildren = AppExploreRoute._addFileChildren(
+  AppExploreRouteChildren,
+)
+
 interface AppRouteChildren {
   AppDashboardRoute: typeof AppDashboardRoute
-  AppExploreRoute: typeof AppExploreRoute
+  AppExploreRoute: typeof AppExploreRouteWithChildren
   AppLibraryRoute: typeof AppLibraryRoute
   AppOnboardingRoute: typeof AppOnboardingRoute
   AppRequestsRoute: typeof AppRequestsRoute
@@ -368,7 +399,7 @@ interface AppRouteChildren {
 
 const AppRouteChildren: AppRouteChildren = {
   AppDashboardRoute: AppDashboardRoute,
-  AppExploreRoute: AppExploreRoute,
+  AppExploreRoute: AppExploreRouteWithChildren,
   AppLibraryRoute: AppLibraryRoute,
   AppOnboardingRoute: AppOnboardingRoute,
   AppRequestsRoute: AppRequestsRoute,

@@ -1,18 +1,17 @@
-import { useLingui } from "@lingui/react/macro";
+import { Trans, useLingui } from "@lingui/react/macro";
 import {
   IconCalendarPlus,
+  IconChevronRight,
   IconDeviceTv,
   IconFlame,
   IconMovie,
+  IconSearch,
   IconTrophy,
 } from "@tabler/icons-react";
 import { useQuery } from "@tanstack/react-query";
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { zodValidator } from "@tanstack/zod-adapter";
-import { z } from "zod";
+import { Link, createFileRoute } from "@tanstack/react-router";
 
 import { DiscoverSearchBar } from "@/components/explore/discover-search-bar";
-import { DiscoverSection } from "@/components/explore/discover-section";
 import { FilterableTitleRow } from "@/components/explore/filterable-title-row";
 import { HeroBanner } from "@/components/explore/hero-banner";
 import { TitleRow } from "@/components/explore/title-row";
@@ -21,40 +20,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { withLoaderRetry } from "@/lib/loader-retry";
 import { orpc } from "@/lib/orpc/client";
 
-// 06.09, Sid: three real bugs found together — (1) filters lived in plain
-// useState inside DiscoverSection, so leaving to a title page and coming
-// back sometimes lost them and the scroll position (whether it survived
-// depended on whether the router happened to keep the old component
-// instance alive); (2) switching a filter didn't reliably start a clean
-// infinite-query — leftover items from a previous filter combination could
-// still be sitting in `items` (self-inflicted, not TMDB: verified the raw
-// TMDB response for the exact same params contains none of the stray
-// titles she saw). Moving every filter into the URL fixes both: the
-// browser's own history is now the single source of truth, and each
-// distinct filter combination gets its own real, stable query key instead
-// of one shared across whatever the closures happened to hold.
-const discoverSearchSchema = z.object({
-  discoverType: z.enum(["movie", "tv"]).optional().catch(undefined),
-  discoverGenreId: z.number().optional().catch(undefined),
-  discoverYearMin: z.number().optional().catch(undefined),
-  discoverYearMax: z.number().optional().catch(undefined),
-  discoverRatingMin: z.number().optional().catch(undefined),
-  discoverSortBy: z
-    .enum([
-      "popularity.desc",
-      "vote_average.desc",
-      "primary_release_date.desc",
-      "primary_release_date.asc",
-    ])
-    .optional()
-    .catch(undefined),
-  discoverLanguage: z.string().optional().catch(undefined),
-  discoverPlatformId: z.string().optional().catch(undefined),
-});
-
 export const Route = createFileRoute("/_app/explore")({
   staleTime: 60_000,
-  validateSearch: zodValidator(discoverSearchSchema),
   loader: async ({ context }) => {
     await withLoaderRetry(() =>
       Promise.all([
@@ -124,8 +91,6 @@ function mergeMaps<T>(...maps: (Record<string, T> | undefined)[]): Record<string
 
 function ExplorePage() {
   const { t } = useLingui();
-  const discoverSearch = Route.useSearch();
-  const navigate = useNavigate({ from: Route.fullPath });
   const { data: trendingData, isPending: trendingPending } = useQuery(
     orpc.discover.trending.queryOptions({ input: { type: "all", page: 1 } }),
   );
@@ -208,8 +173,9 @@ function ExplorePage() {
         />
       )}
 
-      {/* Order per Sid's list (24.08): Tendance, Séries à venir, Films à
-          venir, Séries populaires, Films populaires, Découvrir. */}
+      {/* Order per Sid's list (17.10): Tendance du jour, Tendance de la
+          semaine, Séries à venir, Films à venir, Top de l'année, Découvrir
+          (nav card, own page), Séries populaires, Films populaires. */}
 
       <div>
         <TitleRow
@@ -258,6 +224,23 @@ function ExplorePage() {
         episodeProgress={episodeProgress}
       />
 
+      {/* 17.10, Sid: "ou est-ce qu'on fait peut-être des sous-pages
+          dédiées?" — Discover is a real filtering tool over an infinite-
+          scrolling catalog, not a capped row; it used to sit embedded here,
+          always fully expanded, blocking Populaires below it from ever
+          being reachable. Own page now (/explore/discover), linked from
+          here instead. */}
+      <Link
+        to="/explore/discover"
+        className="ring-foreground/10 hover:bg-card/50 flex items-center justify-between gap-2 rounded-lg px-4 py-3 text-sm font-medium ring-1 transition-colors"
+      >
+        <span className="flex items-center gap-2">
+          <IconSearch aria-hidden={true} className="text-primary size-5" />
+          <Trans>Discover</Trans>
+        </span>
+        <IconChevronRight aria-hidden={true} className="text-muted-foreground size-4" />
+      </Link>
+
       <FilterableTitleRow
         heading={t`Popular TV Shows`}
         icon={<IconDeviceTv aria-hidden={true} className="text-primary size-5" />}
@@ -277,8 +260,6 @@ function ExplorePage() {
         userStatuses={userStatuses}
         episodeProgress={episodeProgress}
       />
-
-      <DiscoverSection search={discoverSearch} onSearchChange={navigate} />
     </div>
   );
 }
