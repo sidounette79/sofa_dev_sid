@@ -835,6 +835,10 @@ msgstr "필터 초기화"
 msgid "Clear Recently Viewed?"
 msgstr "최근 본 항목을 지우시겠습니까?"
 
+#: apps/web/src/components/explore/discover-search-bar.tsx
+msgid "Clear search"
+msgstr ""
+
 #: apps/native/src/components/settings/integration-configs.ts
 #: apps/native/src/components/settings/integration-configs.ts
 msgid "Click \"+\" and select \"Custom Lists\""
@@ -3651,8 +3655,8 @@ msgstr "영화, 프로그램, 인물 검색..."
 
 #: apps/web/src/components/nav-bar.tsx
 #: apps/web/src/components/nav-bar.tsx
-msgid "Search…"
-msgstr "검색…"
+#~ msgid "Search…"
+#~ msgstr "검색…"
 
 #: apps/web/src/routes/_app/authors.$id.tsx
 #: apps/web/src/routes/_app/authors.$id.tsx
@@ -3702,8 +3706,11 @@ msgstr "모두 보기"
 
 #. placeholder {0}: searchData?.totalResults
 #: apps/web/src/components/command-palette.tsx
-#: apps/web/src/components/explore/discover-search-bar.tsx
 msgid "See all {0} results"
+msgstr ""
+
+#: apps/web/src/components/explore/discover-search-bar.tsx
+msgid "See all {totalResults} results"
 msgstr ""
 
 #: apps/web/src/components/dashboard/watched-movies-section.tsx

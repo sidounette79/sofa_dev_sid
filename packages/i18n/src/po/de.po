@@ -835,6 +835,10 @@ msgstr "Filter zurücksetzen"
 msgid "Clear Recently Viewed?"
 msgstr "Zuletzt angesehen löschen?"
 
+#: apps/web/src/components/explore/discover-search-bar.tsx
+msgid "Clear search"
+msgstr ""
+
 #: apps/native/src/components/settings/integration-configs.ts
 #: apps/native/src/components/settings/integration-configs.ts
 msgid "Click \"+\" and select \"Custom Lists\""
@@ -3651,8 +3655,8 @@ msgstr "Filme, Serien, Personen suchen..."
 
 #: apps/web/src/components/nav-bar.tsx
 #: apps/web/src/components/nav-bar.tsx
-msgid "Search…"
-msgstr "Suchen..."
+#~ msgid "Search…"
+#~ msgstr "Suchen..."
 
 #: apps/web/src/routes/_app/authors.$id.tsx
 #: apps/web/src/routes/_app/authors.$id.tsx
@@ -3702,8 +3706,11 @@ msgstr "Alle anzeigen"
 
 #. placeholder {0}: searchData?.totalResults
 #: apps/web/src/components/command-palette.tsx
-#: apps/web/src/components/explore/discover-search-bar.tsx
 msgid "See all {0} results"
+msgstr ""
+
+#: apps/web/src/components/explore/discover-search-bar.tsx
+msgid "See all {totalResults} results"
 msgstr ""
 
 #: apps/web/src/components/dashboard/watched-movies-section.tsx
