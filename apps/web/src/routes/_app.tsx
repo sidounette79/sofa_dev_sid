@@ -1,6 +1,7 @@
 import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
 
 import { CommandPalette } from "@/components/command-palette";
+import { DiscoverSearchBar } from "@/components/explore/discover-search-bar";
 import { MobileTabBar, NavBar } from "@/components/nav-bar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { UpdateToast } from "@/components/update-toast";
@@ -44,6 +45,15 @@ function AppLayout() {
           id="main-content"
           className="relative mx-auto max-w-6xl py-6 ps-[max(1rem,env(safe-area-inset-left))] pe-[max(1rem,env(safe-area-inset-right))] sm:ps-[max(1.5rem,env(safe-area-inset-left))] sm:pe-[max(1.5rem,env(safe-area-inset-right))]"
         >
+          {/* 18.10, Sid: "déplacer la barre de recherche... la mettre tout
+              en haut de chaque page" - was only embedded on /explore; both
+              search entry points (this one and the nav bar's own ⌘K
+              trigger, removed below) already query the exact same
+              orpc.discover.search, so this one single global instance now
+              covers both, on every page instead of just one. */}
+          <div className="mb-6">
+            <DiscoverSearchBar />
+          </div>
           <Outlet />
         </main>
       </div>

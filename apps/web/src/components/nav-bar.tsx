@@ -6,11 +6,9 @@ import {
   IconCompass,
   IconDeviceTv,
   IconLogout,
-  IconSearch,
   IconSettings,
 } from "@tabler/icons-react";
 import { Link, useLocation, useNavigate, useSearch } from "@tanstack/react-router";
-import { useSetAtom } from "jotai";
 import { motion } from "motion/react";
 import { useLayoutEffect, useRef, useState } from "react";
 
@@ -24,9 +22,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Kbd } from "@/components/ui/kbd";
-import { Separator } from "@/components/ui/separator";
-import { commandPaletteOpenAtom } from "@/lib/atoms/command-palette";
 import { signOut } from "@/lib/auth/client";
 import { queryClient } from "@/lib/orpc/client";
 
@@ -43,12 +38,7 @@ const springTransition = {
 
 // navLinks and mobileTabs moved inside components for LingUI
 
-function isLinkActive(
-  pathname: string,
-  href: string,
-  currentType?: string,
-  itemType?: string,
-) {
+function isLinkActive(pathname: string, href: string, currentType?: string, itemType?: string) {
   const pathMatches = pathname === href || pathname.startsWith(`${href}/`);
   if (!pathMatches) return false;
   if (itemType === undefined) return true;
@@ -122,7 +112,6 @@ export function NavBar({
   const { t } = useLingui();
   const navigate = useNavigate();
   const { pathname } = useLocation();
-  const setCommandPaletteOpen = useSetAtom(commandPaletteOpenAtom);
 
   const navLinks = [
     { href: "/library", label: t`TV Shows`, type: "tv" },
@@ -199,29 +188,12 @@ export function NavBar({
         </div>
 
         <div className="flex flex-1 items-center justify-end gap-2 sm:flex-none sm:gap-1">
-          {/* Mobile search trigger */}
-          <button
-            type="button"
-            onClick={() => setCommandPaletteOpen(true)}
-            className="border-border/50 bg-card/50 text-muted-foreground hover:border-primary/20 hover:bg-card flex flex-1 items-center gap-2 rounded-lg border px-3 py-1.5 text-[13px] transition-colors sm:hidden"
-          >
-            <IconSearch aria-hidden={true} className="size-3.5" />
-            <span>{t`Search…`}</span>
-          </button>
-          {/* Desktop search trigger pill */}
-          <button
-            type="button"
-            onClick={() => setCommandPaletteOpen(true)}
-            className="border-border/50 bg-card/50 text-muted-foreground hover:border-primary/20 hover:bg-card hidden items-center gap-2 rounded-lg border px-3 py-1.5 text-[13px] transition-colors sm:inline-flex"
-          >
-            <IconSearch aria-hidden={true} className="size-3.5" />
-            <span>{t`Search…`}</span>
-            <Kbd className="ms-2.5">⌘ K</Kbd>
-          </button>
-          <Separator
-            orientation="vertical"
-            className="bg-border/50 mx-1.5 my-auto hidden h-6 sm:block"
-          />
+          {/* 18.10, Sid: "déplacer la barre de recherche... la mettre tout
+              en haut de chaque page" - the two trigger pills that used to
+              open the ⌘K command palette are gone, replaced by the real,
+              always-visible search bar now mounted globally in _app.tsx.
+              The ⌘K shortcut itself still works (useHotkey inside
+              CommandPalette doesn't depend on these buttons at all). */}
           {/* User avatar dropdown */}
           <DropdownMenu modal={false}>
             <DropdownMenuTrigger

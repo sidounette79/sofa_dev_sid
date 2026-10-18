@@ -11,7 +11,6 @@ import {
 import { useQuery } from "@tanstack/react-query";
 import { Link, createFileRoute } from "@tanstack/react-router";
 
-import { DiscoverSearchBar } from "@/components/explore/discover-search-bar";
 import { FilterableTitleRow } from "@/components/explore/filterable-title-row";
 import { HeroBanner } from "@/components/explore/hero-banner";
 import { TitleRow } from "@/components/explore/title-row";
@@ -64,8 +63,7 @@ export const Route = createFileRoute("/_app/explore")({
 function ExploreSkeletons() {
   return (
     <div className="space-y-6">
-      <DiscoverSearchBar />
-      <Skeleton className="-mt-6 mr-[calc(-50vw+50%)] ml-[calc(-50vw+50%)] h-[320px] rounded-none" />
+      <Skeleton className="mr-[calc(-50vw+50%)] ml-[calc(-50vw+50%)] h-[320px] rounded-none" />
       {[1, 2, 3].map((i) => (
         <div key={i} className="space-y-4">
           <div className="flex items-center gap-2">
@@ -160,8 +158,6 @@ function ExplorePage() {
 
   return (
     <div className="space-y-6">
-      <DiscoverSearchBar />
-
       {hero && (
         <HeroBanner
           id={hero.id}

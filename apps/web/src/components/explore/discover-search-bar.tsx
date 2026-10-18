@@ -140,8 +140,25 @@ export function DiscoverSearchBar() {
             onFocus={() => setOpen(true)}
             placeholder={t`Search movies & TV shows…`}
             aria-label={t`Search movies & TV shows`}
-            className="bg-card/80 border-border/60 text-foreground placeholder:text-muted-foreground focus-visible:ring-primary/40 h-12 w-full rounded-full border pr-4 pl-12 text-base shadow-sm backdrop-blur-sm transition-shadow outline-none focus-visible:ring-2"
+            className="bg-card/80 border-border/60 text-foreground placeholder:text-muted-foreground focus-visible:ring-primary/40 h-12 w-full rounded-full border pr-11 pl-12 text-base shadow-sm backdrop-blur-sm transition-shadow outline-none focus-visible:ring-2"
           />
+          {/* 18.10, Sid: "rajouter la petite croix pour effacer le texte déjà
+              saisi" - distinct from the per-row "x" below (that one removes
+              a saved history entry; this one just clears what's currently
+              typed). Only shown once there's something to clear. */}
+          {hasQuery && (
+            <button
+              type="button"
+              aria-label={t`Clear search`}
+              onMouseDown={(e) => {
+                e.preventDefault();
+                setQuery("");
+              }}
+              className="text-muted-foreground hover:text-foreground absolute top-1/2 right-3 -translate-y-1/2 rounded-full p-1.5 transition-colors"
+            >
+              <IconX aria-hidden={true} className="size-4" />
+            </button>
+          )}
         </div>
       </form>
 
@@ -274,7 +291,9 @@ export function DiscoverSearchBar() {
                       <span className="uppercase">
                         {r.type === "movie" ? t`movie` : r.type === "tv" ? t`tv` : t`person`}
                       </span>
-                      {r.type !== "person" && r.releaseDate && <span>{r.releaseDate.slice(0, 4)}</span>}
+                      {r.type !== "person" && r.releaseDate && (
+                        <span>{r.releaseDate.slice(0, 4)}</span>
+                      )}
                       {r.type !== "person" && r.embyStatus === "available" && (
                         <span className="text-status-completed flex items-center gap-0.5">
                           <IconServer2 aria-hidden={true} className="size-3" />
@@ -294,7 +313,10 @@ export function DiscoverSearchBar() {
                   }}
                   className="text-muted-foreground hover:bg-accent hover:text-foreground w-full rounded-lg px-2.5 py-2 text-center text-sm transition-colors"
                 >
-                  {t`See all ${searchData?.totalResults} results`}
+                  {(() => {
+                    const totalResults = searchData?.totalResults;
+                    return t`See all ${totalResults} results`;
+                  })()}
                 </button>
               )}
             </div>
