@@ -118,6 +118,8 @@ export const implementedRouter = {
     purgeMetadataCache: admin.purgeMetadataCache,
     purgeImageCache: admin.purgeImageCache,
     systemHealth: admin.systemHealth,
+    titleRematchSearch: admin.titleRematchSearch,
+    titleRematch: admin.titleRematch,
   },
   imports: {
     parseFile: imports.parseFile,

@@ -1293,6 +1293,33 @@ export const TriggerJobOutput = z.object({
   ok: z.literal(true).describe("Always true on success"),
 });
 
+// 31.10, Sid ("j'ai des trucs complètement faux alors qu'ils sont juste
+// dans sonarr et dans emby... faut que je puisse aller chercher le truc
+// juste sur tvdb ou tmdb") - manual re-match tool for ambiguous-title
+// mismatches (same-named shows across decades: Le Prisonnier, Brothers,
+// Law & Order). resolveShowTmdbId/resolveMovieTmdbId already guard the
+// automatic crossref against an implausible year, but a wrong match
+// within that tolerance (or a bad TMDB crossref/title+year collision)
+// still needs a manual way out.
+export const TitleRematchCandidateSchema = z
+  .object({
+    tmdbId: z.number().describe("TMDB id for this candidate"),
+    title: z.string().describe("Title or show name"),
+    year: z.number().nullable().describe("Release year or first-air year"),
+    overview: z.string().nullable(),
+    posterUrl: z.string().nullable().describe("Full poster image URL, if TMDB has one"),
+  })
+  .meta({ description: "A TMDB search result candidate for manual re-matching" });
+
+export const TitleRematchSearchOutput = z
+  .object({
+    results: z.array(TitleRematchCandidateSchema),
+  })
+  .meta({
+    description:
+      "TMDB search candidates for manual re-matching, same type (movie/tv) as the title being corrected",
+  });
+
 export const PurgeMetadataCacheOutput = z
   .object({
     deletedTitles: z.number().describe("Number of un-enriched stub titles deleted"),

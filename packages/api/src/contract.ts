@@ -75,6 +75,7 @@ import {
   SystemStatusOutput,
   TitleDetailOutput,
   TitleRecommendationsOutput,
+  TitleRematchSearchOutput,
   TrendingOutput,
   TrendingTypeParam,
   TriggerJobInput,
@@ -1075,6 +1076,46 @@ export const contract = {
         successDescription: "Full system health report",
       })
       .output(SystemHealthOutput),
+    titleRematchSearch: oc
+      .route({
+        method: "GET",
+        path: "/admin/titles/{id}/tmdb-search",
+        tags: ["Admin"],
+        summary: "Search TMDB for a manual re-match",
+        description:
+          "Search TMDB (movie or tv, matching this title's own type) for a correction candidate when the automatic match picked the wrong entry - e.g. a same-named show from a different decade (Le Prisonnier, Brothers, Law & Order).",
+        successDescription: "TMDB candidates matching the query, same type as the title",
+      })
+      .input(IdParam.extend({ query: z.string().min(1) }))
+      .output(TitleRematchSearchOutput)
+      .errors({
+        NOT_FOUND: {
+          message: "Title not found",
+          data: appErrorData(AppErrorCode.TITLE_NOT_FOUND),
+        },
+      }),
+    titleRematch: oc
+      .route({
+        method: "POST",
+        path: "/admin/titles/{id}/rematch",
+        tags: ["Admin"],
+        summary: "Re-point a title at a different TMDB id",
+        description:
+          "Repoints an existing title at the TMDB id picked from search results, keeping the title's own internal id (watch progress and library matches stay intact) and re-fetching all metadata/seasons/episodes under the new match.",
+        successDescription: "The re-matched title with fresh metadata",
+      })
+      .input(IdParam.extend({ tmdbId: z.number() }))
+      .output(TitleDetailOutput)
+      .errors({
+        NOT_FOUND: {
+          message: "Title not found",
+          data: appErrorData(AppErrorCode.TITLE_NOT_FOUND),
+        },
+        CONFLICT: {
+          message: "That TMDB id is already matched to another title",
+          data: appErrorData(AppErrorCode.TITLE_REMATCH_CONFLICT),
+        },
+      }),
   },
 
   // ─── Imports ────────────────────────────────────────────────

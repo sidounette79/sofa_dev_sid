@@ -17,6 +17,12 @@ export const AppErrorCode = {
   EXPORT_FAILED: "EXPORT_FAILED",
   PLAYBACK_DEVICE_ERROR: "PLAYBACK_DEVICE_ERROR",
   NO_TVDB_ID: "NO_TVDB_ID",
+  // 31.10, Sid ("j'ai des trucs complètement faux... faut que je puisse
+  // aller chercher le truc juste sur tvdb ou tmdb") - manual re-match tool
+  // for ambiguous-title mismatches (same-named shows across decades, e.g.
+  // Le Prisonnier/Brothers/Law & Order). This fires when the tmdbId she
+  // picked is already the one another title in the library is using.
+  TITLE_REMATCH_CONFLICT: "TITLE_REMATCH_CONFLICT",
 } as const;
 
 export type AppErrorCode = (typeof AppErrorCode)[keyof typeof AppErrorCode];

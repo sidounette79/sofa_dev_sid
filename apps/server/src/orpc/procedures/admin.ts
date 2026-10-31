@@ -16,9 +16,16 @@ import {
   purgeImageCache as purgeImagesFn,
   purgeMetadataCache as purgeMetadataFn,
 } from "@sofa/core/cache";
+import {
+  getOrFetchTitle,
+  rematchTitle,
+  searchTitleCandidates,
+  TitleRematchConflictError,
+} from "@sofa/core/metadata";
 import { getSetting, getSettings, setSetting } from "@sofa/core/settings";
 import { getSystemHealth } from "@sofa/core/system-health";
 import { getCachedUpdateCheck } from "@sofa/core/update-check";
+import { getTitleById } from "@sofa/db/queries/title";
 
 import { pauseJobs, rescheduleBackup, resumeJobs, triggerJob as triggerCronJob } from "../../cron";
 import { os } from "../context";
@@ -155,6 +162,55 @@ export const purgeMetadataCache = os.admin.purgeMetadataCache
 export const purgeImageCache = os.admin.purgeImageCache
   .use(admin)
   .handler(async () => purgeImagesFn());
+
+// ─── Title re-match ───────────────────────────────────────────
+// 31.10, Sid ("j'ai des trucs complètement faux... faut que je puisse
+// aller chercher le truc juste sur tvdb ou tmdb") - manual re-match for
+// same-named shows across decades (Le Prisonnier, Brothers, Law & Order)
+// that the automatic TMDB crossref can mismatch. See metadata.ts's own
+// comment on searchTitleCandidates/rematchTitle for the full reasoning.
+
+export const titleRematchSearch = os.admin.titleRematchSearch.use(admin).handler(async ({ input }) => {
+  const [title] = await getTitleById(input.id);
+  if (!title) {
+    throw new ORPCError("NOT_FOUND", {
+      message: "Title not found",
+      data: { code: AppErrorCode.TITLE_NOT_FOUND },
+    });
+  }
+  const results = await searchTitleCandidates(title.type as "movie" | "tv", input.query);
+  return { results };
+});
+
+export const titleRematch = os.admin.titleRematch
+  .use(admin)
+  .handler(async ({ input, context }) => {
+    try {
+      const updated = await rematchTitle(input.id, input.tmdbId);
+      if (!updated) {
+        throw new ORPCError("NOT_FOUND", {
+          message: "Title not found",
+          data: { code: AppErrorCode.TITLE_NOT_FOUND },
+        });
+      }
+    } catch (err) {
+      if (err instanceof TitleRematchConflictError) {
+        throw new ORPCError("CONFLICT", {
+          message: err.message,
+          data: { code: AppErrorCode.TITLE_REMATCH_CONFLICT },
+        });
+      }
+      throw err;
+    }
+    const result = await getOrFetchTitle(input.id, context.user.id);
+    if (!result) {
+      throw new ORPCError("NOT_FOUND", {
+        message: "Title not found",
+        data: { code: AppErrorCode.TITLE_NOT_FOUND },
+      });
+    }
+    return result;
+  });
 
 // ─── System Health ────────────────────────────────────────────
 

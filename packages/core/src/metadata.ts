@@ -44,6 +44,8 @@ import {
   getTvDetails,
   getTvSeasonDetails,
   getVideos,
+  searchMovies,
+  searchTv,
 } from "@sofa/tmdb/client";
 import { tmdbImageUrl } from "@sofa/tmdb/image";
 import {
@@ -384,6 +386,63 @@ export async function refreshTitle(titleId: string) {
     refreshCredits(updated.id).catch((err) => log.debug("Credits enrichment failed:", err));
   }
   return updated;
+}
+
+// 31.10, Sid ("j'ai des trucs complètement faux alors qu'ils sont juste
+// dans sonarr et dans emby... comme le prisonnier, brothers et la loi et
+// l'ordre... faut que je puisse aller chercher le truc juste sur tvdb ou
+// tmdb") - manual re-match for the ambiguous-title case: several shows
+// share the same title across decades/countries, and resolveShowTmdbId's
+// automatic crossref (imports/resolve.ts) can land on the wrong one even
+// within its existing year-plausibility guard. Search lets her pick the
+// right TMDB entry by hand; rematchTitle repoints the existing title row
+// at it and reuses refreshTitle for the actual refetch, so the title's
+// own internal id - and everything that already references it (watch
+// progress, library file matches) - stays intact.
+export async function searchTitleCandidates(
+  type: "movie" | "tv",
+  query: string,
+): Promise<
+  { tmdbId: number; title: string; year: number | null; overview: string | null; posterUrl: string | null }[]
+> {
+  if (type === "movie") {
+    const result = await searchMovies(query);
+    return (result.results ?? []).map((m) => ({
+      tmdbId: m.id,
+      title: m.title ?? "",
+      year: m.release_date ? new Date(m.release_date).getFullYear() : null,
+      overview: m.overview ?? null,
+      posterUrl: m.poster_path ? tmdbImageUrl(m.poster_path, "posters") : null,
+    }));
+  }
+  const result = await searchTv(query);
+  return (result.results ?? []).map((s) => ({
+    tmdbId: s.id,
+    title: s.name ?? "",
+    year: s.first_air_date ? new Date(s.first_air_date).getFullYear() : null,
+    overview: s.overview ?? null,
+    posterUrl: s.poster_path ? tmdbImageUrl(s.poster_path, "posters") : null,
+  }));
+}
+
+export class TitleRematchConflictError extends Error {
+  constructor(public readonly conflictingTitle: string) {
+    super(`TMDB id is already matched to another title: "${conflictingTitle}"`);
+  }
+}
+
+export async function rematchTitle(titleId: string, newTmdbId: number) {
+  const [title] = await getTitleById(titleId);
+  if (!title) return null;
+
+  const [conflict] = await getTitleByTmdbIdAndType(newTmdbId, title.type as "movie" | "tv");
+  if (conflict && conflict.id !== titleId) {
+    throw new TitleRematchConflictError(conflict.title);
+  }
+
+  await updateTitleFields(titleId, { tmdbId: newTmdbId });
+  log.info(`Re-matched title "${title.title}" (${titleId}) to TMDB ${newTmdbId}`);
+  return refreshTitle(titleId);
 }
 
 export async function refreshTvChildren(titleId: string, tmdbId: number, numberOfSeasons: number) {
