@@ -4,6 +4,7 @@ import {
   IconClockCheck,
   IconDotsVertical,
   IconDownload,
+  IconEdit,
   IconRepeat,
   IconTrash,
   IconX,
@@ -19,13 +20,14 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Separator } from "@/components/ui/separator";
 
+import { RematchDialog } from "./rematch-dialog";
 import { RequestDialog } from "./request-dialog";
 import { StarRating } from "./star-rating";
 import { StatusButton } from "./status-button";
 import { useTitleContext, useTitleUserInfo } from "./title-context";
 import { useTitleActions } from "./use-title-actions";
 
-export function TitleActions() {
+export function TitleActions({ isAdmin }: { isAdmin: boolean }) {
   const { t } = useLingui();
   const { titleId, titleType, seasons } = useTitleContext();
   const { userStatus, userRating, requestedAt, embyStatus } = useTitleUserInfo();
@@ -36,6 +38,7 @@ export function TitleActions() {
   const canRewatchSeries =
     titleType === "tv" && (userStatus === "completed" || userStatus === "caught_up");
   const [requestDialogOpen, setRequestDialogOpen] = useState(false);
+  const [rematchDialogOpen, setRematchDialogOpen] = useState(false);
 
   return (
     <div className="flex flex-wrap items-center gap-3">
@@ -105,8 +108,24 @@ export function TitleActions() {
             <IconTrash className="size-3.5" />
             {isDropped ? t`Remove Dropped Status` : t`Mark as Dropped`}
           </DropdownMenuItem>
+          {isAdmin && (
+            <DropdownMenuItem
+              onClick={() => setRematchDialogOpen(true)}
+              className="cursor-pointer text-[13px]"
+            >
+              <IconEdit className="size-3.5" />
+              <Trans>Correct TMDB match</Trans>
+            </DropdownMenuItem>
+          )}
         </DropdownMenuContent>
       </DropdownMenu>
+      {isAdmin && (
+        <RematchDialog
+          open={rematchDialogOpen}
+          onOpenChange={setRematchDialogOpen}
+          titleId={titleId}
+        />
+      )}
       {canRewatchSeries && (
         <Button
           onClick={handleRewatch}
@@ -133,7 +152,7 @@ export function TitleActions() {
           // shouldn't compete with it anymore.
           variant={isMovieWatched ? "destructive" : "outline"}
           size="sm"
-          className={`h-7 rounded-lg px-3 text-xs hover:shadow-md active:scale-[0.97] ${isMovieWatched ? "hover:shadow-destructive/20" : "bg-status-completed/10 text-status-completed ring-1 ring-status-completed/20 hover:bg-status-completed/15 hover:ring-status-completed/30 border-transparent"}`}
+          className={`h-7 rounded-lg px-3 text-xs hover:shadow-md active:scale-[0.97] ${isMovieWatched ? "hover:shadow-destructive/20" : "bg-status-completed/10 text-status-completed ring-status-completed/20 hover:bg-status-completed/15 hover:ring-status-completed/30 border-transparent ring-1"}`}
         >
           {isMovieWatched ? (
             <Fragment key="unwatched">

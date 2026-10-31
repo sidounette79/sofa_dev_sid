@@ -4,8 +4,8 @@ import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { useEffect } from "react";
 
 import { TitleActions } from "@/components/titles/title-actions";
-import { TitleEmbyAvailability } from "@/components/titles/title-emby-availability";
 import { TitleCast } from "@/components/titles/title-cast";
+import { TitleEmbyAvailability } from "@/components/titles/title-emby-availability";
 import { TitleHero } from "@/components/titles/title-hero";
 import { TitleKeyboardShortcuts } from "@/components/titles/title-keyboard-shortcuts";
 import { TitleProvider } from "@/components/titles/title-provider";
@@ -57,6 +57,8 @@ export const Route = createFileRoute("/_app/titles/$id")({
 
 function TitleDetailPage() {
   const { title, seasons, cast, embyServerId, embyUrl } = Route.useLoaderData();
+  const { session } = Route.useRouteContext();
+  const isAdmin = session.user.role === "admin";
 
   const themeStyle = getThemeCssProperties(title.colorPalette);
 
@@ -70,7 +72,11 @@ function TitleDetailPage() {
         titleName={title.title}
         seasons={seasons}
       >
-        <TitleHero title={title} trailerVideoKey={title.trailerVideoKey} actions={<TitleActions />}>
+        <TitleHero
+          title={title}
+          trailerVideoKey={title.trailerVideoKey}
+          actions={<TitleActions isAdmin={isAdmin} />}
+        >
           <TitleEmbyAvailability
             embyStatus={title.embyStatus}
             embyLibraryName={title.embyLibraryName}
