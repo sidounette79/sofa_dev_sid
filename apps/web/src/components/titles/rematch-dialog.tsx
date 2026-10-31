@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { useDebounce } from "@/hooks/use-debounce";
+import { getErrorMessage } from "@/lib/error-messages";
 import { orpc } from "@/lib/orpc/client";
 
 interface RematchDialogProps {
@@ -51,7 +52,7 @@ export function RematchDialog({ open, onOpenChange, titleId }: RematchDialogProp
         setConfirming(null);
         onOpenChange(false);
       },
-      onError: (error: Error) => toast.error(error.message || t`Re-match failed`),
+      onError: (error: Error) => toast.error(getErrorMessage(error, t, t`Re-match failed`)),
     }),
   );
 

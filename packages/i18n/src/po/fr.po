@@ -680,6 +680,7 @@ msgstr "Impossible de joindre le serveur"
 #: apps/native/src/components/search/recently-viewed-list.tsx
 #: apps/native/src/components/settings/integration-card.tsx
 #: apps/native/src/components/settings/integration-card.tsx
+#: apps/native/src/components/titles/rematch-modal.tsx
 #: apps/native/src/components/titles/status-action-button.tsx
 #: apps/web/src/components/settings/account-section.tsx
 #: apps/web/src/components/settings/account-section.tsx
@@ -688,6 +689,7 @@ msgstr "Impossible de joindre le serveur"
 #: apps/web/src/components/settings/danger-section.tsx
 #: apps/web/src/components/settings/danger-section.tsx
 #: apps/web/src/components/settings/danger-section.tsx
+#: apps/web/src/components/titles/rematch-dialog.tsx
 #: apps/web/src/components/titles/request-dialog.tsx
 #: apps/web/src/components/titles/status-button.tsx
 #: apps/web/src/components/titles/title-seasons.tsx
@@ -986,6 +988,13 @@ msgstr "Copier"
 #: apps/web/src/components/settings/integration-card.tsx
 msgid "Copy URL"
 msgstr "Copier l'URL"
+
+#: apps/native/src/app/title/[id].tsx
+#: apps/native/src/components/titles/rematch-modal.tsx
+#: apps/web/src/components/titles/rematch-dialog.tsx
+#: apps/web/src/components/titles/title-actions.tsx
+msgid "Correct TMDB match"
+msgstr "Corriger la correspondance TMDB"
 
 #: apps/native/src/components/settings/integrations-section.tsx
 msgid "Could not load integrations"
@@ -2603,6 +2612,8 @@ msgid "No requests yet."
 msgstr "Aucune demande pour l'instant."
 
 #: apps/native/src/app/(tabs)/(search)/index.tsx
+#: apps/native/src/components/titles/rematch-modal.tsx
+#: apps/web/src/components/titles/rematch-dialog.tsx
 msgid "No results for \"{debouncedQuery}\""
 msgstr "Aucun résultat pour « {debouncedQuery} »"
 
@@ -3222,6 +3233,24 @@ msgstr "Note : {rating} sur 5 étoiles"
 msgid "Ratings"
 msgstr "Notes"
 
+#: apps/native/src/components/titles/rematch-modal.tsx
+#: apps/web/src/components/titles/rematch-dialog.tsx
+msgid "Re-match"
+msgstr "Recorriger"
+
+#: apps/native/src/components/titles/rematch-modal.tsx
+#: apps/web/src/components/titles/rematch-dialog.tsx
+msgid "Re-match failed"
+msgstr "Échec de la correction"
+
+#: apps/web/src/components/titles/rematch-dialog.tsx
+msgid "Re-match this title to \"{confirmingLabel}\"?"
+msgstr "Recorriger ce titre vers « {confirmingLabel} » ?"
+
+#: apps/native/src/components/titles/rematch-modal.tsx
+msgid "Re-match this title?"
+msgstr "Recorriger ce titre ?"
+
 #: apps/web/src/routes/_app/books.index.tsx
 #: apps/web/src/routes/_app/books.index.tsx
 #~ msgid "Read"
@@ -3581,6 +3610,11 @@ msgstr "Recherche"
 #~ msgid "Search books or authors..."
 #~ msgstr "Rechercher des livres ou auteurs…"
 
+#: apps/native/src/components/titles/rematch-modal.tsx
+#: apps/web/src/components/titles/rematch-dialog.tsx
+msgid "Search by exact title and year..."
+msgstr "Rechercher par titre exact et année..."
+
 #: apps/web/src/routes/_app/authors.$id.tsx
 #~ msgid "Search failed"
 #~ msgstr "Échec de la recherche"
@@ -3645,6 +3679,10 @@ msgstr "Rechercher des films, séries, personnes..."
 #~ msgid "Search titles..."
 #~ msgstr "Rechercher des titres..."
 
+#: apps/web/src/components/titles/rematch-dialog.tsx
+msgid "Search TMDB directly when the automatic match picked the wrong entry (e.g. a same-named show from a different decade)."
+msgstr "Recherche directement sur TMDB quand la correspondance automatique s'est trompée (par exemple une série du même nom mais d'une autre décennie)."
+
 #: apps/web/src/routes/_app/authors.$id.tsx
 #~ msgid "Search your Grimmory books..."
 #~ msgstr "Chercher parmi tes livres Grimmory..."
@@ -3665,6 +3703,10 @@ msgstr "Rechercher des films, séries, personnes..."
 #: apps/web/src/routes/_app/books.index.tsx
 #~ msgid "Searching..."
 #~ msgstr "Recherche en cours..."
+
+#: apps/web/src/components/titles/rematch-dialog.tsx
+msgid "Searching…"
+msgstr "Recherche…"
 
 #. placeholder {0}: season.seasonNumber
 #: apps/web/src/components/titles/request-dialog.tsx
@@ -4185,6 +4227,11 @@ msgstr "Titre A-Z"
 msgid "Title not found"
 msgstr "Titre introuvable"
 
+#: apps/native/src/components/titles/rematch-modal.tsx
+#: apps/web/src/components/titles/rematch-dialog.tsx
+msgid "Title re-matched"
+msgstr "Titre recorrigé"
+
 #: apps/native/src/components/library/sort-menu.tsx
 msgid "Title Z-A"
 msgstr "Titre Z-A"
@@ -4359,6 +4406,11 @@ msgstr "Type"
 #: apps/web/src/routes/_app/search.tsx
 msgid "Type something to search"
 msgstr "Tapez quelque chose pour rechercher"
+
+#: apps/native/src/components/titles/rematch-modal.tsx
+#: apps/web/src/components/titles/rematch-dialog.tsx
+msgid "Type the title and year to narrow it down (e.g. \"Brothers 2009\")"
+msgstr "Tape le titre et l'année pour affiner (ex. « Brothers 2009 »)"
 
 #: apps/web/src/components/settings/system-health-section.tsx
 msgid "unknown"

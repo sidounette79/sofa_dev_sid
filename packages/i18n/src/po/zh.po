@@ -680,6 +680,7 @@ msgstr "无法连接服务器"
 #: apps/native/src/components/search/recently-viewed-list.tsx
 #: apps/native/src/components/settings/integration-card.tsx
 #: apps/native/src/components/settings/integration-card.tsx
+#: apps/native/src/components/titles/rematch-modal.tsx
 #: apps/native/src/components/titles/status-action-button.tsx
 #: apps/web/src/components/settings/account-section.tsx
 #: apps/web/src/components/settings/account-section.tsx
@@ -688,6 +689,7 @@ msgstr "无法连接服务器"
 #: apps/web/src/components/settings/danger-section.tsx
 #: apps/web/src/components/settings/danger-section.tsx
 #: apps/web/src/components/settings/danger-section.tsx
+#: apps/web/src/components/titles/rematch-dialog.tsx
 #: apps/web/src/components/titles/request-dialog.tsx
 #: apps/web/src/components/titles/status-button.tsx
 #: apps/web/src/components/titles/title-seasons.tsx
@@ -986,6 +988,13 @@ msgstr "复制"
 #: apps/web/src/components/settings/integration-card.tsx
 msgid "Copy URL"
 msgstr "复制 URL"
+
+#: apps/native/src/app/title/[id].tsx
+#: apps/native/src/components/titles/rematch-modal.tsx
+#: apps/web/src/components/titles/rematch-dialog.tsx
+#: apps/web/src/components/titles/title-actions.tsx
+msgid "Correct TMDB match"
+msgstr ""
 
 #: apps/native/src/components/settings/integrations-section.tsx
 msgid "Could not load integrations"
@@ -2603,6 +2612,8 @@ msgid "No requests yet."
 msgstr ""
 
 #: apps/native/src/app/(tabs)/(search)/index.tsx
+#: apps/native/src/components/titles/rematch-modal.tsx
+#: apps/web/src/components/titles/rematch-dialog.tsx
 msgid "No results for \"{debouncedQuery}\""
 msgstr "未找到\"{debouncedQuery}\"的相关结果"
 
@@ -3222,6 +3233,24 @@ msgstr "评分：{rating} / 5 星"
 msgid "Ratings"
 msgstr "评分"
 
+#: apps/native/src/components/titles/rematch-modal.tsx
+#: apps/web/src/components/titles/rematch-dialog.tsx
+msgid "Re-match"
+msgstr ""
+
+#: apps/native/src/components/titles/rematch-modal.tsx
+#: apps/web/src/components/titles/rematch-dialog.tsx
+msgid "Re-match failed"
+msgstr ""
+
+#: apps/web/src/components/titles/rematch-dialog.tsx
+msgid "Re-match this title to \"{confirmingLabel}\"?"
+msgstr ""
+
+#: apps/native/src/components/titles/rematch-modal.tsx
+msgid "Re-match this title?"
+msgstr ""
+
 #: apps/web/src/routes/_app/books.index.tsx
 #: apps/web/src/routes/_app/books.index.tsx
 #~ msgid "Read"
@@ -3581,6 +3610,11 @@ msgstr "搜索"
 #~ msgid "Search books or authors..."
 #~ msgstr ""
 
+#: apps/native/src/components/titles/rematch-modal.tsx
+#: apps/web/src/components/titles/rematch-dialog.tsx
+msgid "Search by exact title and year..."
+msgstr ""
+
 #: apps/web/src/routes/_app/authors.$id.tsx
 #~ msgid "Search failed"
 #~ msgstr ""
@@ -3645,6 +3679,10 @@ msgstr "搜索电影、剧集、人物..."
 #~ msgid "Search titles..."
 #~ msgstr ""
 
+#: apps/web/src/components/titles/rematch-dialog.tsx
+msgid "Search TMDB directly when the automatic match picked the wrong entry (e.g. a same-named show from a different decade)."
+msgstr ""
+
 #: apps/web/src/routes/_app/authors.$id.tsx
 #~ msgid "Search your Grimmory books..."
 #~ msgstr ""
@@ -3665,6 +3703,10 @@ msgstr "搜索电影、剧集、人物..."
 #: apps/web/src/routes/_app/books.index.tsx
 #~ msgid "Searching..."
 #~ msgstr ""
+
+#: apps/web/src/components/titles/rematch-dialog.tsx
+msgid "Searching…"
+msgstr ""
 
 #. placeholder {0}: season.seasonNumber
 #: apps/web/src/components/titles/request-dialog.tsx
@@ -4181,6 +4223,11 @@ msgstr "标题 A-Z"
 msgid "Title not found"
 msgstr "未找到内容"
 
+#: apps/native/src/components/titles/rematch-modal.tsx
+#: apps/web/src/components/titles/rematch-dialog.tsx
+msgid "Title re-matched"
+msgstr ""
+
 #: apps/native/src/components/library/sort-menu.tsx
 msgid "Title Z-A"
 msgstr "标题 Z-A"
@@ -4354,6 +4401,11 @@ msgstr "类型"
 
 #: apps/web/src/routes/_app/search.tsx
 msgid "Type something to search"
+msgstr ""
+
+#: apps/native/src/components/titles/rematch-modal.tsx
+#: apps/web/src/components/titles/rematch-dialog.tsx
+msgid "Type the title and year to narrow it down (e.g. \"Brothers 2009\")"
 msgstr ""
 
 #: apps/web/src/components/settings/system-health-section.tsx

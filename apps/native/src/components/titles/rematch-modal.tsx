@@ -9,6 +9,7 @@ import { Spinner } from "@/components/ui/spinner";
 import { Text } from "@/components/ui/text";
 import { Input } from "@/components/ui/text-field";
 import { useDebounce } from "@/hooks/use-debounce";
+import { getErrorMessage } from "@/lib/error-messages";
 import { orpc } from "@/lib/orpc";
 import { toast } from "@/lib/toast";
 
@@ -50,7 +51,7 @@ export function RematchModal({
         toast.success(t`Title re-matched`);
         onOpenChange(false);
       },
-      onError: (error: Error) => toast.error(error.message || t`Re-match failed`),
+      onError: (error: Error) => toast.error(getErrorMessage(error, t, t`Re-match failed`)),
     }),
   );
 

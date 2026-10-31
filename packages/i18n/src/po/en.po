@@ -680,6 +680,7 @@ msgstr ""
 #: apps/native/src/components/search/recently-viewed-list.tsx
 #: apps/native/src/components/settings/integration-card.tsx
 #: apps/native/src/components/settings/integration-card.tsx
+#: apps/native/src/components/titles/rematch-modal.tsx
 #: apps/native/src/components/titles/status-action-button.tsx
 #: apps/web/src/components/settings/account-section.tsx
 #: apps/web/src/components/settings/account-section.tsx
@@ -688,6 +689,7 @@ msgstr ""
 #: apps/web/src/components/settings/danger-section.tsx
 #: apps/web/src/components/settings/danger-section.tsx
 #: apps/web/src/components/settings/danger-section.tsx
+#: apps/web/src/components/titles/rematch-dialog.tsx
 #: apps/web/src/components/titles/request-dialog.tsx
 #: apps/web/src/components/titles/status-button.tsx
 #: apps/web/src/components/titles/title-seasons.tsx
@@ -986,6 +988,13 @@ msgstr ""
 #: apps/web/src/components/settings/integration-card.tsx
 msgid "Copy URL"
 msgstr ""
+
+#: apps/native/src/app/title/[id].tsx
+#: apps/native/src/components/titles/rematch-modal.tsx
+#: apps/web/src/components/titles/rematch-dialog.tsx
+#: apps/web/src/components/titles/title-actions.tsx
+msgid "Correct TMDB match"
+msgstr "Correct TMDB match"
 
 #: apps/native/src/components/settings/integrations-section.tsx
 msgid "Could not load integrations"
@@ -2603,6 +2612,8 @@ msgid "No requests yet."
 msgstr "No requests yet."
 
 #: apps/native/src/app/(tabs)/(search)/index.tsx
+#: apps/native/src/components/titles/rematch-modal.tsx
+#: apps/web/src/components/titles/rematch-dialog.tsx
 msgid "No results for \"{debouncedQuery}\""
 msgstr ""
 
@@ -3222,6 +3233,24 @@ msgstr "Rating: {rating} out of 5 stars"
 msgid "Ratings"
 msgstr ""
 
+#: apps/native/src/components/titles/rematch-modal.tsx
+#: apps/web/src/components/titles/rematch-dialog.tsx
+msgid "Re-match"
+msgstr "Re-match"
+
+#: apps/native/src/components/titles/rematch-modal.tsx
+#: apps/web/src/components/titles/rematch-dialog.tsx
+msgid "Re-match failed"
+msgstr "Re-match failed"
+
+#: apps/web/src/components/titles/rematch-dialog.tsx
+msgid "Re-match this title to \"{confirmingLabel}\"?"
+msgstr "Re-match this title to \"{confirmingLabel}\"?"
+
+#: apps/native/src/components/titles/rematch-modal.tsx
+msgid "Re-match this title?"
+msgstr "Re-match this title?"
+
 #: apps/web/src/routes/_app/books.index.tsx
 #: apps/web/src/routes/_app/books.index.tsx
 #~ msgid "Read"
@@ -3581,6 +3610,11 @@ msgstr "Search"
 #~ msgid "Search books or authors..."
 #~ msgstr "Search books or authors..."
 
+#: apps/native/src/components/titles/rematch-modal.tsx
+#: apps/web/src/components/titles/rematch-dialog.tsx
+msgid "Search by exact title and year..."
+msgstr "Search by exact title and year..."
+
 #: apps/web/src/routes/_app/authors.$id.tsx
 #~ msgid "Search failed"
 #~ msgstr "Search failed"
@@ -3645,6 +3679,10 @@ msgstr ""
 #~ msgid "Search titles..."
 #~ msgstr "Search titles..."
 
+#: apps/web/src/components/titles/rematch-dialog.tsx
+msgid "Search TMDB directly when the automatic match picked the wrong entry (e.g. a same-named show from a different decade)."
+msgstr "Search TMDB directly when the automatic match picked the wrong entry (e.g. a same-named show from a different decade)."
+
 #: apps/web/src/routes/_app/authors.$id.tsx
 #~ msgid "Search your Grimmory books..."
 #~ msgstr "Search your Grimmory books..."
@@ -3665,6 +3703,10 @@ msgstr ""
 #: apps/web/src/routes/_app/books.index.tsx
 #~ msgid "Searching..."
 #~ msgstr "Searching..."
+
+#: apps/web/src/components/titles/rematch-dialog.tsx
+msgid "Searching…"
+msgstr "Searching…"
 
 #. placeholder {0}: season.seasonNumber
 #: apps/web/src/components/titles/request-dialog.tsx
@@ -4181,6 +4223,11 @@ msgstr "Title A-Z"
 msgid "Title not found"
 msgstr ""
 
+#: apps/native/src/components/titles/rematch-modal.tsx
+#: apps/web/src/components/titles/rematch-dialog.tsx
+msgid "Title re-matched"
+msgstr "Title re-matched"
+
 #: apps/native/src/components/library/sort-menu.tsx
 msgid "Title Z-A"
 msgstr "Title Z-A"
@@ -4355,6 +4402,11 @@ msgstr "Type"
 #: apps/web/src/routes/_app/search.tsx
 msgid "Type something to search"
 msgstr "Type something to search"
+
+#: apps/native/src/components/titles/rematch-modal.tsx
+#: apps/web/src/components/titles/rematch-dialog.tsx
+msgid "Type the title and year to narrow it down (e.g. \"Brothers 2009\")"
+msgstr "Type the title and year to narrow it down (e.g. \"Brothers 2009\")"
 
 #: apps/web/src/components/settings/system-health-section.tsx
 msgid "unknown"
