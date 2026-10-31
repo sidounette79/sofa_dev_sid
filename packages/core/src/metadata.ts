@@ -8,6 +8,7 @@ import type {
 import { deriveEmbyStatus } from "@sofa/db/queries/emby-library";
 import {
   batchUpsertEpisodes,
+  deleteTitleById,
   ensureBrowseTitlesTransaction,
   getAvailabilityOffersForTitle,
   getEpisodesBySeasonIds,
@@ -445,7 +446,25 @@ export async function rematchTitle(titleId: string, newTmdbId: number) {
 
   const [conflict] = await getTitleByTmdbIdAndType(newTmdbId, title.type as "movie" | "tv");
   if (conflict && conflict.id !== titleId) {
-    throw new TitleRematchConflictError(conflict.title);
+    // 31.10, Sid ("un outil pour que je puisse fusionner... ou supprimer
+    // le faux" - real case: moving a show to a different Emby library
+    // in-place leaves its OLD title row behind, still holding the TMDB
+    // id, now pointing at nothing - "Prisoner" under the old "CARBA
+    // SERIES" library, moved elsewhere, 0 watchedCount across every
+    // user, a pure duplicate). A title no longer live in Emby has no
+    // reason to keep exclusive claim on a TMDB id - clear it out of the
+    // way instead of blocking. Two titles BOTH still in Emby sharing a
+    // TMDB id is the real conflict this guard exists for; that still
+    // throws, since auto-deleting an active library title would be
+    // destructive.
+    if (!conflict.inEmbyLibrary) {
+      log.info(
+        `Clearing stale duplicate "${conflict.title}" (${conflict.id}, no longer in Emby) to free TMDB ${newTmdbId} for re-match`,
+      );
+      await deleteTitleById(conflict.id);
+    } else {
+      throw new TitleRematchConflictError(conflict.title);
+    }
   }
 
   await updateTitleFields(titleId, { tmdbId: newTmdbId });

@@ -43,6 +43,16 @@ export function getTitleByTmdbIdAndType(tmdbId: number, type: "movie" | "tv") {
     .where(and(eq(titles.tmdbId, tmdbId), eq(titles.type, type)));
 }
 
+// 31.10, Sid ("un outil pour que je puisse fusionner... ou supprimer le
+// faux") - every child table (seasons, episodes, userTitleStatus, etc.)
+// is ON DELETE CASCADE, so this is a clean, complete removal. Used by
+// rematchTitle to clear a stale duplicate (moved to a different Emby
+// library, so no longer the live entry under its old title row) out of
+// the way of the real one.
+export function deleteTitleById(titleId: string) {
+  return db.delete(titles).where(eq(titles.id, titleId));
+}
+
 export async function updateTitleFields(
   titleId: string,
   values: Partial<typeof titles.$inferInsert>,
@@ -140,7 +150,11 @@ export function upsertSeasonReturning(values: {
 }
 
 export function getSeasonsForTitle(titleId: string) {
-  return db.select().from(seasons).where(eq(seasons.titleId, titleId)).orderBy(seasons.seasonNumber);
+  return db
+    .select()
+    .from(seasons)
+    .where(eq(seasons.titleId, titleId))
+    .orderBy(seasons.seasonNumber);
 }
 
 export async function nullifySeasonThumbHash(seasonId: string): Promise<void> {
@@ -149,9 +163,7 @@ export async function nullifySeasonThumbHash(seasonId: string): Promise<void> {
 
 // ─── Episodes ────────────────────────────────────────────────────────
 
-export async function getOldEpisodeStills(
-  seasonId: string,
-): Promise<Map<number, string | null>> {
+export async function getOldEpisodeStills(seasonId: string): Promise<Map<number, string | null>> {
   const rows = await db
     .select({
       episodeNumber: episodes.episodeNumber,
@@ -266,7 +278,12 @@ export async function setEpisodeEmbyItemIds(
  * text with null.
  */
 export async function setEpisodeFrenchTranslations(
-  updates: { seasonId: string; episodeNumber: number; nameFr: string | null; overviewFr: string | null }[],
+  updates: {
+    seasonId: string;
+    episodeNumber: number;
+    nameFr: string | null;
+    overviewFr: string | null;
+  }[],
 ): Promise<void> {
   if (updates.length === 0) return;
   await db.transaction(async (tx) => {
