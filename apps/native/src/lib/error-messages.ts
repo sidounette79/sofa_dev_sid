@@ -35,6 +35,7 @@ export function appErrorMessages(
     EXPORT_FAILED: t`Failed to export data`,
     PLAYBACK_DEVICE_ERROR: t`Playback device error`,
     NO_TVDB_ID: t`No TVDB ID available for this show yet`,
+    TITLE_REMATCH_CONFLICT: t`That TMDB match is already used by another title`,
   };
 }
 

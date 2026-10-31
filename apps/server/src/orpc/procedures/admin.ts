@@ -127,8 +127,7 @@ export const backupsUpdateSchedule = os.admin.backups.updateSchedule
   .use(admin)
   .handler(async ({ input }) => {
     if (input.enabled !== undefined) await setSetting("scheduledBackups", String(input.enabled));
-    if (input.frequency !== undefined)
-      await setSetting("backupScheduleFrequency", input.frequency);
+    if (input.frequency !== undefined) await setSetting("backupScheduleFrequency", input.frequency);
     if (input.time !== undefined) await setSetting("backupScheduleTime", input.time);
     if (input.dayOfWeek !== undefined)
       await setSetting("backupScheduleDow", String(input.dayOfWeek));
@@ -170,47 +169,47 @@ export const purgeImageCache = os.admin.purgeImageCache
 // that the automatic TMDB crossref can mismatch. See metadata.ts's own
 // comment on searchTitleCandidates/rematchTitle for the full reasoning.
 
-export const titleRematchSearch = os.admin.titleRematchSearch.use(admin).handler(async ({ input }) => {
-  const [title] = await getTitleById(input.id);
-  if (!title) {
-    throw new ORPCError("NOT_FOUND", {
-      message: "Title not found",
-      data: { code: AppErrorCode.TITLE_NOT_FOUND },
-    });
-  }
-  const results = await searchTitleCandidates(title.type as "movie" | "tv", input.query);
-  return { results };
-});
-
-export const titleRematch = os.admin.titleRematch
+export const titleRematchSearch = os.admin.titleRematchSearch
   .use(admin)
-  .handler(async ({ input, context }) => {
-    try {
-      const updated = await rematchTitle(input.id, input.tmdbId);
-      if (!updated) {
-        throw new ORPCError("NOT_FOUND", {
-          message: "Title not found",
-          data: { code: AppErrorCode.TITLE_NOT_FOUND },
-        });
-      }
-    } catch (err) {
-      if (err instanceof TitleRematchConflictError) {
-        throw new ORPCError("CONFLICT", {
-          message: err.message,
-          data: { code: AppErrorCode.TITLE_REMATCH_CONFLICT },
-        });
-      }
-      throw err;
-    }
-    const result = await getOrFetchTitle(input.id, context.user.id);
-    if (!result) {
+  .handler(async ({ input }) => {
+    const [title] = await getTitleById(input.id);
+    if (!title) {
       throw new ORPCError("NOT_FOUND", {
         message: "Title not found",
         data: { code: AppErrorCode.TITLE_NOT_FOUND },
       });
     }
-    return result;
+    const results = await searchTitleCandidates(title.type as "movie" | "tv", input.query);
+    return { results };
   });
+
+export const titleRematch = os.admin.titleRematch.use(admin).handler(async ({ input, context }) => {
+  try {
+    const updated = await rematchTitle(input.id, input.tmdbId);
+    if (!updated) {
+      throw new ORPCError("NOT_FOUND", {
+        message: "Title not found",
+        data: { code: AppErrorCode.TITLE_NOT_FOUND },
+      });
+    }
+  } catch (err) {
+    if (err instanceof TitleRematchConflictError) {
+      throw new ORPCError("CONFLICT", {
+        message: err.message,
+        data: { code: AppErrorCode.TITLE_REMATCH_CONFLICT },
+      });
+    }
+    throw err;
+  }
+  const result = await getOrFetchTitle(input.id, context.user.id);
+  if (!result) {
+    throw new ORPCError("NOT_FOUND", {
+      message: "Title not found",
+      data: { code: AppErrorCode.TITLE_NOT_FOUND },
+    });
+  }
+  return result;
+});
 
 // ─── System Health ────────────────────────────────────────────
 

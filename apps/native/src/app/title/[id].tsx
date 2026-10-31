@@ -6,6 +6,7 @@ import {
   IconBrandAppstore,
   IconBrandGooglePlay,
   IconCheck,
+  IconEdit,
   IconList,
   IconMovie,
   IconPlayerPlay,
@@ -19,7 +20,7 @@ import { GlassView, isLiquidGlassAvailable } from "expo-glass-effect";
 import { LinearGradient } from "expo-linear-gradient";
 import { Link, useLocalSearchParams, useRouter } from "expo-router";
 import * as WebBrowser from "expo-web-browser";
-import { useCallback, useEffect, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, View } from "react-native";
 import Animated, { FadeIn, FadeInDown } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -32,6 +33,7 @@ import {
 import { ModalLayout } from "@/components/navigation/modal-layout";
 import { CastCard } from "@/components/titles/cast-card";
 import { ContinueWatchingBanner } from "@/components/titles/continue-watching-banner";
+import { RematchModal } from "@/components/titles/rematch-modal";
 import { SeasonAccordion } from "@/components/titles/season-accordion";
 import { StatusActionButton } from "@/components/titles/status-action-button";
 import { ExpandableText } from "@/components/ui/expandable-text";
@@ -52,6 +54,7 @@ import { useTitleTheme } from "@/hooks/use-title-theme";
 import { getAppErrorCode } from "@/lib/error-messages";
 import { orpc } from "@/lib/orpc";
 import { addRecentlyViewed } from "@/lib/recently-viewed";
+import { authClient } from "@/lib/server";
 
 const titleGenresContentStyle = { paddingHorizontal: 16 };
 const titleAvailabilityContentStyle = { gap: 8, paddingHorizontal: 16 };
@@ -98,6 +101,9 @@ export default function TitleDetailScreen() {
   const headerHeight = useHeaderHeight();
   const { back } = useRouter();
   const useAutomaticInsets = process.env.EXPO_OS === "ios";
+  const { data: session } = authClient.useSession();
+  const isAdmin = session?.user?.role === "admin";
+  const [rematchOpen, setRematchOpen] = useState(false);
 
   const [titleAccent, mutedForeground, titleAccentForeground, destructiveColor] = useCSSVariable([
     "--color-title-accent",
@@ -466,8 +472,21 @@ export default function TitleDetailScreen() {
               onRate={(stars) => updateRating.mutate({ id, stars })}
               accentColor={titleAccent}
             />
+
+            {isAdmin && (
+              <Pressable
+                onPress={() => setRematchOpen(true)}
+                hitSlop={8}
+                accessibilityRole="button"
+                accessibilityLabel={t`Correct TMDB match`}
+              >
+                <ScaledIcon icon={IconEdit} size={20} color={mutedForeground} />
+              </Pressable>
+            )}
           </View>
         </Animated.View>
+
+        {isAdmin && <RematchModal titleId={id} open={rematchOpen} onOpenChange={setRematchOpen} />}
 
         {/* Overview */}
         {title.overview ? (

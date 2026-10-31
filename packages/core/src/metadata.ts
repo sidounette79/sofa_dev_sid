@@ -5,6 +5,7 @@ import type {
   ResolvedTitle,
   Season,
 } from "@sofa/api/schemas";
+import { deriveEmbyStatus } from "@sofa/db/queries/emby-library";
 import {
   batchUpsertEpisodes,
   ensureBrowseTitlesTransaction,
@@ -57,8 +58,6 @@ import {
 import { refreshAvailability } from "./availability";
 import { extractAndStoreColors, parseColorPalette } from "./colors";
 import { getCastForTitle, refreshCredits } from "./credits";
-import { deriveEmbyStatus } from "@sofa/db/queries/emby-library";
-
 import { getEmbyPublicUrl, getEmbyServerId, resolvePosterUrl } from "./emby";
 import {
   cacheEpisodeStills,
@@ -67,8 +66,8 @@ import {
   imageCacheEnabled,
   loadImageBuffer,
 } from "./image-cache";
-import { notifySeriesStatusChanged } from "./push";
 import { generateProviderUrl } from "./providers";
+import { notifySeriesStatusChanged } from "./push";
 import {
   generateEpisodeThumbHash,
   generateSeasonThumbHash,
@@ -368,9 +367,12 @@ export async function refreshTitle(titleId: string) {
     // from unknown to something, that's not a real transition worth paging
     // her about.
     if (previousStatus && show.status && show.status !== previousStatus) {
-      notifySeriesStatusChanged(titleId, show.name ?? title.title, previousStatus, show.status).catch((err) =>
-        log.debug("Status-change push notification failed:", err),
-      );
+      notifySeriesStatusChanged(
+        titleId,
+        show.name ?? title.title,
+        previousStatus,
+        show.status,
+      ).catch((err) => log.debug("Status-change push notification failed:", err));
     }
   }
 
@@ -403,7 +405,13 @@ export async function searchTitleCandidates(
   type: "movie" | "tv",
   query: string,
 ): Promise<
-  { tmdbId: number; title: string; year: number | null; overview: string | null; posterUrl: string | null }[]
+  {
+    tmdbId: number;
+    title: string;
+    year: number | null;
+    overview: string | null;
+    posterUrl: string | null;
+  }[]
 > {
   if (type === "movie") {
     const result = await searchMovies(query);
@@ -681,7 +689,10 @@ const tvdbHydrationsInFlight = new Set<string>();
 // individually meaningful synopses).
 const EPISODE_HYDRATION_CAP = 1000;
 
-export async function hydrateFrenchEpisodeTranslations(titleId: string, tvdbId: number): Promise<void> {
+export async function hydrateFrenchEpisodeTranslations(
+  titleId: string,
+  tvdbId: number,
+): Promise<void> {
   if (!isTvdbConfigured() || tvdbHydrationsInFlight.has(titleId)) return;
   tvdbHydrationsInFlight.add(titleId);
   const start = Date.now();
