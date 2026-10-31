@@ -157,6 +157,20 @@ export function getSeasonsForTitle(titleId: string) {
     .orderBy(seasons.seasonNumber);
 }
 
+// 31.10, Sid (Brothers rematch: new TMDB entry has 1 season/8 episodes,
+// but the title still showed the OLD match's 5 seasons/116 episodes
+// afterward) - refreshTvChildren only upserts seasons 1..N for the NEW
+// season count, it never deletes seasons the old (now-replaced) match
+// had beyond that - correct for a routine refresh of the SAME show
+// (season count only ever grows or stays put), wrong for a rematch to a
+// genuinely different show. episodes (and userEpisodeWatches) cascade
+// from seasons, so this also clears episode-level watch history tied to
+// the old show - correct, that history belonged to episodes that were
+// never actually this show.
+export function deleteSeasonsForTitle(titleId: string) {
+  return db.delete(seasons).where(eq(seasons.titleId, titleId));
+}
+
 export async function nullifySeasonThumbHash(seasonId: string): Promise<void> {
   await db.update(seasons).set({ posterThumbHash: null }).where(eq(seasons.id, seasonId));
 }

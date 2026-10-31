@@ -8,6 +8,7 @@ import type {
 import { deriveEmbyStatus } from "@sofa/db/queries/emby-library";
 import {
   batchUpsertEpisodes,
+  deleteSeasonsForTitle,
   deleteTitleById,
   ensureBrowseTitlesTransaction,
   getAvailabilityOffersForTitle,
@@ -465,6 +466,14 @@ export async function rematchTitle(titleId: string, newTmdbId: number) {
     } else {
       throw new TitleRematchConflictError(conflict.title);
     }
+  }
+
+  if (title.type === "tv") {
+    // See deleteSeasonsForTitle's own comment (packages/db) - the old
+    // seasons belong to whatever show this used to be wrongly matched
+    // to, not the new one. refreshTitle below rebuilds them from scratch
+    // against the new tmdbId, same as a brand new import would.
+    await deleteSeasonsForTitle(titleId);
   }
 
   await updateTitleFields(titleId, { tmdbId: newTmdbId });
