@@ -1,4 +1,4 @@
-import { and, count, desc, eq, notInArray, sql } from "drizzle-orm";
+import { and, count, desc, eq, ne, notInArray, sql } from "drizzle-orm";
 
 import { db } from "../client";
 import { titles, userEmbyLibraries, userTitleStatus } from "../schema";
@@ -25,6 +25,23 @@ export async function markTitlesInEmbyLibrary(matches: EmbyLibraryMatch[]): Prom
   if (matches.length === 0) return;
   await db.transaction(async (tx) => {
     for (const m of matches) {
+      // 01.11, Sid (Brothers AND The Lowdown both ended up with two
+      // inEmbyLibrary=true title rows sharing the same embyItemId after a
+      // routine scan): resolveItemTmdbId's title+year fallback isn't
+      // guaranteed to return the same tmdbId every scan for an ambiguous
+      // title, so a later scan can land this same Emby item on a
+      // DIFFERENT title row than a previous scan did. clearStaleEmbyLibraryFlags
+      // only clears titles whose embyItemId wasn't seen at all this scan -
+      // it has no way to know the id moved to a different title row,
+      // so the old one just sits there forever also claiming "in library".
+      // Clearing any other title currently holding this exact embyItemId
+      // before setting it here keeps the invariant that at most one title
+      // can claim a given real Emby item at a time, regardless of how many
+      // times the resolution flip-flops.
+      await tx
+        .update(titles)
+        .set({ inEmbyLibrary: false })
+        .where(and(eq(titles.embyItemId, m.embyItemId), ne(titles.id, m.titleId)));
       await tx
         .update(titles)
         .set({
