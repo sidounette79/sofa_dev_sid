@@ -6,9 +6,46 @@ import type { WebhookEvent } from "@sofa/core/webhooks";
 import { parseEmbyPayload, parseJellyfinPayload, processWebhook } from "@sofa/core/webhooks";
 import { createLogger } from "@sofa/logger";
 
+import { triggerJob } from "../cron";
+
 const log = createLogger("webhooks");
 
+const LIBRARY_NEW_RE = /library\.new/i;
+const LIBRARY_DELETED_RE = /library\.deleted/i;
+
 const app = new Hono();
+
+// 01.11, Sid ("on n'a pas la mainmise sur Emby mais on l'a sur Patoune
+// TV. On peut lui faire envoyer les éléments qu'Emby n'envoie pas ?") -
+// confirmed live tonight: moving a show between Emby libraries fires a
+// real "library.deleted" webhook for its old item, but Emby never fires
+// the matching "library.new" for wherever it reappears (Tyson: deleted
+// webhook arrived, Emby's own search already showed it under a brand
+// new ItemId at its new path, no "new" event ever came for it - "Power",
+// "Trust" etc. did fire around the same time, so webhooks in general
+// work, Emby just doesn't emit one for this specific transition).
+// Can't fix Emby's behavior, but every "deleted" is exactly the signal
+// that something might have moved rather than truly vanished - a full
+// scanEmbyLibrary() shortly after reliably picks the relocated item back
+// up (confirmed: that's what fixed Brothers/Prisoner/Lowdown tonight).
+// Debounced because Emby fires several "deleted" events in a burst for
+// one real move (Tyson: 3 in under 400ms) - collapse them into one scan
+// instead of queuing several. triggerJob (not scanEmbyLibrary directly)
+// reuses its existing isBusy() guard, so this never overlaps the regular
+// 6h cron run or another pending debounce.
+let pendingDeletionScan: ReturnType<typeof setTimeout> | null = null;
+const DELETION_SCAN_DEBOUNCE_MS = 30_000;
+
+function scheduleCatchUpScan() {
+  if (pendingDeletionScan) clearTimeout(pendingDeletionScan);
+  pendingDeletionScan = setTimeout(() => {
+    pendingDeletionScan = null;
+    log.info("Running catch-up Emby library scan after deletion webhook(s)");
+    triggerJob("scanEmbyLibrary").catch((err) =>
+      log.warn("Catch-up Emby library scan failed:", err),
+    );
+  }, DELETION_SCAN_DEBOUNCE_MS);
+}
 
 app.post("/:token", async (c) => {
   const token = c.req.param("token");
@@ -62,7 +99,7 @@ app.post("/:token", async (c) => {
       const item = (body as Record<string, unknown>).Item as
         | { Id?: string; Name?: string }
         | undefined;
-      if (typeof rawEvent === "string" && /library\.new/i.test(rawEvent)) {
+      if (typeof rawEvent === "string" && LIBRARY_NEW_RE.test(rawEvent)) {
         // Logged (24.08) — real-time library-change events were previously
         // invisible in any persisted record (no logEvent call on this path,
         // unlike playback webhooks), making a missed/delayed event
@@ -77,13 +114,17 @@ app.post("/:token", async (c) => {
         }
         return c.json({ ok: true });
       }
-      if (typeof rawEvent === "string" && /library\.deleted/i.test(rawEvent)) {
+      if (typeof rawEvent === "string" && LIBRARY_DELETED_RE.test(rawEvent)) {
         log.info(`Emby library.deleted webhook: "${item?.Name ?? item?.Id ?? "unknown"}"`);
         if (item?.Id) {
           handleSingleEmbyItemDeleted(item.Id).catch((err) =>
             log.warn("Real-time Emby item deletion handling failed:", err),
           );
         }
+        // See scheduleCatchUpScan's own comment - a "deleted" is exactly
+        // the signal a move might have happened, since Emby doesn't
+        // reliably send the matching "new" for wherever it reappears.
+        scheduleCatchUpScan();
         return c.json({ ok: true });
       }
 
