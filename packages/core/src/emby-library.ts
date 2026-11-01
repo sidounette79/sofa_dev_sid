@@ -317,6 +317,42 @@ export function handleSingleEmbyItemDeleted(itemId: string): Promise<boolean> {
   return clearSingleEmbyLibraryFlag(itemId);
 }
 
+/**
+ * 01.11, Sid ("on n'a pas la mainmise sur Emby mais on l'a sur Patoune
+ * TV. On peut lui faire envoyer les éléments qu'Emby n'envoie pas ?") -
+ * confirmed live: moving a show between Emby libraries fires a real
+ * "library.deleted" for its old item, but Emby never fires the matching
+ * "library.new" for wherever it reappears (Tyson: deleted webhook
+ * arrived, Emby's own search already showed it under a brand new ItemId
+ * at its new path by then - other titles' "new" events fired fine
+ * around the same time, so this is specific to the move transition, not
+ * webhooks being broken in general).
+ *
+ * Can't make Emby send what it won't, so this supplies the missing
+ * signal directly from the one thing a "deleted" webhook does give us -
+ * the item's own name: search Emby for a Movie/Series with that exact
+ * name right now, and if one exists, run it through the exact same path
+ * a genuine "library.new" webhook would (scanSingleEmbyItem). Targeted
+ * at the one item that just vanished, not a full library walk.
+ */
+export async function recoverMovedEmbyItem(itemName: string): Promise<boolean> {
+  if (!EMBY_ADMIN_USER_ID || !itemName) return false;
+  let result: { Items: { Id: string; Name: string }[] };
+  try {
+    result = await embyFetch(
+      `/Users/${EMBY_ADMIN_USER_ID}/Items?SearchTerm=${encodeURIComponent(itemName)}` +
+        `&IncludeItemTypes=Movie,Series&Recursive=true`,
+    );
+  } catch (err) {
+    log.warn(`Failed to search Emby for moved item "${itemName}":`, err);
+    return false;
+  }
+  const match = result.Items.find((it) => it.Name === itemName);
+  if (!match) return false;
+  log.info(`Found "${itemName}" under a new Emby item (${match.Id}) after a deletion - recovering`);
+  return scanSingleEmbyItem(match.Id);
+}
+
 export async function listEmbyLibrariesForUser(
   userId: string,
 ): Promise<{ libraries: string[]; selected: string[] }> {

@@ -61,6 +61,7 @@ import { refreshAvailability } from "./availability";
 import { extractAndStoreColors, parseColorPalette } from "./colors";
 import { getCastForTitle, refreshCredits } from "./credits";
 import { getEmbyPublicUrl, getEmbyServerId, resolvePosterUrl } from "./emby";
+import { reconcileEmbyWatchStatus } from "./emby-watch-reconciliation";
 import {
   cacheEpisodeStills,
   cacheImagesForTitle,
@@ -478,7 +479,28 @@ export async function rematchTitle(titleId: string, newTmdbId: number) {
 
   await updateTitleFields(titleId, { tmdbId: newTmdbId });
   log.info(`Re-matched title "${title.title}" (${titleId}) to TMDB ${newTmdbId}`);
-  return refreshTitle(titleId);
+  const updated = await refreshTitle(titleId);
+
+  // 01.11, Sid ("pour que je perde pas le statut de lecture aussi") -
+  // deleteSeasonsForTitle above cascades to episodes and their
+  // userEpisodeWatches, which is correct (that watch history belonged
+  // to episodes of the wrong show) - but if she'd genuinely watched real
+  // episodes of the CORRECT show under the old (wrong) metadata, that
+  // real progress is now gone too, with nothing left to derive it from
+  // locally. reconcileEmbyWatchStatus already exists as the 6h safety
+  // net for exactly this shape of gap (webhook/data loss vs. Emby's own
+  // "played" truth) - running it right now instead of waiting up to 6h
+  // backfills any real watch progress against the freshly rebuilt
+  // episodes immediately. Fire-and-forget: global in scope (every
+  // linked user, not just this title), shouldn't block the rematch
+  // response on it.
+  if (title.type === "tv") {
+    reconcileEmbyWatchStatus().catch((err) =>
+      log.warn("Post-rematch Emby watch reconciliation failed:", err),
+    );
+  }
+
+  return updated;
 }
 
 export async function refreshTvChildren(titleId: string, tmdbId: number, numberOfSeasons: number) {

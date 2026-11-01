@@ -1,12 +1,14 @@
 import { Hono } from "hono";
 
-import { handleSingleEmbyItemDeleted, scanSingleEmbyItem } from "@sofa/core/emby-library";
+import {
+  handleSingleEmbyItemDeleted,
+  recoverMovedEmbyItem,
+  scanSingleEmbyItem,
+} from "@sofa/core/emby-library";
 import { findIntegrationByToken } from "@sofa/core/integrations";
 import type { WebhookEvent } from "@sofa/core/webhooks";
 import { parseEmbyPayload, parseJellyfinPayload, processWebhook } from "@sofa/core/webhooks";
 import { createLogger } from "@sofa/logger";
-
-import { triggerJob } from "../cron";
 
 const log = createLogger("webhooks");
 
@@ -16,36 +18,20 @@ const LIBRARY_DELETED_RE = /library\.deleted/i;
 const app = new Hono();
 
 // 01.11, Sid ("on n'a pas la mainmise sur Emby mais on l'a sur Patoune
-// TV. On peut lui faire envoyer les éléments qu'Emby n'envoie pas ?") -
-// confirmed live tonight: moving a show between Emby libraries fires a
-// real "library.deleted" webhook for its old item, but Emby never fires
-// the matching "library.new" for wherever it reappears (Tyson: deleted
-// webhook arrived, Emby's own search already showed it under a brand
-// new ItemId at its new path, no "new" event ever came for it - "Power",
-// "Trust" etc. did fire around the same time, so webhooks in general
-// work, Emby just doesn't emit one for this specific transition).
-// Can't fix Emby's behavior, but every "deleted" is exactly the signal
-// that something might have moved rather than truly vanished - a full
-// scanEmbyLibrary() shortly after reliably picks the relocated item back
-// up (confirmed: that's what fixed Brothers/Prisoner/Lowdown tonight).
-// Debounced because Emby fires several "deleted" events in a burst for
-// one real move (Tyson: 3 in under 400ms) - collapse them into one scan
-// instead of queuing several. triggerJob (not scanEmbyLibrary directly)
-// reuses its existing isBusy() guard, so this never overlaps the regular
-// 6h cron run or another pending debounce.
-let pendingDeletionScan: ReturnType<typeof setTimeout> | null = null;
-const DELETION_SCAN_DEBOUNCE_MS = 30_000;
-
-function scheduleCatchUpScan() {
-  if (pendingDeletionScan) clearTimeout(pendingDeletionScan);
-  pendingDeletionScan = setTimeout(() => {
-    pendingDeletionScan = null;
-    log.info("Running catch-up Emby library scan after deletion webhook(s)");
-    triggerJob("scanEmbyLibrary").catch((err) =>
-      log.warn("Catch-up Emby library scan failed:", err),
-    );
-  }, DELETION_SCAN_DEBOUNCE_MS);
-}
+// TV. On peut lui faire envoyer les éléments qu'Emby n'envoie pas ?" -
+// then, clarifying away from an earlier full-scan version of this fix:
+// "pas d'un truc qui existe déjà [le bouton Scan Emby] ... j'ai pas
+// besoin que ça scanne tout de suite, [il] faut qu'ça transmette les
+// infos manquantes") - confirmed live: moving a show between Emby
+// libraries fires a real "library.deleted" webhook for its old item,
+// but Emby never fires the matching "library.new" for wherever it
+// reappears (Tyson: deleted webhook arrived, Emby's own search already
+// showed it under a brand new ItemId at its new path, no "new" event
+// ever came for it - "Power", "Trust" etc. did fire around the same
+// time, so webhooks in general work, Emby just doesn't emit one for
+// this specific transition). recoverMovedEmbyItem (packages/core)
+// supplies exactly that missing signal, targeted at the one item that
+// moved - see its own comment for how.
 
 app.post("/:token", async (c) => {
   const token = c.req.param("token");
@@ -121,10 +107,14 @@ app.post("/:token", async (c) => {
             log.warn("Real-time Emby item deletion handling failed:", err),
           );
         }
-        // See scheduleCatchUpScan's own comment - a "deleted" is exactly
+        // See recoverMovedEmbyItem's own comment - a "deleted" is exactly
         // the signal a move might have happened, since Emby doesn't
         // reliably send the matching "new" for wherever it reappears.
-        scheduleCatchUpScan();
+        if (item?.Name) {
+          recoverMovedEmbyItem(item.Name).catch((err) =>
+            log.warn("Moved-item recovery failed:", err),
+          );
+        }
         return c.json({ ok: true });
       }
 
