@@ -24,6 +24,7 @@ import { eq } from "drizzle-orm";
 import {
   AlreadyRequestedError,
   getRequestOptions,
+  getUserDefaults,
   MediaRequestError,
   NoTvdbIdError,
   requestMovie as requestMovieFn,
@@ -81,9 +82,37 @@ function compatIntId(uuid: string): number {
 // ─── Auth ─────────────────────────────────────────────────────
 
 async function requireUser(c: Context<CompatEnv>): Promise<CompatUser | null> {
-  const session = await auth.api.getSession({ headers: c.req.raw.headers });
-  if (!session?.user) return null;
-  return session.user;
+  const headers = c.req.raw.headers;
+  const session = await auth.api.getSession({ headers });
+  if (session?.user) return session.user;
+
+  // 18.11 : le SSO du plugin Moonbase butait ici. La connexion aboutissait
+  // (« session ouverte pour sidounette@bluewin.ch via Emby », 200 sur
+  // /Moonfin/Seerr/Login), puis TOUT appel suivant repartait en
+  // « gate rejected: GET /auth/me ».
+  //
+  // C'est le plugin - pas l'app - qui garde et rejoue le cookie, et il est
+  // ecrit pour le vrai Jellyseerr: il ne retient que `connect.sid`, le nom
+  // d'Express. Le miroir qu'on pose sous ce nom lui revient donc bien, mais
+  // getSession cherche `__Secure-better-auth.session_token` et ne trouve
+  // rien. On rejoue donc la lecture en remettant la valeur de connect.sid
+  // sous le nom attendu. La signature est verifiee par better-auth comme
+  // pour n'importe quel cookie: aucune confiance supplementaire accordee.
+  const raw = headers.get("cookie");
+  if (!raw) return null;
+  const connectSid = raw
+    .split(";")
+    .map((part) => part.trim())
+    .find((part) => part.startsWith("connect.sid="));
+  if (!connectSid) return null;
+
+  const value = connectSid.slice("connect.sid=".length);
+  const ctx = await auth.$context;
+  const name = ctx.authCookies.sessionToken.name;
+  const retry = new Headers(headers);
+  retry.set("cookie", `${name}=${value}`);
+  const mirrored = await auth.api.getSession({ headers: retry });
+  return mirrored?.user ?? null;
 }
 
 // 28.09: real isolated test (throwaway account, cleaned up immediately)
@@ -528,6 +557,54 @@ app.get("/user/:id/quota", (c) =>
 // Emby directly, unrelated to this Seerr-compat layer).
 app.get("/media", (c) => c.json({ pageInfo: { pages: 0, pageSize: 10, results: 0, page: 1 }, results: [] }));
 
+// 18.11, Sid : « ça reprend pas le dossier par defaut defini dans Patoune
+// TV ». Exact: on renvoyait le PREMIER dossier de Radarr/Sonarr comme
+// selection active, alors que Patoune TV garde un dossier et un profil par
+// defaut PAR UTILISATEUR (getUserDefaults). La boite de demande de CARBA TV
+// pre-selectionne ce que ces champs annoncent - elle proposait donc toujours
+// le premier de la liste au lieu du sien.
+//
+// On lit ses defauts quand une session existe, et on retombe sur le premier
+// element seulement s'il n'y en a pas.
+async function activeDefaults(
+  c: Context<CompatEnv>,
+  opts: Awaited<ReturnType<typeof getRequestOptions>>,
+  kind: "radarr" | "sonarr",
+): Promise<{ rootFolder: string; profileId: number }> {
+  const service = opts[kind];
+  const fallbackFolder = service.rootFolders[0]?.path ?? "";
+  const fallbackProfile = service.qualityProfiles[0]?.id ?? 0;
+
+  const user = c.get("user");
+  if (!user) {
+    return { rootFolder: fallbackFolder, profileId: fallbackProfile };
+  }
+  try {
+    const defaults = await getUserDefaults(user.id);
+    const folder =
+      kind === "radarr" ? defaults.radarrRootFolder : defaults.sonarrRootFolder;
+    const profile =
+      kind === "radarr"
+        ? defaults.radarrQualityProfileId
+        : defaults.sonarrQualityProfileId;
+    return {
+      // Un defaut qui ne figure plus dans Radarr/Sonarr serait refuse par la
+      // liste deroulante : on ne le propose que s'il existe encore.
+      rootFolder:
+        folder && service.rootFolders.some((f) => f.path === folder)
+          ? folder
+          : fallbackFolder,
+      profileId:
+        profile && service.qualityProfiles.some((p) => p.id === profile)
+          ? profile
+          : fallbackProfile,
+    };
+  } catch (err) {
+    log.warn(`activeDefaults(${kind}): defauts illisibles,`, err);
+    return { rootFolder: fallbackFolder, profileId: fallbackProfile };
+  }
+}
+
 // ─── Radarr / Sonarr passthrough ────────────────────────────────
 // Sofa only ever talks to a single Radarr/Sonarr instance each (unlike
 // Jellyseerr's multi-server support) - both service/settings endpoints
@@ -542,15 +619,15 @@ app.get("/media", (c) => c.json({ pageInfo: { pages: 0, pageSize: 10, results: 0
 // sans choix de dossier ni de profil.
 app.get("/service/radarr", async (c) => {
   const opts = await getRequestOptions();
-  const first = opts.radarr.rootFolders[0];
+  const active = await activeDefaults(c, opts, "radarr");
   return c.json([
     {
       id: 0,
       name: "Radarr",
       is4k: false,
       isDefault: true,
-      activeProfileId: opts.radarr.qualityProfiles[0]?.id ?? 0,
-      activeDirectory: first?.path ?? "",
+      activeProfileId: active.profileId,
+      activeDirectory: active.rootFolder,
       activeTags: [],
     },
   ]);
@@ -564,15 +641,15 @@ app.get("/service/radarr", async (c) => {
 // avaient le meme defaut, je n'en avais vu qu'une.
 app.get("/service/radarr/:id", async (c) => {
   const opts = await getRequestOptions();
-  const first = opts.radarr.rootFolders[0];
+  const active = await activeDefaults(c, opts, "radarr");
   return c.json({
     server: {
       id: 0,
       name: "Radarr",
       is4k: false,
       isDefault: true,
-      activeProfileId: opts.radarr.qualityProfiles[0]?.id ?? 0,
-      activeDirectory: first?.path ?? "",
+      activeProfileId: active.profileId,
+      activeDirectory: active.rootFolder,
       activeTags: [],
     },
     profiles: opts.radarr.qualityProfiles,
@@ -588,15 +665,15 @@ app.get("/service/radarr/:id", async (c) => {
 // sans choix de dossier ni de profil.
 app.get("/service/sonarr", async (c) => {
   const opts = await getRequestOptions();
-  const first = opts.sonarr.rootFolders[0];
+  const active = await activeDefaults(c, opts, "sonarr");
   return c.json([
     {
       id: 0,
       name: "Sonarr",
       is4k: false,
       isDefault: true,
-      activeProfileId: opts.sonarr.qualityProfiles[0]?.id ?? 0,
-      activeDirectory: first?.path ?? "",
+      activeProfileId: active.profileId,
+      activeDirectory: active.rootFolder,
       activeTags: [],
     },
   ]);
@@ -610,15 +687,15 @@ app.get("/service/sonarr", async (c) => {
 // avaient le meme defaut, je n'en avais vu qu'une.
 app.get("/service/sonarr/:id", async (c) => {
   const opts = await getRequestOptions();
-  const first = opts.sonarr.rootFolders[0];
+  const active = await activeDefaults(c, opts, "sonarr");
   return c.json({
     server: {
       id: 0,
       name: "Sonarr",
       is4k: false,
       isDefault: true,
-      activeProfileId: opts.sonarr.qualityProfiles[0]?.id ?? 0,
-      activeDirectory: first?.path ?? "",
+      activeProfileId: active.profileId,
+      activeDirectory: active.rootFolder,
       activeTags: [],
     },
     profiles: opts.sonarr.qualityProfiles,
@@ -798,6 +875,24 @@ app.get("/search", async (c) => {
   return c.json({ page: data.page, totalPages: data.total_pages, totalResults: data.total_results, results: mapResults(data.results ?? []) });
 });
 
+// 18.11, Sid : « le film que j'ai demandé je l'ai deja vu et c'etait indiqué
+// nulle part ». On renvoyait `status: 1` pour tout titre connu - or 1 est
+// UNKNOWN dans l'echelle de Jellyseerr, pas « disponible ». Les clients
+// n'affichaient donc aucun badge, et rien ne la prevenait qu'elle possedait
+// deja le film.
+//
+// Echelle Jellyseerr: 1 UNKNOWN, 2 PENDING, 3 PROCESSING, 4 PARTIALLY_AVAILABLE,
+// 5 AVAILABLE. Un titre present dans la bibliotheque Emby est disponible (5);
+// demande mais pas encore arrive, en traitement (3).
+function mediaInfoFor(
+  existing: { inEmbyLibrary?: boolean | null; requestedAt?: Date | null } | undefined,
+) {
+  if (!existing) return undefined;
+  if (existing.inEmbyLibrary) return { status: 5 };
+  if (existing.requestedAt) return { status: 3 };
+  return { status: 1 };
+}
+
 // ─── Title / person detail ────────────────────────────────────
 
 app.get("/movie/:id", async (c) => {
@@ -806,7 +901,7 @@ app.get("/movie/:id", async (c) => {
   const tmdbId = Number(c.req.param("id"));
   const details = await getMovieDetails(tmdbId);
   const [existing] = await getExistingTitlesByTmdbIds([tmdbId]);
-  return c.json({ ...details, mediaInfo: existing ? { status: existing.requestedAt ? 3 : 1 } : undefined });
+  return c.json({ ...details, mediaInfo: mediaInfoFor(existing) });
 });
 
 app.get("/tv/:id", async (c) => {
@@ -815,7 +910,7 @@ app.get("/tv/:id", async (c) => {
   const tmdbId = Number(c.req.param("id"));
   const details = await getTvDetails(tmdbId);
   const [existing] = await getExistingTitlesByTmdbIds([tmdbId]);
-  return c.json({ ...details, mediaInfo: existing ? { status: existing.requestedAt ? 3 : 1 } : undefined });
+  return c.json({ ...details, mediaInfo: mediaInfoFor(existing) });
 });
 
 app.get("/tv/tvdb/:tvdbId", async (c) => {
@@ -827,7 +922,7 @@ app.get("/tv/tvdb/:tvdbId", async (c) => {
   if (!tvResult) return c.json({ message: "Not found" }, 404);
   const details = await getTvDetails(tvResult.id);
   const [existing] = await getExistingTitlesByTmdbIds([tvResult.id]);
-  return c.json({ ...details, mediaInfo: existing ? { status: existing.requestedAt ? 3 : 1 } : undefined });
+  return c.json({ ...details, mediaInfo: mediaInfoFor(existing) });
 });
 
 app.get("/movie/:id/similar", async (c) => {
