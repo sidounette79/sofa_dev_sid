@@ -17,6 +17,10 @@
 import { type Context, Hono } from "hono";
 
 import { auth } from "@sofa/auth/server";
+import { EMBY_API_KEY, EMBY_URL } from "@sofa/config";
+import { db } from "@sofa/db/client";
+import { user as userTable } from "@sofa/db/schema";
+import { eq } from "drizzle-orm";
 import {
   AlreadyRequestedError,
   getRequestOptions,
@@ -117,7 +121,14 @@ app.use("*", async (c, next) => {
     c.req.path.endsWith("/status") ||
     c.req.path.endsWith("/settings/public") ||
     c.req.path.endsWith("/auth/local") ||
-    c.req.path.endsWith("/auth/jellyfin")
+    c.req.path.endsWith("/auth/jellyfin") ||
+    // 18.11 : le plugin Moonbase sonde la RACINE du service avant toute
+    // connexion. Elle tombait sur la porte et renvoyait 401, et Emby en
+    // concluait « Seerr auth failed » sans avoir rien tente - visible dans
+    // ses journaux comme « gate rejected: GET /api/jellyseerr/ ». Une sonde
+    // ne doit pas demander de session; elle ne revele rien de plus que
+    // /status, deja ouvert juste au-dessus.
+    c.req.path.replace(/\/+$/, "").endsWith("/jellyseerr")
   ) {
     return next();
   }
@@ -131,6 +142,19 @@ app.use("*", async (c, next) => {
 });
 
 // ─── Status / settings ───────────────────────────────────────
+
+// Sonde du plugin Moonbase: il interroge la racine du service avant toute
+// connexion. Sans cette route elle renvoyait 404, et avec la porte fermee
+// un 401 - deux facons de faire echouer la detection. Meme contenu que
+// /status, qui est ce que Jellyseerr expose a la meme place.
+app.get("/", async (c) => {
+  return c.json({
+    version: "1.0.0",
+    commitTag: await getInstanceId(),
+    updateAvailable: false,
+    commitsBehind: 0,
+  });
+});
 
 app.get("/status", async (c) => {
   return c.json({
@@ -200,36 +224,115 @@ app.post("/auth/local", async (c) => {
 // 28.09: real Jellyseerr's own Jellyfin/Emby-login endpoint name/shape -
 // Moonbase calls this, not /auth/local, mounted under /api/v1 (see
 // index.ts). Body is {username, password, email?}.
+// 18.11, Sid : « ben le SSO et utiliser via le plugin me semble mieux quand
+// meme donc on fait tout propre direct non ? ». Elle a raison, et le plugin
+// Moonbase d'Emby est construit exactement pour ca : il s'authentifie une
+// fois cote serveur et tous ses clients passent ensuite par
+// /Moonfin/Seerr/Api/ sans jamais ressaisir un mot de passe.
+//
+// Ce qui bloquait: cette route portait mal son nom. Malgre « jellyfin »,
+// elle faisait un simple signInEmail dans la base locale - donc elle exigeait
+// le mot de passe PATOUNE TV, alors que le plugin envoie celui d'EMBY. Ses
+// deux mots de passe different (« non j'ai pas le meme mot de passe »), d'ou
+// le « Seerr auth failed for user sidounette@bluewin.ch: Unauthorized »
+// repete dans les journaux d'Emby.
+//
+// Elle fait desormais ce que son nom annonce:
+//   1. verifier l'identifiant et le mot de passe AUPRES D'EMBY
+//   2. retrouver le compte local par e-mail (aucun compte n'est cree ici:
+//      un utilisateur Emby sans compte Patoune TV reste refuse)
+//   3. ouvrir une session sans redemander de mot de passe
+//
+// La connexion locale par mot de passe (/auth/local) reste intacte a cote.
 app.post("/auth/jellyfin", async (c) => {
   const body = await c
     .req.json<{ username?: string; email?: string; password: string }>()
     .catch(() => null);
-  const email = body?.email ?? body?.username;
-  if (!email || !body?.password) {
+  const identifier = body?.email ?? body?.username;
+  if (!identifier || !body?.password) {
     return c.json({ message: "Unauthorized" }, 401);
   }
+
+  if (!EMBY_URL || !EMBY_API_KEY) {
+    log.warn("auth/jellyfin: EMBY_URL/EMBY_API_KEY absents, SSO indisponible");
+    return c.json({ message: "Unauthorized" }, 401);
+  }
+
+  // Emby authentifie par nom d'utilisateur, le plugin peut envoyer une
+  // adresse e-mail : on tente le nom tel quel, puis sa partie locale.
+  const candidates = identifier.includes("@")
+    ? [identifier, identifier.split("@")[0]!]
+    : [identifier];
+
+  let embyUser: { Id: string; Name: string } | null = null;
+  for (const candidate of candidates) {
+    try {
+      const res = await fetch(`${EMBY_URL}/Users/AuthenticateByName`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          // Emby refuse la requete sans en-tete d'autorisation client.
+          Authorization:
+            'MediaBrowser Client="Patoune TV", Device="Server", ' +
+            `DeviceId="patoune-tv-sso", Version="1.0.0", Token="${EMBY_API_KEY}"`,
+        },
+        body: JSON.stringify({ Username: candidate, Pw: body.password }),
+        signal: AbortSignal.timeout(15_000),
+      });
+      if (!res.ok) continue;
+      const payload = (await res.json()) as { User?: { Id: string; Name: string } };
+      if (payload.User) {
+        embyUser = payload.User;
+        break;
+      }
+    } catch (err) {
+      log.warn(`auth/jellyfin: Emby injoignable pour ${candidate}:`, err);
+    }
+  }
+
+  if (!embyUser) {
+    log.warn(`auth/jellyfin: Emby a refuse ${identifier}`);
+    return c.json({ message: "Unauthorized" }, 401);
+  }
+
+  // Le compte local doit exister: ce SSO authentifie, il n'inscrit personne.
+  const matches = await db
+    .select()
+    .from(userTable)
+    .where(eq(userTable.email, identifier.toLowerCase()))
+    .limit(1);
+  const local = matches[0];
+  if (!local) {
+    log.warn(
+      `auth/jellyfin: ${identifier} valide par Emby mais sans compte local`,
+    );
+    return c.json({ message: "Unauthorized" }, 401);
+  }
+
   try {
-    const result = await auth.api.signInEmail({
-      body: { email, password: body.password },
-      asResponse: true,
-      headers: c.req.raw.headers,
-    });
-    if (!result.ok) {
-      log.warn(`auth/jellyfin: signInEmail rejected, status=${result.status}`);
+    const ctx = await auth.$context;
+    const session = await ctx.internalAdapter.createSession(local.id, false);
+    if (!session) {
       return c.json({ message: "Unauthorized" }, 401);
     }
-    mirrorSessionCookies(c, result.headers.getSetCookie?.() ?? []);
-    const session = (await result.json().catch(() => null)) as { user?: CompatUser } | null;
-    const user = session?.user;
+    // Meme forme de cookie que le reste: le jeton better-auth, plus son
+    // miroir connect.sid que les clients Jellyseerr attendent.
+    const secure = (process.env.BETTER_AUTH_URL ?? "").startsWith("https://");
+    const attrs = `Path=/; HttpOnly; SameSite=Lax${secure ? "; Secure" : ""}`;
+    const name = secure
+      ? "__Secure-better-auth.session_token"
+      : "better-auth.session_token";
+    mirrorSessionCookies(c, [`${name}=${session.token}; ${attrs}`]);
+    log.info(`auth/jellyfin: session ouverte pour ${identifier} via Emby`);
     return c.json({
-      id: compatIntId(user?.id ?? email),
-      email: user?.email ?? email,
-      displayName: user?.name ?? "",
-      username: user?.name ?? "",
+      id: compatIntId(local.id),
+      email: local.email ?? identifier,
+      displayName: local.name ?? embyUser.Name,
+      username: local.name ?? embyUser.Name,
       permissions: 2,
     });
   } catch (err) {
-    log.warn("auth/jellyfin sign-in failed:", err);
+    log.warn("auth/jellyfin: ouverture de session impossible:", err);
     return c.json({ message: "Unauthorized" }, 401);
   }
 });
@@ -392,35 +495,93 @@ app.get("/media", (c) => c.json({ pageInfo: { pages: 0, pageSize: 10, results: 0
 // below always describe that one instance, id 0, regardless of the path
 // param.
 
+// 17.11: Jellyseerr renvoie ici un TABLEAU de serveurs, et l'objet
+// detaille seulement sur /service/radarr/:id. CARBA TV lit cette reponse
+// en `List<dynamic>` (getRadarrServers/getSonarrServers): un objet y
+// faisait echouer le transtypage, donc zero serveur trouve et
+// « Aucun serveur de service configure » dans la boite de demande,
+// sans choix de dossier ni de profil.
 app.get("/service/radarr", async (c) => {
   const opts = await getRequestOptions();
-  return c.json({
-    server: { id: 0, name: "Radarr", is4k: false },
-    profiles: opts.radarr.qualityProfiles,
-    rootFolders: opts.radarr.rootFolders.map((f, i) => ({ id: i, path: f.path })),
-  });
+  const first = opts.radarr.rootFolders[0];
+  return c.json([
+    {
+      id: 0,
+      name: "Radarr",
+      is4k: false,
+      isDefault: true,
+      activeProfileId: opts.radarr.qualityProfiles[0]?.id ?? 0,
+      activeDirectory: first?.path ?? "",
+      activeTags: [],
+    },
+  ]);
 });
+// 18.11: `server` doit porter activeProfileId ET activeDirectory.
+// CARBA TV les lit comme obligatoires (SeerrServiceServer.fromJson:
+// `(json["activeProfileId"] as num).toInt()`), donc sans eux le
+// transtypage echoue, le detail est perdu et la boite de demande
+// reste sans dossier ni profil a proposer. Corrige apres que la
+// liste /service/radarr l'ait deja ete la veille: les deux routes
+// avaient le meme defaut, je n'en avais vu qu'une.
 app.get("/service/radarr/:id", async (c) => {
   const opts = await getRequestOptions();
+  const first = opts.radarr.rootFolders[0];
   return c.json({
-    server: { id: 0, name: "Radarr", is4k: false },
+    server: {
+      id: 0,
+      name: "Radarr",
+      is4k: false,
+      isDefault: true,
+      activeProfileId: opts.radarr.qualityProfiles[0]?.id ?? 0,
+      activeDirectory: first?.path ?? "",
+      activeTags: [],
+    },
     profiles: opts.radarr.qualityProfiles,
     rootFolders: opts.radarr.rootFolders.map((f, i) => ({ id: i, path: f.path })),
   });
 });
 
+// 17.11: Jellyseerr renvoie ici un TABLEAU de serveurs, et l'objet
+// detaille seulement sur /service/sonarr/:id. CARBA TV lit cette reponse
+// en `List<dynamic>` (getRadarrServers/getSonarrServers): un objet y
+// faisait echouer le transtypage, donc zero serveur trouve et
+// « Aucun serveur de service configure » dans la boite de demande,
+// sans choix de dossier ni de profil.
 app.get("/service/sonarr", async (c) => {
   const opts = await getRequestOptions();
-  return c.json({
-    server: { id: 0, name: "Sonarr", is4k: false },
-    profiles: opts.sonarr.qualityProfiles,
-    rootFolders: opts.sonarr.rootFolders.map((f, i) => ({ id: i, path: f.path })),
-  });
+  const first = opts.sonarr.rootFolders[0];
+  return c.json([
+    {
+      id: 0,
+      name: "Sonarr",
+      is4k: false,
+      isDefault: true,
+      activeProfileId: opts.sonarr.qualityProfiles[0]?.id ?? 0,
+      activeDirectory: first?.path ?? "",
+      activeTags: [],
+    },
+  ]);
 });
+// 18.11: `server` doit porter activeProfileId ET activeDirectory.
+// CARBA TV les lit comme obligatoires (SeerrServiceServer.fromJson:
+// `(json["activeProfileId"] as num).toInt()`), donc sans eux le
+// transtypage echoue, le detail est perdu et la boite de demande
+// reste sans dossier ni profil a proposer. Corrige apres que la
+// liste /service/sonarr l'ait deja ete la veille: les deux routes
+// avaient le meme defaut, je n'en avais vu qu'une.
 app.get("/service/sonarr/:id", async (c) => {
   const opts = await getRequestOptions();
+  const first = opts.sonarr.rootFolders[0];
   return c.json({
-    server: { id: 0, name: "Sonarr", is4k: false },
+    server: {
+      id: 0,
+      name: "Sonarr",
+      is4k: false,
+      isDefault: true,
+      activeProfileId: opts.sonarr.qualityProfiles[0]?.id ?? 0,
+      activeDirectory: first?.path ?? "",
+      activeTags: [],
+    },
     profiles: opts.sonarr.qualityProfiles,
     rootFolders: opts.sonarr.rootFolders.map((f, i) => ({ id: i, path: f.path })),
   });
