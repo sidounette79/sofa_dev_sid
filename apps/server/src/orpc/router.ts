@@ -37,6 +37,7 @@ export const implementedRouter = {
     statistics: library.statistics,
     continueWatching: library.continueWatching,
     nowPlaying: library.nowPlaying,
+    recentWatches: library.recentWatches,
     upcoming: library.upcoming,
   },
   mediaRequests: {

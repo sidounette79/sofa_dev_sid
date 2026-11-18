@@ -1,7 +1,13 @@
 import { and, count, desc, eq, inArray, sql } from "drizzle-orm";
 
 import { db } from "../client";
-import { episodes, seasons, titles } from "../schema";
+import {
+  episodes,
+  seasons,
+  titles,
+  userEpisodeWatches,
+  userMovieWatches,
+} from "../schema";
 
 export function getTitleById(titleId: string) {
   return db.select().from(titles).where(eq(titles.id, titleId));
@@ -110,4 +116,58 @@ export function getRequestedNotAvailable(type: "movie" | "tv", limit = 20) {
     )
     .orderBy(desc(titles.requestedAt))
     .limit(limit);
+}
+
+/**
+ * Les N derniers titres vus par un utilisateur, films ou episodes.
+ *
+ * 18.11, Sid : « on pourrait avoir, quelque part dans la page des series et
+ * aussi des films, un resume des 10 derniers trucs vus ? Sous forme de
+ * liste ? ». Les deux tables de visionnage existaient et n'etaient lues que
+ * pour des compteurs; rien n'exposait l'historique lui-meme.
+ *
+ * Un episode revu (cycle 2+) compte comme un visionnage a part entiere, mais
+ * on ne garde que la derniere occurrence par titre pour ne pas remplir la
+ * liste avec la meme serie.
+ */
+export async function getRecentWatches(
+  userId: string,
+  type: "movie" | "tv",
+  limit = 10,
+) {
+  if (type === "movie") {
+    const rows = await db
+      .select({
+        titleId: titles.id,
+        name: titles.title,
+        posterPath: titles.posterPath,
+        tmdbId: titles.tmdbId,
+        watchedAt: sql<Date>`max(${userMovieWatches.watchedAt})`.as("watchedAt"),
+      })
+      .from(userMovieWatches)
+      .innerJoin(titles, eq(titles.id, userMovieWatches.titleId))
+      .where(eq(userMovieWatches.userId, userId))
+      .groupBy(titles.id, titles.title, titles.posterPath, titles.tmdbId)
+      .orderBy(desc(sql`max(${userMovieWatches.watchedAt})`))
+      .limit(limit);
+    return rows;
+  }
+
+  const rows = await db
+    .select({
+      titleId: titles.id,
+      name: titles.title,
+      posterPath: titles.posterPath,
+      tmdbId: titles.tmdbId,
+      watchedAt: sql<Date>`max(${userEpisodeWatches.watchedAt})`.as("watchedAt"),
+    })
+    .from(userEpisodeWatches)
+    .innerJoin(episodes, eq(episodes.id, userEpisodeWatches.episodeId))
+    .innerJoin(seasons, eq(seasons.id, episodes.seasonId))
+    .innerJoin(titles, eq(titles.id, seasons.titleId))
+    .where(eq(userEpisodeWatches.userId, userId))
+    .groupBy(titles.id, titles.title, titles.posterPath, titles.tmdbId)
+    .orderBy(desc(sql`max(${userEpisodeWatches.watchedAt})`))
+    .limit(limit);
+  return rows;
 }

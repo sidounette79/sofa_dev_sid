@@ -692,6 +692,24 @@ export const LibraryStatisticsOutput = z
   })
   .meta({ description: "Extended library statistics for the statistics page" });
 
+// 18.11, Sid : « un resume des 10 derniers trucs vus, sous forme de liste ».
+export const RecentWatchesInput = z.object({
+  type: z.enum(["movie", "tv"]),
+  limit: z.number().int().min(1).max(50).optional(),
+});
+
+export const RecentWatchesOutput = z.object({
+  items: z.array(
+    z.object({
+      titleId: z.string(),
+      name: z.string(),
+      posterPath: z.string().nullable(),
+      tmdbId: z.number().nullable(),
+      watchedAt: z.date(),
+    }),
+  ),
+});
+
 export const ContinueWatchingInput = z.object({
   sortBy: z.enum(["watched", "aired"]).default("watched").describe("Sort field"),
   sortDirection: z.enum(["asc", "desc"]).default("desc").describe("Sort direction"),

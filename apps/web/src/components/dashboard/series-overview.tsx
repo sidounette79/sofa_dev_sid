@@ -2,6 +2,7 @@ import { CaughtUpSection } from "./caught-up-section";
 import { CompletedSeriesSection } from "./completed-series-section";
 import { DroppedSeriesSection } from "./dropped-series-section";
 import { NowPlayingSection } from "./now-playing-section";
+import { RecentWatchesSection } from "./recent-watches-section";
 import { RecommendationsSection } from "./recommendations-section";
 import { RequestedNotAvailableSection } from "./requested-not-available-section";
 import { ToWatchSection } from "./to-watch-section";
@@ -28,7 +29,17 @@ import { UpcomingCardsSection } from "./upcoming-cards-section";
 export function SeriesOverview() {
   return (
     <div className="space-y-8">
-      <NowPlayingSection compact />
+      {/* 18.11, Sid : « on aurait de la place là, pour mettre séries et films
+          côte à côte, sans que ça décale rien ». La section « En cours sur
+          Emby » n'occupe qu'une fraction de sa rangée: les deux listes se
+          posent dans ce vide plutôt qu'en poussant le reste vers le bas. */}
+      <div className="grid gap-6 lg:grid-cols-2">
+        <NowPlayingSection compact />
+        <div className="grid gap-6 sm:grid-cols-2">
+          <RecentWatchesSection type="tv" />
+          <RecentWatchesSection type="movie" />
+        </div>
+      </div>
       <ToWatchSection type="tv" />
       <UpcomingCardsSection type="tv" />
       <RequestedNotAvailableSection type="tv" />

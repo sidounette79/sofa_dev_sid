@@ -9,6 +9,7 @@ import { getEmbyPublicUrl, getEmbyServerId, resolvePosterUrl } from "@sofa/core/
 import { getNowPlayingFeed } from "@sofa/core/now-playing";
 import { getTvRewatchCountsByTitleIds } from "@sofa/core/tracking";
 import { deriveEmbyStatus } from "@sofa/db/queries/emby-library";
+import { getRecentWatches } from "@sofa/db/queries/title";
 import { tmdbImageUrl } from "@sofa/tmdb/image";
 
 import { os } from "../context";
@@ -111,6 +112,21 @@ export const continueWatching = os.library.continueWatching
     }));
     const embyServerId = await getEmbyServerId();
     return { items, embyServerId, embyUrl: getEmbyPublicUrl() };
+  });
+
+export const recentWatches = os.library.recentWatches
+  .use(authed)
+  .handler(async ({ input, context }) => {
+    const rows = await getRecentWatches(context.user.id, input.type, input.limit ?? 10);
+    return {
+      items: rows.map((row) => ({
+        titleId: row.titleId,
+        name: row.name,
+        posterPath: tmdbImageUrl(row.posterPath, "posters"),
+        tmdbId: row.tmdbId,
+        watchedAt: row.watchedAt,
+      })),
+    };
   });
 
 export const nowPlaying = os.library.nowPlaying.use(authed).handler(async ({ context }) => {

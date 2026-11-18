@@ -10,6 +10,8 @@ import {
   BackupsListOutput,
   ContinueWatchingInput,
   ContinueWatchingOutput,
+  RecentWatchesInput,
+  RecentWatchesOutput,
   NowPlayingOutput,
   UntrackedEmbyLibraryOutput,
   RequestedNotAvailableOutput,
@@ -318,6 +320,18 @@ export const contract = {
       })
       .input(ContinueWatchingInput)
       .output(ContinueWatchingOutput),
+    recentWatches: oc
+      .route({
+        method: "GET",
+        path: "/library/recent-watches",
+        tags: ["Library"],
+        summary: "Get the last titles the user watched",
+        description:
+          "Fetch the most recently watched movies or series for the current user, newest first, one entry per title.",
+        successDescription: "Recently watched titles",
+      })
+      .input(RecentWatchesInput)
+      .output(RecentWatchesOutput),
     nowPlaying: oc
       .route({
         method: "GET",
