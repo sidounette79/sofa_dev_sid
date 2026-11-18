@@ -32,12 +32,24 @@ export function SeriesOverview() {
       {/* 18.11, Sid : « on aurait de la place là, pour mettre séries et films
           côte à côte, sans que ça décale rien ». La section « En cours sur
           Emby » n'occupe qu'une fraction de sa rangée: les deux listes se
-          posent dans ce vide plutôt qu'en poussant le reste vers le bas. */}
-      <div className="grid gap-6 lg:grid-cols-2">
-        <NowPlayingSection compact />
-        <div className="grid gap-6 sm:grid-cols-2">
-          <RecentWatchesSection type="tv" />
-          <RecentWatchesSection type="movie" />
+          posent dans ce vide plutôt qu'en poussant le reste vers le bas.
+
+          Puis, sur téléphone : « c'est chiant, sur le natel ça vient en
+          dessous. Est-ce que tu peux forcer les listes dans deux cases qui
+          se mettraient à côté de "en cours sur emby" et qui resteraient
+          fixes et figées à droite ? Sans passer en dessous ? »
+          D'où `flex` sans `flex-wrap` et SANS point de rupture: la rangée
+          ne se réorganise à aucune largeur, les trois colonnes se serrent
+          au lieu de retomber l'une sous l'autre. `empty:hidden` laisse les
+          listes prendre toute la place quand aucune session Emby ne joue —
+          la section renvoie `null`, le conteneur se retrouve vide. */}
+      <div className="flex items-start gap-3 sm:gap-6">
+        <div className="w-[30%] shrink-0 empty:hidden sm:w-1/4 lg:w-1/3">
+          <NowPlayingSection compact narrow />
+        </div>
+        <div className="grid min-w-0 flex-1 grid-cols-2 gap-3 sm:gap-6">
+          <RecentWatchesSection type="tv" dense />
+          <RecentWatchesSection type="movie" dense />
         </div>
       </div>
       <ToWatchSection type="tv" />

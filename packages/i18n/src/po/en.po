@@ -39,6 +39,10 @@ msgid "Last watched series"
 msgstr ""
 
 #: apps/web/src/components/dashboard/recent-watches-section.tsx
+msgid "Tap to enlarge"
+msgstr ""
+
+#: apps/web/src/components/dashboard/recent-watches-section.tsx
 msgid "Yesterday"
 msgstr ""
 
