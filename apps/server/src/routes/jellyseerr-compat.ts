@@ -495,7 +495,25 @@ app.post("/request", async (c) => {
         seasonNumbers,
       });
     }
-    return c.json({ id: titleId, status: 2 /* PENDING_APPROVAL-ish */ }, 201);
+    // 18.11, Sid : « j'ai le message mais ça part quand même dans radarr »,
+    // avec « type 'String' is not a subtype of type 'num' in type cast » en
+    // bas de l'écran. La demande partait bien (201), c'est la REPONSE qui
+    // etait illisible : on renvoyait `titleId`, l'UUID du titre dans Sofa,
+    // la ou l'app fait `(json['id'] as num).toInt()`.
+    //
+    // Le modele `SeerrRequest` exige trois champs : `id` (num), `status`
+    // (num) et `type` (String). `type` manquait aussi - en ne corrigeant que
+    // l'id on aurait simplement deplace l'erreur sur « Null is not a subtype
+    // of String ». Verifier TOUS les champs requis, pas seulement celui qui
+    // plante.
+    //
+    // Sofa n'a pas d'entite « requete » avec un id numerique (voir la note
+    // plus bas) : l'id TMDB fait un identifiant numerique stable et unique
+    // par titre, ce qui suffit a l'app.
+    return c.json(
+      { id: body.mediaId, status: 2 /* PENDING_APPROVAL-ish */, type: body.mediaType },
+      201,
+    );
   } catch (err) {
     if (err instanceof TitleNotFoundError) return c.json({ message: err.message }, 404);
     if (err instanceof AlreadyRequestedError) return c.json({ message: err.message }, 409);
