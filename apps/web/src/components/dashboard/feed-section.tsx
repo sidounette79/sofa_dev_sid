@@ -16,6 +16,7 @@ export function FeedSection({
   countLabel,
   actions,
   id,
+  narrow = false,
 }: {
   title: string;
   icon: ReactNode;
@@ -35,6 +36,14 @@ export function FeedSection({
   actions?: ReactNode;
   /** Stable identifier used to persist this section's expanded/collapsed state across visits. */
   id?: string;
+  /**
+   * 18.11 : la section « En cours sur Emby » posée dans une colonne étroite
+   * à côté des listes « derniers vus ». Capture de Sid à l'appui, son titre
+   * en `text-xl` s'y empilait sur quatre lignes — un mot par ligne. En
+   * `narrow` le titre descend à la taille du corps de texte et cesse d'être
+   * centré, pour tenir sur une ou deux lignes dans ~130 px.
+   */
+  narrow?: boolean;
 }) {
   const [open, setOpenState] = useState(() =>
     id ? getPersistedSectionOpen(id, defaultOpen) : defaultOpen,
@@ -45,10 +54,24 @@ export function FeedSection({
   };
 
   const titlePart = (
-    <div className="flex items-center gap-2">
-      <span aria-hidden={true}>{icon}</span>
-      <h2 className="font-display text-xl tracking-tight text-balance">{title}</h2>
-      {countLabel && <span className="text-muted-foreground text-sm">{countLabel}</span>}
+    <div className={narrow ? "flex items-center gap-1.5" : "flex items-center gap-2"}>
+      <span aria-hidden={true} className={narrow ? "shrink-0" : undefined}>
+        {icon}
+      </span>
+      <h2
+        className={
+          narrow
+            ? "font-display min-w-0 text-left text-sm leading-tight tracking-tight"
+            : "font-display text-xl tracking-tight text-balance"
+        }
+      >
+        {title}
+      </h2>
+      {countLabel && (
+        <span className={narrow ? "text-muted-foreground text-xs" : "text-muted-foreground text-sm"}>
+          {countLabel}
+        </span>
+      )}
     </div>
   );
 

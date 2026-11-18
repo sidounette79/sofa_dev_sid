@@ -30,6 +30,10 @@ msgstr "...and {remainingErrors} more"
 msgid "Could not load this list."
 msgstr ""
 
+#: apps/web/src/components/dashboard/now-playing-section.tsx
+msgid "Emby live"
+msgstr ""
+
 #: apps/web/src/components/dashboard/recent-watches-section.tsx
 msgid "Last watched films"
 msgstr ""

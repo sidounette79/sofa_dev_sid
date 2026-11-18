@@ -16,13 +16,20 @@ export function NowPlayingSection({
   const items = data?.items ?? [];
   if (items.length === 0) return null;
 
+  // 18.11, Sid, capture a l'appui : « En cours sur Emby » s'empilait sur
+  // QUATRE lignes dans la colonne etroite, un mot par ligne. « Mets juste
+  // "Sur Emby" [...] et vire "en cours" [...] ou "Emby live" ». Le titre
+  // long reste partout ailleurs (page Tableau de bord, pleine largeur).
+  const titre = narrow ? t`Emby live` : t`Now Playing`;
+
   return (
     <FeedSection
       id="now-playing"
       collapsible
       defaultOpen
-      title={t`Now Playing`}
-      icon={<IconDeviceTv className="text-primary size-5" />}
+      narrow={narrow}
+      title={titre}
+      icon={<IconDeviceTv className={narrow ? "text-primary size-4" : "text-primary size-5"} />}
     >
       {/* 18.11 : `narrow` sert quand la section tient dans une colonne
           etroite a cote des listes « derniers vus » (series-overview). Une
