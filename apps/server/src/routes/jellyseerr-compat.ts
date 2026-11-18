@@ -740,12 +740,51 @@ function requireTmdb(c: import("hono").Context) {
   return null;
 }
 
-function mapResults(results: unknown[]) {
-  return (results as Record<string, unknown>[]).map((r) => ({
-    ...r,
-    posterPath: undefined,
-    poster_path: r.poster_path,
-  }));
+// 18.11, Sid : « toujours pas les pochettes » sur les rangees Similaires et
+// Recommandations de CARBA TV, et « est-ce que Patoune TV pourrait faire
+// afficher les petites icones de ce que j'ai deja vu ». Les deux manques
+// partaient d'ici.
+//
+// 1. `posterPath: undefined` effacait la forme camelCase pour ne garder que
+//    le `poster_path` brut de TMDB. Or le vrai Jellyseerr renvoie camelCase,
+//    et c'est ce que lisent ses clients (SeerrMediaItem.posterPath cote
+//    CARBA TV): les cartes n'avaient jamais rien a afficher. On renvoie les
+//    deux formes, pour ne casser aucun client existant.
+//
+// 2. Aucun mediaInfo n'accompagnait les resultats, donc aucun badge de
+//    disponibilite ne pouvait s'afficher sur ces cartes - alors que le
+//    reglage existe cote app et qu'elle l'a active. On croise desormais les
+//    identifiants TMDB de la page avec les titres connus, en une seule
+//    requete.
+async function mapResults(results: unknown[]) {
+  const rows = results as Record<string, unknown>[];
+  const tmdbIds = rows
+    .map((r) => Number(r.id))
+    .filter((id) => Number.isFinite(id) && id > 0);
+
+  let known = new Map<number, { inEmbyLibrary?: boolean | null; requestedAt?: Date | null }>();
+  try {
+    const existing = await getExistingTitlesByTmdbIds(tmdbIds);
+    known = new Map(
+      existing
+        .filter((t): t is typeof t & { tmdbId: number } => t.tmdbId != null)
+        .map((t) => [t.tmdbId, t]),
+    );
+  } catch (err) {
+    // Une page sans badges reste lisible; une page en erreur, non.
+    log.warn("mapResults: titres connus illisibles,", err);
+  }
+
+  return rows.map((r) => {
+    const poster = r.posterPath ?? r.poster_path;
+    return {
+      ...r,
+      posterPath: poster,
+      poster_path: poster,
+      backdropPath: r.backdropPath ?? r.backdrop_path,
+      mediaInfo: mediaInfoFor(known.get(Number(r.id))),
+    };
+  });
 }
 
 app.get("/discover/trending", async (c) => {
@@ -753,7 +792,7 @@ app.get("/discover/trending", async (c) => {
   if (err) return err;
   const page = Number(c.req.query("page") ?? "1");
   const data = await getTrending("all", "day", page);
-  return c.json({ page: data.page, totalPages: data.total_pages, totalResults: data.total_results, results: mapResults(data.results ?? []) });
+  return c.json({ page: data.page, totalPages: data.total_pages, totalResults: data.total_results, results: await mapResults(data.results ?? []) });
 });
 
 app.get("/discover/movies", async (c) => {
@@ -761,7 +800,7 @@ app.get("/discover/movies", async (c) => {
   if (err) return err;
   const page = Number(c.req.query("page") ?? "1");
   const data = await getPopular("movie", page);
-  return c.json({ page: data.page, totalPages: data.total_pages, totalResults: data.total_results, results: mapResults(data.results ?? []) });
+  return c.json({ page: data.page, totalPages: data.total_pages, totalResults: data.total_results, results: await mapResults(data.results ?? []) });
 });
 
 app.get("/discover/tv", async (c) => {
@@ -769,7 +808,7 @@ app.get("/discover/tv", async (c) => {
   if (err) return err;
   const page = Number(c.req.query("page") ?? "1");
   const data = await getPopular("tv", page);
-  return c.json({ page: data.page, totalPages: data.total_pages, totalResults: data.total_results, results: mapResults(data.results ?? []) });
+  return c.json({ page: data.page, totalPages: data.total_pages, totalResults: data.total_results, results: await mapResults(data.results ?? []) });
 });
 
 app.get("/discover/movies/upcoming", async (c) => {
@@ -777,7 +816,7 @@ app.get("/discover/movies/upcoming", async (c) => {
   if (err) return err;
   const page = Number(c.req.query("page") ?? "1");
   const data = await getUpcomingMovies(page);
-  return c.json({ page: data.page, totalPages: data.total_pages, totalResults: data.total_results, results: mapResults(data.results ?? []) });
+  return c.json({ page: data.page, totalPages: data.total_pages, totalResults: data.total_results, results: await mapResults(data.results ?? []) });
 });
 
 app.get("/discover/movies/top", async (c) => {
@@ -785,7 +824,7 @@ app.get("/discover/movies/top", async (c) => {
   if (err) return err;
   const page = Number(c.req.query("page") ?? "1");
   const data = await discoverTmdb("movie", { sort_by: "vote_average.desc", "vote_count.gte": "200" }, page);
-  return c.json({ page: data.page, totalPages: data.total_pages, totalResults: data.total_results, results: mapResults(data.results ?? []) });
+  return c.json({ page: data.page, totalPages: data.total_pages, totalResults: data.total_results, results: await mapResults(data.results ?? []) });
 });
 
 app.get("/discover/tv/top", async (c) => {
@@ -793,7 +832,7 @@ app.get("/discover/tv/top", async (c) => {
   if (err) return err;
   const page = Number(c.req.query("page") ?? "1");
   const data = await discoverTmdb("tv", { sort_by: "vote_average.desc", "vote_count.gte": "200" }, page);
-  return c.json({ page: data.page, totalPages: data.total_pages, totalResults: data.total_results, results: mapResults(data.results ?? []) });
+  return c.json({ page: data.page, totalPages: data.total_pages, totalResults: data.total_results, results: await mapResults(data.results ?? []) });
 });
 
 app.get("/discover/tv/upcoming", async (c) => {
@@ -806,7 +845,7 @@ app.get("/discover/tv/upcoming", async (c) => {
     { sort_by: "first_air_date.asc", "first_air_date.gte": today },
     page,
   );
-  return c.json({ page: data.page, totalPages: data.total_pages, totalResults: data.total_results, results: mapResults(data.results ?? []) });
+  return c.json({ page: data.page, totalPages: data.total_pages, totalResults: data.total_results, results: await mapResults(data.results ?? []) });
 });
 
 // 28.09: Sofa's own per-user "watchlist" status (userTitleStatus table) is
@@ -872,7 +911,7 @@ app.get("/search", async (c) => {
   const query = c.req.query("query") ?? "";
   const page = Number(c.req.query("page") ?? "1");
   const data = await searchMulti(query, page);
-  return c.json({ page: data.page, totalPages: data.total_pages, totalResults: data.total_results, results: mapResults(data.results ?? []) });
+  return c.json({ page: data.page, totalPages: data.total_pages, totalResults: data.total_results, results: await mapResults(data.results ?? []) });
 });
 
 // 18.11, Sid : « le film que j'ai demandé je l'ai deja vu et c'etait indiqué
@@ -929,28 +968,28 @@ app.get("/movie/:id/similar", async (c) => {
   const err = requireTmdb(c);
   if (err) return err;
   const data = await getSimilar(Number(c.req.param("id")), "movie");
-  return c.json({ page: 1, totalPages: 1, totalResults: (data.results ?? []).length, results: mapResults(data.results ?? []) });
+  return c.json({ page: 1, totalPages: 1, totalResults: (data.results ?? []).length, results: await mapResults(data.results ?? []) });
 });
 
 app.get("/tv/:id/similar", async (c) => {
   const err = requireTmdb(c);
   if (err) return err;
   const data = await getSimilar(Number(c.req.param("id")), "tv");
-  return c.json({ page: 1, totalPages: 1, totalResults: (data.results ?? []).length, results: mapResults(data.results ?? []) });
+  return c.json({ page: 1, totalPages: 1, totalResults: (data.results ?? []).length, results: await mapResults(data.results ?? []) });
 });
 
 app.get("/movie/:id/recommendations", async (c) => {
   const err = requireTmdb(c);
   if (err) return err;
   const data = await getRecommendations(Number(c.req.param("id")), "movie");
-  return c.json({ page: 1, totalPages: 1, totalResults: (data.results ?? []).length, results: mapResults(data.results ?? []) });
+  return c.json({ page: 1, totalPages: 1, totalResults: (data.results ?? []).length, results: await mapResults(data.results ?? []) });
 });
 
 app.get("/tv/:id/recommendations", async (c) => {
   const err = requireTmdb(c);
   if (err) return err;
   const data = await getRecommendations(Number(c.req.param("id")), "tv");
-  return c.json({ page: 1, totalPages: 1, totalResults: (data.results ?? []).length, results: mapResults(data.results ?? []) });
+  return c.json({ page: 1, totalPages: 1, totalResults: (data.results ?? []).length, results: await mapResults(data.results ?? []) });
 });
 
 app.get("/person/:id", async (c) => {
