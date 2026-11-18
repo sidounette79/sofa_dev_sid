@@ -117,7 +117,12 @@ export const continueWatching = os.library.continueWatching
 export const recentWatches = os.library.recentWatches
   .use(authed)
   .handler(async ({ input, context }) => {
-    const rows = await getRecentWatches(context.user.id, input.type, input.limit ?? 10);
+    const rows = await getRecentWatches(
+      context.user.id,
+      input.type,
+      input.limit ?? 10,
+      input.days ?? 3,
+    );
     return {
       items: rows.map((row) => ({
         titleId: row.titleId,

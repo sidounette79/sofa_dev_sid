@@ -52,38 +52,32 @@ export function RecentWatchesSection({ type }: { type: "movie" | "tv" }) {
   if (!isLoading && items.length === 0) return null;
 
   return (
-    <section className="space-y-3">
-      <h2 className="text-base font-semibold">
+    <section className="space-y-1.5">
+      <h2 className="text-sm font-semibold">
         {type === "tv" ? t`Last watched series` : t`Last watched films`}
       </h2>
-      <ol className="space-y-1.5">
+      {/* 18.11, Sid : « on peut juste mettre la liste sans les pochettes ?
+          et plus serrees ? et ecrites en plus petit ? » — les vignettes
+          imposaient une hauteur de ligne de 40 px pour une information que
+          le titre donne deja. Sans elles, la ligne tient sur son texte. */}
+      <ol className="space-y-px">
         {items.map((item) => (
           <li key={item.titleId}>
             <Link
               to="/titles/$id"
               params={{ id: item.titleId }}
-              className="hover:bg-muted/50 flex items-center gap-2 rounded-md px-1.5 py-1 transition-colors"
+              className="hover:bg-muted/50 flex items-baseline gap-2 rounded px-1.5 py-0.5 transition-colors"
             >
-              {item.posterPath ? (
-                <img
-                  src={item.posterPath}
-                  alt=""
-                  loading="lazy"
-                  className="h-10 w-7 shrink-0 rounded object-cover"
-                />
-              ) : (
-                <div className="bg-muted h-10 w-7 shrink-0 rounded" />
-              )}
-              <span className="min-w-0 flex-1 truncate text-sm">
+              <span className="min-w-0 flex-1 truncate text-xs">
                 {item.name}
                 {item.seasonNumber != null && item.episodeNumber != null && (
-                  <span className="text-muted-foreground ml-1.5 text-xs tabular-nums">
+                  <span className="text-muted-foreground ml-1.5 tabular-nums">
                     S{String(item.seasonNumber).padStart(2, "0")}E
                     {String(item.episodeNumber).padStart(2, "0")}
                   </span>
                 )}
               </span>
-              <span className="text-muted-foreground shrink-0 text-xs">
+              <span className="text-muted-foreground shrink-0 text-[11px]">
                 {relativeDay(new Date(item.watchedAt), t)}
               </span>
             </Link>

@@ -134,6 +134,7 @@ export async function getRecentWatches(
   userId: string,
   type: "movie" | "tv",
   limit = 10,
+  days = 3,
 ) {
   // 18.11, Sid : « est-ce que ca ralentit le chargement de toute la page ?
   // Parce qu'on a lutte des mois pour que ca arrete de ramer ». Question
@@ -156,7 +157,13 @@ export async function getRecentWatches(
   // `mapWith(<la colonne>)` applique exactement le convertisseur que
   // drizzle utilise pour une selection normale, donc aucun decalage de
   // fuseau introduit : c'est le chemin de `lastWatchedAt` ailleurs.
+  //
+  // 18.11, Sid : « on se limite a 10 sur les 3 derniers jours ? si rien vu,
+  // on affiche pas plus loin ? » — la borne temporelle passe DANS la
+  // sous-requete, pas apres : elle s'appuie sur le meme index
+  // (userId, watchedAt) et reduit encore ce qu'on remonte.
   const window = Math.max(limit * 40, 400);
+  const since = new Date(Date.now() - days * 86_400_000);
 
   if (type === "movie") {
     return db
@@ -173,7 +180,7 @@ export async function getRecentWatches(
         sql`(
           select "titleId", "watchedAt"
           from ${userMovieWatches}
-          where "userId" = ${userId}
+          where "userId" = ${userId} and "watchedAt" >= ${since}
           order by "watchedAt" desc
           limit ${window}
         ) as recent`,
@@ -209,7 +216,7 @@ export async function getRecentWatches(
       sql`(
         select "episodeId", "watchedAt"
         from ${userEpisodeWatches}
-        where "userId" = ${userId}
+        where "userId" = ${userId} and "watchedAt" >= ${since}
         order by "watchedAt" desc
         limit ${window}
       ) as recent`,

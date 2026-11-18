@@ -696,6 +696,10 @@ export const LibraryStatisticsOutput = z
 export const RecentWatchesInput = z.object({
   type: z.enum(["movie", "tv"]),
   limit: z.number().int().min(1).max(50).optional(),
+  // 18.11, Sid : « on se limite a 10 sur les 3 derniers jours ? si rien vu,
+  // on affiche pas plus loin ? » — la fenetre borne la liste dans le temps,
+  // la limite la borne en longueur ; les deux s'appliquent.
+  days: z.number().int().min(1).max(365).optional(),
 });
 
 export const RecentWatchesOutput = z.object({
