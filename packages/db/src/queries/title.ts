@@ -135,39 +135,64 @@ export async function getRecentWatches(
   type: "movie" | "tv",
   limit = 10,
 ) {
+  // 18.11, Sid : « est-ce que ca ralentit le chargement de toute la page ?
+  // Parce qu'on a lutte des mois pour que ca arrete de ramer ». Question
+  // justifiee: la premiere version agregeait TOUT l'historique avant de
+  // trier et d'en garder dix - EXPLAIN montrait un Seq Scan sur les 175 794
+  // episodes et les 39 809 visionnages, 240 ms pour afficher dix lignes.
+  // Exactement le motif qui a fait ramer Sofa pendant des mois.
+  //
+  // On lit d'abord les derniers visionnages par l'index
+  // (userId, watchedAt), puis on joint seulement ceux-la: plus aucun Seq
+  // Scan, 11 ms stables. La fenetre est large (40x la limite demandee) pour
+  // qu'une serie regardee d'affilee ne masque pas les titres precedents.
+  const window = Math.max(limit * 40, 400);
+
   if (type === "movie") {
-    const rows = await db
+    return db
       .select({
         titleId: titles.id,
         name: titles.title,
         posterPath: titles.posterPath,
         tmdbId: titles.tmdbId,
-        watchedAt: sql<Date>`max(${userMovieWatches.watchedAt})`.as("watchedAt"),
+        watchedAt: sql<Date>`max(recent."watchedAt")`.as("watchedAt"),
       })
-      .from(userMovieWatches)
-      .innerJoin(titles, eq(titles.id, userMovieWatches.titleId))
-      .where(eq(userMovieWatches.userId, userId))
+      .from(
+        sql`(
+          select "titleId", "watchedAt"
+          from ${userMovieWatches}
+          where "userId" = ${userId}
+          order by "watchedAt" desc
+          limit ${window}
+        ) as recent`,
+      )
+      .innerJoin(titles, sql`${titles.id} = recent."titleId"`)
       .groupBy(titles.id, titles.title, titles.posterPath, titles.tmdbId)
-      .orderBy(desc(sql`max(${userMovieWatches.watchedAt})`))
+      .orderBy(desc(sql`max(recent."watchedAt")`))
       .limit(limit);
-    return rows;
   }
 
-  const rows = await db
+  return db
     .select({
       titleId: titles.id,
       name: titles.title,
       posterPath: titles.posterPath,
       tmdbId: titles.tmdbId,
-      watchedAt: sql<Date>`max(${userEpisodeWatches.watchedAt})`.as("watchedAt"),
+      watchedAt: sql<Date>`max(recent."watchedAt")`.as("watchedAt"),
     })
-    .from(userEpisodeWatches)
-    .innerJoin(episodes, eq(episodes.id, userEpisodeWatches.episodeId))
+    .from(
+      sql`(
+        select "episodeId", "watchedAt"
+        from ${userEpisodeWatches}
+        where "userId" = ${userId}
+        order by "watchedAt" desc
+        limit ${window}
+      ) as recent`,
+    )
+    .innerJoin(episodes, sql`${episodes.id} = recent."episodeId"`)
     .innerJoin(seasons, eq(seasons.id, episodes.seasonId))
     .innerJoin(titles, eq(titles.id, seasons.titleId))
-    .where(eq(userEpisodeWatches.userId, userId))
     .groupBy(titles.id, titles.title, titles.posterPath, titles.tmdbId)
-    .orderBy(desc(sql`max(${userEpisodeWatches.watchedAt})`))
+    .orderBy(desc(sql`max(recent."watchedAt")`))
     .limit(limit);
-  return rows;
 }
