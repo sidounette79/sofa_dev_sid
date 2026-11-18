@@ -18,6 +18,33 @@ export function getExistingTitlesByTmdbIds(tmdbIds: number[]) {
   return db.select().from(titles).where(inArray(titles.tmdbId, tmdbIds));
 }
 
+/**
+ * Les titres (parmi `titleIds`) que cette personne a deja vus.
+ *
+ * 18.11, Sid : « voir aussi un deja vu, quand on a deja vu ». Jellyseerr
+ * n'a pas cette notion - mais Patoune TV, si : « oui mais patoune TV l'a,
+ * et nous on bosse avec patoune TV ». La donnee vit dans
+ * `userMovieWatches`, que `getExistingTitlesByTmdbIds` ne remonte pas
+ * (elle ne lit que `titles`).
+ *
+ * Limite assumee : les FILMS seulement. Pour une serie, « deja vu »
+ * demanderait de comparer les episodes vus au total, ce qui n'a pas la
+ * meme reponse selon qu'on parle d'une saison ou de la serie entiere.
+ */
+export async function getWatchedTitleIds(
+  userId: string,
+  titleIds: string[],
+): Promise<Set<string>> {
+  if (titleIds.length === 0) return new Set();
+  const rows = await db
+    .selectDistinct({ titleId: userMovieWatches.titleId })
+    .from(userMovieWatches)
+    .where(
+      and(eq(userMovieWatches.userId, userId), inArray(userMovieWatches.titleId, titleIds)),
+    );
+  return new Set(rows.map((r) => r.titleId));
+}
+
 export function getExistingTitlesByTvdbIds(tvdbIds: number[]) {
   if (tvdbIds.length === 0) return Promise.resolve([]);
   return db.select().from(titles).where(inArray(titles.tvdbId, tvdbIds));
