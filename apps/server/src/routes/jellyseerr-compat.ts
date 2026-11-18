@@ -97,6 +97,36 @@ async function requireUser(c: Context<CompatEnv>): Promise<CompatUser | null> {
 // name costs nothing (every other endpoint here still authenticates off
 // the real better-auth cookie via auth.api.getSession) and needs no
 // guessing at Moonbase's closed-source logic beyond the cookie name itself.
+/// Signe une valeur de cookie comme better-auth le fait.
+///
+/// 18.11 : un premier essai posait le jeton de session nu. La session
+/// s'ouvrait bien (« session ouverte pour sidounette@bluewin.ch via Emby »),
+/// mais l'appel suivant repartait en « gate rejected: GET /auth/me » parce
+/// que getSession ne reconnaissait pas le cookie: better-auth y attend
+/// `<jeton>.<signature>`, pas le jeton seul.
+///
+/// L'algorithme est repris de better-call (dist/crypto.mjs): HMAC-SHA-256
+/// sur la valeur, signature en base64, concatenee par un point, le tout
+/// encode pour l'URL. Reimplemente ici parce que le paquet n'exporte que
+/// ".", "./client" et "./error" - signCookieValue n'est pas accessible, et
+/// l'importer fait tomber le serveur au demarrage (teste en vrai).
+async function signCookieValue(value: string, secret: string): Promise<string> {
+  const key = await crypto.subtle.importKey(
+    "raw",
+    new TextEncoder().encode(secret),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"],
+  );
+  const signature = await crypto.subtle.sign(
+    "HMAC",
+    key,
+    new TextEncoder().encode(value),
+  );
+  const base64 = btoa(String.fromCharCode(...new Uint8Array(signature)));
+  return encodeURIComponent(`${value}.${base64}`);
+}
+
 function mirrorSessionCookies(c: Context<CompatEnv>, cookies: string[]) {
   for (const cookie of cookies) c.header("set-cookie", cookie, { append: true });
   const tokenCookie = cookies.find((raw) => raw.split(";")[0]?.includes("session_token"));
@@ -315,14 +345,23 @@ app.post("/auth/jellyfin", async (c) => {
     if (!session) {
       return c.json({ message: "Unauthorized" }, 401);
     }
-    // Meme forme de cookie que le reste: le jeton better-auth, plus son
-    // miroir connect.sid que les clients Jellyseerr attendent.
-    const secure = (process.env.BETTER_AUTH_URL ?? "").startsWith("https://");
-    const attrs = `Path=/; HttpOnly; SameSite=Lax${secure ? "; Secure" : ""}`;
-    const name = secure
-      ? "__Secure-better-auth.session_token"
-      : "better-auth.session_token";
-    mirrorSessionCookies(c, [`${name}=${session.token}; ${attrs}`]);
+    // better-auth SIGNE son cookie de session: la valeur est
+    // `<jeton>.<signature HMAC>`, pas le jeton nu. Un premier essai posait
+    // le jeton brut - la session s'ouvrait bien (« session ouverte pour
+    // sidounette@bluewin.ch via Emby » dans les journaux) mais l'appel
+    // suivant repartait en « gate rejected: GET /auth/me », parce que
+    // getSession ne reconnaissait pas le cookie. On signe donc avec la
+    // fonction de better-call elle-meme plutot que de reimplementer le HMAC,
+    // et on reprend le nom et les attributs que better-auth utilise, pour ne
+    // pas avoir deux cookies concurrents.
+    const cookieName = ctx.authCookies.sessionToken.name;
+    const attributes = ctx.authCookies.sessionToken.attributes ?? {};
+    const signed = await signCookieValue(session.token, ctx.secret);
+    const parts = [`${cookieName}=${signed}`, "Path=/"];
+    if (attributes.httpOnly !== false) parts.push("HttpOnly");
+    if (attributes.secure) parts.push("Secure");
+    parts.push(`SameSite=${attributes.sameSite ?? "Lax"}`);
+    mirrorSessionCookies(c, [parts.join("; ")]);
     log.info(`auth/jellyfin: session ouverte pour ${identifier} via Emby`);
     return c.json({
       id: compatIntId(local.id),
