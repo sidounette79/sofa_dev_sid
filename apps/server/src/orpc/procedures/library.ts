@@ -124,7 +124,9 @@ export const recentWatches = os.library.recentWatches
         name: row.name,
         posterPath: tmdbImageUrl(row.posterPath, "posters"),
         tmdbId: row.tmdbId,
-        watchedAt: row.watchedAt,
+        watchedAt: row.watchedAt.toISOString(),
+        seasonNumber: "seasonNumber" in row ? row.seasonNumber : null,
+        episodeNumber: "episodeNumber" in row ? row.episodeNumber : null,
       })),
     };
   });

@@ -146,6 +146,16 @@ export async function getRecentWatches(
   // (userId, watchedAt), puis on joint seulement ceux-la: plus aucun Seq
   // Scan, 11 ms stables. La fenetre est large (40x la limite demandee) pour
   // qu'une serie regardee d'affilee ne masque pas les titres precedents.
+  // 18.11 : les deux sections disparaissaient apres chargement et la page
+  // ramait au demarrage. Une seule cause, mesuree dans le conteneur :
+  // `sql`max(...)`` brut court-circuite le convertisseur de drizzle, donc
+  // `watchedAt` revenait en texte Postgres (« 2026-11-18 04:49:40.251 »)
+  // la ou le schema attendait une Date -> « Output validation failed » a
+  // chaque appel -> react-query retentait -> deux sections x les retentes
+  // saturaient le pool et la meme requete passait de 9 ms a 26 s.
+  // `mapWith(<la colonne>)` applique exactement le convertisseur que
+  // drizzle utilise pour une selection normale, donc aucun decalage de
+  // fuseau introduit : c'est le chemin de `lastWatchedAt` ailleurs.
   const window = Math.max(limit * 40, 400);
 
   if (type === "movie") {
@@ -155,7 +165,9 @@ export async function getRecentWatches(
         name: titles.title,
         posterPath: titles.posterPath,
         tmdbId: titles.tmdbId,
-        watchedAt: sql<Date>`max(recent."watchedAt")`.as("watchedAt"),
+        watchedAt: sql<Date>`max(recent."watchedAt")`
+          .mapWith(userMovieWatches.watchedAt)
+          .as("watchedAt"),
       })
       .from(
         sql`(
@@ -178,7 +190,20 @@ export async function getRecentWatches(
       name: titles.title,
       posterPath: titles.posterPath,
       tmdbId: titles.tmdbId,
-      watchedAt: sql<Date>`max(recent."watchedAt")`.as("watchedAt"),
+      watchedAt: sql<Date>`max(recent."watchedAt")`
+        .mapWith(userEpisodeWatches.watchedAt)
+        .as("watchedAt"),
+      // 18.11, Sid : « comme y a la place j'aimerai bien au moins voir
+      // S12E04 apres le titre de la serie ». On veut l'episode du DERNIER
+      // visionnage du titre, pas le plus grand numero : d'ou l'agregat
+      // trie par date decroissante dont on prend le premier element.
+      // mapWith pour la meme raison que watchedAt ci-dessus.
+      seasonNumber: sql<number>`(array_agg(${seasons.seasonNumber} order by recent."watchedAt" desc))[1]`
+        .mapWith(seasons.seasonNumber)
+        .as("seasonNumber"),
+      episodeNumber: sql<number>`(array_agg(${episodes.episodeNumber} order by recent."watchedAt" desc))[1]`
+        .mapWith(episodes.episodeNumber)
+        .as("episodeNumber"),
     })
     .from(
       sql`(

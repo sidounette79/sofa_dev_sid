@@ -26,6 +26,22 @@ msgstr ""
 msgid "...and {remainingErrors} more"
 msgstr "...et {remainingErrors} de plus"
 
+#: apps/web/src/components/dashboard/recent-watches-section.tsx
+msgid "Could not load this list."
+msgstr "Impossible de charger cette liste."
+
+#: apps/web/src/components/dashboard/recent-watches-section.tsx
+msgid "Last watched films"
+msgstr "Derniers films vus"
+
+#: apps/web/src/components/dashboard/recent-watches-section.tsx
+msgid "Last watched series"
+msgstr "Dernières séries vues"
+
+#: apps/web/src/components/dashboard/recent-watches-section.tsx
+msgid "Yesterday"
+msgstr "Hier"
+
 #. placeholder {0}: systemHealth.data.imageCache.imageCount
 #: apps/native/src/app/(tabs)/(settings)/index.tsx
 msgid "{0, plural, one {# image} other {# images}}"
@@ -157,6 +173,11 @@ msgstr "{count, plural, one {# ép} other {# éps}}"
 #: apps/web/src/components/settings/system-health-section.tsx
 #~ msgid "{healthyCount} of {0} jobs healthy"
 #~ msgstr "{healthyCount} sur {0} tâches en bonne santé"
+
+#. placeholder {days}: days
+#: apps/web/src/components/dashboard/recent-watches-section.tsx
+msgid "{days}d ago"
+msgstr "il y a {days} j"
 
 #: apps/web/src/components/settings/system-health-section.tsx
 msgid "{healthyCount} of {activeJobCount} jobs healthy"

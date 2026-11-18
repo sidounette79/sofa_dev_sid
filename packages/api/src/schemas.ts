@@ -705,7 +705,15 @@ export const RecentWatchesOutput = z.object({
       name: z.string(),
       posterPath: z.string().nullable(),
       tmdbId: z.number().nullable(),
-      watchedAt: z.date(),
+      watchedAt: z.string().describe("ISO date the title was last watched"),
+      seasonNumber: z
+        .number()
+        .nullable()
+        .describe("Season of the last watched episode, null for movies"),
+      episodeNumber: z
+        .number()
+        .nullable()
+        .describe("Episode number of the last watched episode, null for movies"),
     }),
   ),
 });
