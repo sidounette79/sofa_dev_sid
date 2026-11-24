@@ -261,6 +261,32 @@ export interface EmbyNowPlayingSession {
 // makes), so it's handed straight to Emby's own /Users/Me rather than
 // inventing a separate secret Sofa would have to mint, expose in some UI,
 // and Sid would have to copy into Moonfin by hand.
+/**
+ * 24.11, Sid — same call as verifyEmbyUserToken, but also returns the Emby
+ * username. The home-screen widgets need the *Patoune TV* user, and the
+ * only bridge between the two accounts is `integrations.embyUsername`
+ * (populated by her Emby webhook, which already marks per-user watches).
+ * Resolving by name rather than by Emby id keeps that single bridge: no
+ * second mapping to create, nothing for her to configure.
+ */
+export async function getEmbyUserFromToken(
+  token: string,
+): Promise<{ id: string; name: string } | null> {
+  if (!EMBY_URL || !token) return null;
+  try {
+    const response = await fetch(`${EMBY_URL}/Users/Me`, {
+      headers: { "X-Emby-Token": token },
+      signal: AbortSignal.timeout(EMBY_REQUEST_TIMEOUT_MS),
+    });
+    if (!response.ok) return null;
+    const user = (await response.json()) as { Id?: string; Name?: string };
+    if (!user.Id || !user.Name) return null;
+    return { id: user.Id, name: user.Name };
+  } catch {
+    return null;
+  }
+}
+
 export async function verifyEmbyUserToken(token: string): Promise<string | null> {
   if (!EMBY_URL || !token) return null;
   try {

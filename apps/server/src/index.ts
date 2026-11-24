@@ -27,6 +27,7 @@ import imagesRoutes from "./routes/images";
 import jellyseerrCompatRoutes from "./routes/jellyseerr-compat";
 import listsRoutes from "./routes/lists";
 import moonfinSyncRoutes from "./routes/moonfin-sync";
+import widgetRoutes from "./routes/widget";
 import webhooksRoutes from "./routes/webhooks";
 
 const log = createLogger("server");
@@ -123,6 +124,7 @@ app.route("/api/moonfin-sync", moonfinSyncRoutes);
 app.route("/api/jellyseerr/api/v1", jellyseerrCompatRoutes);
 app.route("/api/jellyseerr", jellyseerrCompatRoutes);
 app.route("/api/french-overview", frenchOverviewRoutes);
+app.route("/api/widget", widgetRoutes);
 
 // Cached images — serve from disk (fast path), fall back to TMDB fetch on miss
 if (imageCacheEnabled()) {
