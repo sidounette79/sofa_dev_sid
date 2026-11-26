@@ -26,7 +26,25 @@ export function NotificationsSection() {
   const unsubscribeMutation = useMutation(orpc.notifications.unsubscribe.mutationOptions());
 
   useEffect(() => {
-    getExistingPushSubscription().then((sub) => setSubscribed(sub !== null));
+    getExistingPushSubscription().then((sub) => {
+      setSubscribed(sub !== null);
+      // 26.11, Sid : « pourtant, dans mon compte, les notifs ont toujours
+      // été activées » — et l'interrupteur le disait bien, à tort.
+      //
+      // Il ne regardait que le navigateur. Or le serveur supprime tout
+      // abonnement auquel le service de push répond 404/410 (voir le
+      // pruning dans core/push.ts). Après ça, le navigateur garde le
+      // sien, l'interrupteur reste allumé, et plus rien n'est jamais
+      // envoyé : son compte n'avait plus AUCUN abonnement enregistré
+      // alors que l'écran affichait « activées ».
+      //
+      // On le ré-enregistre donc à chaque ouverture de l'écran. L'appel
+      // est un upsert sur l'endpoint (queries/push.ts), donc sans effet
+      // s'il est déjà connu, et il répare tout seul la désynchronisation.
+      if (sub) subscribeMutation.mutate(serializeSubscription(sub));
+    });
+    // Au montage uniquement : re-synchroniser à chaque rendu n'apporterait
+    // rien et multiplierait les écritures.
   }, []);
 
   if (isLoadingInfo || subscribed === null) {
