@@ -136,7 +136,7 @@ export async function logEpisodeWatch(
   // curiosite ne veut pas dire qu'on reprend la serie.
   const [existing] = await getTitleStatus(userId, titleId);
 
-  if (!existing || existing.status === "watchlist" || existing.status === "completed") {
+  if (!existing || existing.status === "watchlist") {
     await setTitleStatus(userId, titleId, "in_progress", source);
   }
 
@@ -161,7 +161,7 @@ export async function logEpisodeWatchBatch(
   const titleIds = new Set(episodeTitleMap.values());
   for (const titleId of titleIds) {
     const [existing] = await getTitleStatus(userId, titleId);
-    if (!existing || existing.status === "watchlist" || existing.status === "completed") {
+    if (!existing || existing.status === "watchlist") {
       await setTitleStatus(userId, titleId, "in_progress", source);
     }
   }
