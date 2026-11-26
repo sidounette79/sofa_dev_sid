@@ -29,18 +29,28 @@ async function requireUserId(c: {
   req: { header: (name: string) => string | undefined };
 }): Promise<string | null> {
   const token = c.req.header("X-Emby-Token");
-  if (!token) return null;
+  if (!token) {
+    // 26.11 : on journalise CHAQUE appel, succes compris. Les widgets
+    // restaient vides et le serveur ne voyait rien passer : impossible de
+    // dire si l'app n'appelait pas, ou si elle appelait et echouait.
+    log.info("appel widget SANS jeton");
+    return null;
+  }
 
   const embyUser = await getEmbyUserFromToken(token);
-  if (!embyUser) return null;
+  if (!embyUser) {
+    log.warn(`appel widget avec un jeton qu'Emby refuse (${token.slice(0, 6)}…)`);
+    return null;
+  }
 
   const integrations = await getEnabledEmbyIntegrationsWithUsername();
   const wanted = embyUser.name.toLowerCase();
   const match = integrations.find((row) => row.embyUsername?.toLowerCase() === wanted);
   if (!match) {
-    log.warn(`No Patoune TV user linked to Emby account "${embyUser.name}"`);
+    log.warn(`appel widget : aucun compte Patoune TV lie a l'utilisateur Emby "${embyUser.name}"`);
     return null;
   }
+  log.info(`appel widget reconnu : Emby "${embyUser.name}"`);
   return match.userId;
 }
 
