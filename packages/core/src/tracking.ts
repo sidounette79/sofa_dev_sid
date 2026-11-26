@@ -117,10 +117,26 @@ export async function logEpisodeWatch(
 
   if (!titleId) return;
 
-  // Auto-set status to in_progress if not set or still on watchlist
+  // Auto-set status to in_progress if not set, still on watchlist, or
+  // already marked finished.
+  //
+  // 26.11, Sid : « pourquoi les anneaux de pouvoir que je suis en train de
+  // regarder n'apparaissent pas ? » — 'completed' manquait ici. Elle avait
+  // fini les saisons 1 et 2, marqué la serie terminee ; en regardant la
+  // S3E1 le statut restait 'completed', et « En cours » filtre strictement
+  // sur 'in_progress' (getInProgressTitleIds). La serie disparaissait de sa
+  // liste alors qu'elle etait justement en train de la regarder.
+  //
+  // Ca ne touchait qu'elle : Mary n'a jamais marque une seule serie comme
+  // terminee (178 series integralement vues, toutes restees 'in_progress'),
+  // donc le cas ne pouvait pas se presenter sur son compte. Le defaut ne
+  // frappait que ceux qui tiennent leur liste a jour.
+  //
+  // On ne touche pas a 'dropped' : abandonner puis regarder un episode par
+  // curiosite ne veut pas dire qu'on reprend la serie.
   const [existing] = await getTitleStatus(userId, titleId);
 
-  if (!existing || existing.status === "watchlist") {
+  if (!existing || existing.status === "watchlist" || existing.status === "completed") {
     await setTitleStatus(userId, titleId, "in_progress", source);
   }
 
@@ -145,7 +161,7 @@ export async function logEpisodeWatchBatch(
   const titleIds = new Set(episodeTitleMap.values());
   for (const titleId of titleIds) {
     const [existing] = await getTitleStatus(userId, titleId);
-    if (!existing || existing.status === "watchlist") {
+    if (!existing || existing.status === "watchlist" || existing.status === "completed") {
       await setTitleStatus(userId, titleId, "in_progress", source);
     }
   }
