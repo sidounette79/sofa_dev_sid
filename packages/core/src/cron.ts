@@ -14,6 +14,8 @@ import {
   updateCronRunError,
   updateCronRunSuccess,
 } from "@sofa/db/queries/cron";
+import { reopenFinishedTvWithUnwatchedEpisodes } from "@sofa/db/queries/tracking";
+import { createLogger } from "@sofa/logger";
 
 export function startCronRun(jobName: string) {
   return insertCronRunReturning(jobName);
@@ -59,3 +61,24 @@ export {
   getTitleIdsWithStaleSeasons,
   getTitlesWithFreshRecommendations,
 };
+
+const logReopen = createLogger("reopenFinishedTv");
+
+/**
+ * 26.11, Sid : « les anneaux de pouvoir que je suis en train de regarder
+ * n'apparaissent pas ». Une série terminée puis reprise ne revenait jamais
+ * dans « En cours » : le statut restait `completed` alors qu'une nouvelle
+ * saison était sortie. Voir
+ * reopenFinishedTvWithUnwatchedEpisodes() pour le détail.
+ *
+ * Tourne après le rafraîchissement nocturne, qui est ce qui fait entrer
+ * les nouveaux épisodes : sans cet ordre, la tâche passerait avant d'avoir
+ * de quoi travailler et il faudrait attendre le lendemain.
+ */
+export async function reopenFinishedTvJob(): Promise<void> {
+  const rouvertes = await reopenFinishedTvWithUnwatchedEpisodes();
+  if (rouvertes.length === 0) return;
+  logReopen.info(
+    `${rouvertes.length} série(s) rouverte(s) : de nouveaux épisodes sont arrivés depuis qu'elles avaient été finies`,
+  );
+}

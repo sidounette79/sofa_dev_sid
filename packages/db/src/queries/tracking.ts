@@ -69,6 +69,54 @@ export async function getWatchedEpisodeCycleKeysForUser(userId: string): Promise
   return new Set(rows.map((r) => `${r.episodeId}:${r.cycle}`));
 }
 
+/**
+ * 26.11, Sid — une série finie puis reprise restait invisible.
+ *
+ * Quand on vient à bout de tout ce qui existe, la série passe en
+ * `completed`. Si une nouvelle saison sort ensuite, rien ne la remet en
+ * `in_progress` : elle disparaît de « En cours », et ne revient que par la
+ * bannière du haut, qui raisonne sur « prochain épisode non vu » et ignore
+ * le statut. 58 séries de son compte étaient dans ce cas le 26.11, dont
+ * Les Anneaux de pouvoir (saison 3 entamée) et FBI (25 épisodes en
+ * attente).
+ *
+ * La comparaison porte sur le `currentCycle` : un épisode vu lors d'un
+ * visionnage précédent ne compte pas comme vu pour le cycle en cours,
+ * sinon une série qu'on recommence ne se rouvrirait jamais.
+ *
+ * Volontairement à sens unique, `completed` → `in_progress` : on ne
+ * referme jamais une série automatiquement, c'est à elle de le faire.
+ */
+export function reopenFinishedTvWithUnwatchedEpisodes() {
+  return db
+    .update(userTitleStatus)
+    .set({ status: "in_progress", updatedAt: new Date() })
+    .where(
+      and(
+        eq(userTitleStatus.status, "completed"),
+        sql`EXISTS (
+          SELECT 1 FROM ${titles} t
+          WHERE t.id = ${userTitleStatus.titleId} AND t.type = 'tv'
+        )`,
+        sql`EXISTS (
+          SELECT 1
+          FROM ${seasons} se
+          JOIN ${episodes} e ON e."seasonId" = se.id
+          LEFT JOIN ${userEpisodeWatches} w
+                 ON w."episodeId" = e.id
+                AND w."userId" = ${userTitleStatus.userId}
+                AND w.cycle = ${userTitleStatus.currentCycle}
+          WHERE se."titleId" = ${userTitleStatus.titleId}
+            AND w."episodeId" IS NULL
+        )`,
+      ),
+    )
+    .returning({
+      userId: userTitleStatus.userId,
+      titleId: userTitleStatus.titleId,
+    });
+}
+
 export async function upsertTitleStatus(
   userId: string,
   titleId: string,

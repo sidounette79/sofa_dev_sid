@@ -18,6 +18,7 @@ import {
   getTitleIdsWithStaleSeasons,
   getTitlesWithFreshRecommendations,
   startCronRun,
+  reopenFinishedTvJob,
 } from "@sofa/core/cron";
 import {
   cacheEpisodeStills,
@@ -392,6 +393,10 @@ export async function startJobs() {
   schedule("scheduledBackup", await getBackupCronFromSettings(), scheduledBackupJob);
   schedule("nightlyRefreshLibrary", "0 3 * * *", nightlyRefreshLibrary);
   schedule("refreshAvailability", "0 */6 * * *", refreshAvailabilityJob);
+  // 26.11: juste apres nightlyRefreshLibrary (3h), qui est ce qui fait
+  // entrer les nouveaux episodes. Une serie finie puis reprise redevient
+  // ainsi "en cours" le matin meme, sans attendre qu'elle s'en apercoive.
+  schedule("reopenFinishedTv", "45 3 * * *", reopenFinishedTvJob);
   schedule("scanEmbyLibrary", "15 */6 * * *", async () => {
     await scanEmbyLibrary();
   });
